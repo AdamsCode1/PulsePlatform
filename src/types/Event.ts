@@ -1,17 +1,15 @@
 export interface Event {
   id: string;
-  eventName: string;
-  date: string;
-  location: string;
+  name: string;
   description: string;
-  organiserID: string;
-  societyName: string;
-  time?: string;
-  endTime?: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  category?: string;
+  society_id: string;
+  created_at?: string;
   attendeeCount?: number;
   imageUrl?: string;
-  requiresOrganizerSignup?: boolean;
-  organizerEmail?: string;
 }
 
 export interface User {
