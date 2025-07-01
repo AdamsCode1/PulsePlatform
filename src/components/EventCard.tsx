@@ -1,4 +1,5 @@
 
+import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { MapPin, Clock, Users } from 'lucide-react';
 import { Event } from '../types/Event';
@@ -9,11 +10,46 @@ interface EventCardProps {
 }
 
 const EventCard = ({ event, onClick }: EventCardProps) => {
+  const [hasRSVPed, setHasRSVPed] = useState(false);
+  const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
+
+  const handleQuickRSVP = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening the modal
+    
+    if (!hasRSVPed) {
+      // Simulate RSVP - in real app this would call the API
+      setHasRSVPed(true);
+      setAttendeeCount(prev => prev + 1);
+      
+      // Store RSVP info in localStorage for demo purposes
+      const existingRSVPs = JSON.parse(localStorage.getItem('rsvps') || '[]');
+      const newRSVP = {
+        eventId: event.id,
+        timestamp: new Date().toISOString(),
+        quickRSVP: true
+      };
+      localStorage.setItem('rsvps', JSON.stringify([...existingRSVPs, newRSVP]));
+    }
+  };
+
+  // Check if user has already RSVP'd on component mount
+  React.useEffect(() => {
+    const existingRSVPs = JSON.parse(localStorage.getItem('rsvps') || '[]');
+    const hasUserRSVPed = existingRSVPs.some((rsvp: any) => rsvp.eventId === event.id);
+    setHasRSVPed(hasUserRSVPed);
+  }, [event.id]);
+
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 overflow-hidden"
+      className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-1 overflow-hidden relative"
     >
+      {/* Attend Counter - Top Right */}
+      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center space-x-1 text-sm font-medium text-gray-700 z-10">
+        <Users size={14} />
+        <span>{attendeeCount}</span>
+      </div>
+
       {/* Event Image */}
       <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 relative overflow-hidden">
         <div className="absolute inset-0 bg-black bg-opacity-20"></div>
@@ -43,14 +79,6 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
             <MapPin size={18} className="mr-3 text-blue-500" />
             <span className="text-sm">{event.location}</span>
           </div>
-          
-          {/* Attendees */}
-          {event.attendeeCount && (
-            <div className="flex items-center text-gray-600">
-              <Users size={18} className="mr-3 text-blue-500" />
-              <span className="text-sm">{event.attendeeCount} attending</span>
-            </div>
-          )}
         </div>
         
         {/* Description Preview */}
@@ -58,11 +86,23 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
           {event.description.substring(0, 120)}...
         </p>
         
-        {/* View Details Button */}
-        <div className="mt-6">
+        {/* Action Buttons */}
+        <div className="mt-6 flex items-center justify-between">
           <div className="text-blue-600 font-medium text-sm hover:text-blue-700 transition-colors">
             View Details →
           </div>
+          
+          <button
+            onClick={handleQuickRSVP}
+            disabled={hasRSVPed}
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+              hasRSVPed
+                ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                : 'bg-pink-500 text-white hover:bg-pink-600 active:scale-95'
+            }`}
+          >
+            {hasRSVPed ? 'RSVP\'d ✓' : 'Quick RSVP'}
+          </button>
         </div>
       </div>
     </div>
