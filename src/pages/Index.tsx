@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from 'react';
-import { format, addDays, startOfDay, isSameDay } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import DateNavigator from '../components/DateNavigator';
 import EventCard from '../components/EventCard';
 import EventModal from '../components/EventModal';
 import { Event } from '../types/Event';
-import { mockEvents } from '../data/mockEvents';
+import { fetchEventsByDate } from '../lib/eventApi';
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -13,19 +12,15 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  // Simulate API call to fetch events for a specific date
+  // Fetch events from backend for a specific date
   const fetchEventsForDate = async (date: Date) => {
     setIsLoading(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Filter mock events for the selected date
-    const dayEvents = mockEvents.filter(event => 
-      isSameDay(new Date(event.date), date)
-    );
-    
-    setEvents(dayEvents);
+    try {
+      const dayEvents = await fetchEventsByDate(date);
+      setEvents(dayEvents);
+    } catch (e) {
+      setEvents([]);
+    }
     setIsLoading(false);
   };
 
@@ -45,9 +40,7 @@ const Index = () => {
     setSelectedEventId(null);
   };
 
-  const selectedEvent = selectedEventId 
-    ? mockEvents.find(event => event.id === selectedEventId)
-    : null;
+  const selectedEvent = events.find(event => event.id === selectedEventId) || null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
