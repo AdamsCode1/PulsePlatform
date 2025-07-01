@@ -52,7 +52,10 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                   {format(new Date(event.date), 'EEEE, MMMM d, yyyy')}
                 </div>
                 {event.time && (
-                  <div className="text-gray-600">{event.time}</div>
+                  <div className="text-gray-600">
+                    {event.time}
+                    {event.endTime && ` - ${event.endTime}`}
+                  </div>
                 )}
               </div>
             </div>
@@ -76,6 +79,24 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                 </div>
               </div>
             )}
+
+            {/* Organizer Contact */}
+            {event.requiresOrganizerSignup && event.organizerEmail && (
+              <div className="flex items-start space-x-3">
+                <div className="text-blue-500 mt-1">
+                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Registration</div>
+                  <div className="text-gray-600">Contact organizer directly</div>
+                  <a href={`mailto:${event.organizerEmail}`} className="text-blue-600 hover:text-blue-700 text-sm">
+                    {event.organizerEmail}
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -86,7 +107,25 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
 
           {/* RSVP Section */}
           <div className="border-t pt-6">
-            {hasRSVPed ? (
+            {event.requiresOrganizerSignup ? (
+              <div className="text-center py-6">
+                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Direct Registration Required</h3>
+                <p className="text-gray-600 mb-4">
+                  This event requires you to sign up directly with the organizer.
+                </p>
+                <a
+                  href={`mailto:${event.organizerEmail}`}
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block"
+                >
+                  Contact Organizer
+                </a>
+              </div>
+            ) : hasRSVPed ? (
               <div className="text-center py-6">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

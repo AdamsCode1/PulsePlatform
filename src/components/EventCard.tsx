@@ -70,7 +70,10 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
           {event.time && (
             <div className="flex items-center text-gray-600">
               <Clock size={18} className="mr-3 text-blue-500" />
-              <span className="text-sm font-medium">{event.time}</span>
+              <span className="text-sm font-medium">
+                {event.time}
+                {event.endTime && ` - ${event.endTime}`}
+              </span>
             </div>
           )}
           
@@ -80,6 +83,15 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
             <span className="text-sm">{event.location}</span>
           </div>
         </div>
+        
+        {/* Organizer Signup Notice */}
+        {event.requiresOrganizerSignup && (
+          <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800">
+              ⚠️ Direct signup required with organizer
+            </p>
+          </div>
+        )}
         
         {/* Description Preview */}
         <p className="text-gray-600 text-sm mt-4 line-clamp-2">
@@ -92,17 +104,23 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
             View Details →
           </div>
           
-          <button
-            onClick={handleQuickRSVP}
-            disabled={hasRSVPed}
-            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-              hasRSVPed
-                ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                : 'bg-pink-500 text-white hover:bg-pink-600 active:scale-95'
-            }`}
-          >
-            {hasRSVPed ? 'RSVP\'d ✓' : 'Quick RSVP'}
-          </button>
+          {event.requiresOrganizerSignup ? (
+            <div className="text-xs text-gray-500 font-medium">
+              Contact organizer
+            </div>
+          ) : (
+            <button
+              onClick={handleQuickRSVP}
+              disabled={hasRSVPed}
+              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                hasRSVPed
+                  ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                  : 'bg-pink-500 text-white hover:bg-pink-600 active:scale-95'
+              }`}
+            >
+              {hasRSVPed ? 'RSVP\'d ✓' : 'Quick RSVP'}
+            </button>
+          )}
         </div>
       </div>
     </div>

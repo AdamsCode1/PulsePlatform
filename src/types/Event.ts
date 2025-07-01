@@ -1,4 +1,3 @@
-
 export interface Event {
   id: string;
   eventName: string;
@@ -8,8 +7,11 @@ export interface Event {
   organiserID: string;
   societyName: string;
   time?: string;
+  endTime?: string;
   attendeeCount?: number;
   imageUrl?: string;
+  requiresOrganizerSignup?: boolean;
+  organizerEmail?: string;
 }
 
 export interface User {
