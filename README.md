@@ -1,73 +1,100 @@
-# Welcome to your Lovable project
+# 🎯 DUPulse - Your Durham University Event Hub
 
-## Project info
+**Never miss out on what's happening at Durham again!**
 
-**URL**: https://lovable.dev/projects/6c381dbc-5e6c-4618-b006-65daec4cd3ce
+DUPulse is the all-in-one platform that brings together every event, society meetup, academic talk, and social gathering happening across Durham University. No more FOMO, no more scrolling through endless group chats or checking multiple websites - everything you need to know is right here.
 
-## How can I edit this code?
+## 🚀 What is DUPulse?
 
-There are several ways of editing your application.
+Tired of finding out about amazing events *after* they've happened? We've all been there. DUPulse solves the age-old problem of event discovery at Durham University by bringing together:
 
-**Use Lovable**
+- 🎓 **Society Events** - From freshers' activities to career talks
+- 📚 **Academic Seminars** - Guest lectures, research presentations, and workshops  
+- ⚽ **Sports Events** - Matches, tournaments, and fitness classes
+- 🎉 **Social Gatherings** - Parties, cultural nights, and networking events
+- 💼 **Career Events** - Job fairs, recruitment talks, and industry meetups
+- 🎨 **Creative Workshops** - Art classes, photography sessions, and creative meetups
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/6c381dbc-5e6c-4618-b006-65daec4cd3ce) and start prompting.
+## ✨ Why DUPulse?
 
-Changes made via Lovable will be committed automatically to this repo.
+**Before DUPulse:** Checking Facebook groups, Instagram stories, email lists, society websites, department notice boards, WhatsApp groups, college announcements...
 
-**Use your preferred IDE**
+**With DUPulse:** One platform. All events. Zero FOMO.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Key Features
+- 📅 **Smart Date Navigation** - Browse events by day, week, or month
+- 🔍 **Discover Everything** - Find events you never knew existed
+- ✅ **Easy RSVP** - Secure your spot with one click
+- 🏢 **Society Profiles** - Learn about different student organizations
+- 📱 **Mobile Friendly** - Check events on the go between lectures
+- 🎯 **Personalized** - See events that match your interests
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🔮 Coming Soon
 
-Follow these steps:
+We're just getting started! Here's what's coming to make your Durham experience even better:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- 💰 **Student Deals** - Exclusive discounts and offers for Durham students
+- 👥 **Community Features** - Connect with like-minded students
+- 🎯 **Smart Recommendations** - AI-powered event suggestions based on your interests
+- 📧 **Event Reminders** - Never forget about events you've RSVP'd to
+- 🏆 **Achievement System** - Earn badges for attending different types of events
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 🎯 Who Is This For?
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 👨‍🎓 Students
+- Discover events you're actually interested in
+- Make the most of your Durham experience
+- Meet new people and try new things
+- Stay updated on academic opportunities
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### 🎪 Event Organizers
+- Societies and student organizations
+- University departments
+- Student unions and colleges
+- External partners hosting Durham events
+
+## 🚧 Development Status
+
+DUPulse is currently in active development. We're working hard to build the platform that Durham students deserve. Want to stay updated or contribute ideas?
+
+## 🛠️ Technical Details
+
+### Built With
+- **React** - Modern, responsive user interface
+- **TypeScript** - Type-safe, reliable code
+- **Tailwind CSS** - Beautiful, mobile-first design
+- **Vite** - Lightning-fast development experience
+- **shadcn/ui** - Polished, accessible components
+
+### For Developers
+
+Want to contribute or run this locally?
+
+```bash
+# Clone the repository
+git clone https://github.com/AdamsCode1/PulsePlatform.git
+
+# Navigate to project directory
+cd PulsePlatform
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+**Requirements:** Node.js 18+ and npm
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📞 Get Involved
 
-**Use GitHub Codespaces**
+This is a project by Durham students, for Durham students. Got ideas? Found a bug? Want to help out?
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- 🐛 Report issues on GitHub
+- 💡 Suggest features 
+- 🤝 Contribute to development
+- 📢 Spread the word!
 
-## What technologies are used for this project?
+---
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/6c381dbc-5e6c-4618-b006-65daec4cd3ce) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+*Built with ❤️ for the Durham University community*
