@@ -75,7 +75,7 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                 <Users className="text-blue-500 mt-1" size={20} />
                 <div>
                   <div className="font-semibold text-gray-900">Attendees</div>
-                  <div className="text-gray-600">{event.attendeeCount} people attending</div>
+                  <div className="text-gray-600">{event.attendeeCount} people interested</div>
                 </div>
               </div>
             )}
@@ -90,7 +90,7 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900">Registration</div>
-                  <div className="text-gray-600">Contact organizer directly</div>
+                  <div className="text-gray-600">Contact organizer to complete signup</div>
                   <a href={`mailto:${event.organizerEmail}`} className="text-blue-600 hover:text-blue-700 text-sm">
                     {event.organizerEmail}
                   </a>
@@ -107,33 +107,30 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
 
           {/* RSVP Section */}
           <div className="border-t pt-6">
-            {event.requiresOrganizerSignup ? (
-              <div className="text-center py-6">
-                <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Direct Registration Required</h3>
-                <p className="text-gray-600 mb-4">
-                  This event requires you to sign up directly with the organizer.
-                </p>
-                <a
-                  href={`mailto:${event.organizerEmail}`}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-block"
-                >
-                  Contact Organizer
-                </a>
-              </div>
-            ) : hasRSVPed ? (
+            {hasRSVPed ? (
               <div className="text-center py-6">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">You're all set!</h3>
-                <p className="text-gray-600">Thanks for RSVPing. We'll see you at the event!</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {event.requiresOrganizerSignup ? "Interest Registered!" : "You're all set!"}
+                </h3>
+                <p className="text-gray-600">
+                  {event.requiresOrganizerSignup 
+                    ? "We've recorded your interest. Please contact the organizer to complete your registration."
+                    : "Thanks for RSVPing. We'll see you at the event!"
+                  }
+                </p>
+                {event.requiresOrganizerSignup && event.organizerEmail && (
+                  <a
+                    href={`mailto:${event.organizerEmail}`}
+                    className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors inline-block"
+                  >
+                    Contact Organizer
+                  </a>
+                )}
               </div>
             ) : showRSVPForm ? (
               <RSVPForm
@@ -143,13 +140,27 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
               />
             ) : (
               <div className="text-center">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Join This Event</h3>
-                <p className="text-gray-600 mb-6">Reserve your spot and we'll send you event updates.</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {event.requiresOrganizerSignup ? "Show Your Interest" : "Join This Event"}
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  {event.requiresOrganizerSignup 
+                    ? "Let us know you're interested and we'll help you connect with the organizer."
+                    : "Reserve your spot and we'll send you event updates."
+                  }
+                </p>
+                {event.requiresOrganizerSignup && (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ Final registration must be completed directly with the organizer
+                    </p>
+                  </div>
+                )}
                 <button
                   onClick={() => setShowRSVPForm(true)}
                   className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                 >
-                  RSVP Now
+                  {event.requiresOrganizerSignup ? "Register Interest" : "RSVP Now"}
                 </button>
               </div>
             )}
