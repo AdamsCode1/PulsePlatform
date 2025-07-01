@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { X, MapPin, Clock, Users, Calendar } from 'lucide-react';
@@ -32,7 +33,8 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
               <X size={24} />
             </button>
             <div className="absolute bottom-6 left-6 right-6 text-white">
-              <h1 className="text-3xl font-bold mb-2">{event.name}</h1>
+              <h1 className="text-3xl font-bold mb-2">{event.eventName}</h1>
+              <p className="text-blue-100 text-lg">{event.societyName}</p>
             </div>
           </div>
         </div>
@@ -47,11 +49,14 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
               <div>
                 <div className="font-semibold text-gray-900">Date & Time</div>
                 <div className="text-gray-600">
-                  {format(new Date(event.start_time), 'EEEE, MMMM d, yyyy')}
+                  {format(new Date(event.date), 'EEEE, MMMM d, yyyy')}
                 </div>
-                <div className="text-gray-600">
-                  {format(new Date(event.start_time), 'HH:mm')} - {format(new Date(event.end_time), 'HH:mm')}
-                </div>
+                {event.time && (
+                  <div className="text-gray-600">
+                    {event.time}
+                    {event.endTime && ` - ${event.endTime}`}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -74,6 +79,24 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                 </div>
               </div>
             )}
+
+            {/* Organizer Contact */}
+            {event.requiresOrganizerSignup && event.organizerEmail && (
+              <div className="flex items-start space-x-3">
+                <div className="text-blue-500 mt-1">
+                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                  </svg>
+                </div>
+                <div>
+                  <div className="font-semibold text-gray-900">Registration</div>
+                  <div className="text-gray-600">Contact organizer to complete signup</div>
+                  <a href={`mailto:${event.organizerEmail}`} className="text-blue-600 hover:text-blue-700 text-sm">
+                    {event.organizerEmail}
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}
@@ -92,11 +115,22 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  You're all set!
+                  {event.requiresOrganizerSignup ? "Interest Registered!" : "You're all set!"}
                 </h3>
                 <p className="text-gray-600">
-                  Thanks for RSVPing. We'll see you at the event!
+                  {event.requiresOrganizerSignup 
+                    ? "We've recorded your interest. Please contact the organizer to complete your registration."
+                    : "Thanks for RSVPing. We'll see you at the event!"
+                  }
                 </p>
+                {event.requiresOrganizerSignup && event.organizerEmail && (
+                  <a
+                    href={`mailto:${event.organizerEmail}`}
+                    className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors inline-block"
+                  >
+                    Contact Organizer
+                  </a>
+                )}
               </div>
             ) : showRSVPForm ? (
               <RSVPForm
@@ -107,16 +141,26 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
             ) : (
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Join This Event
+                  {event.requiresOrganizerSignup ? "Show Your Interest" : "Join This Event"}
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Reserve your spot and we'll send you event updates.
+                  {event.requiresOrganizerSignup 
+                    ? "Let us know you're interested and we'll help you connect with the organizer."
+                    : "Reserve your spot and we'll send you event updates."
+                  }
                 </p>
+                {event.requiresOrganizerSignup && (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      ⚠️ Final registration must be completed directly with the organizer
+                    </p>
+                  </div>
+                )}
                 <button
                   onClick={() => setShowRSVPForm(true)}
                   className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                 >
-                  RSVP Now
+                  {event.requiresOrganizerSignup ? "Register Interest" : "RSVP Now"}
                 </button>
               </div>
             )}

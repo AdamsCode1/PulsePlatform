@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from 'react';
-import { format, isSameDay } from 'date-fns';
+import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import DateNavigator from '../components/DateNavigator';
 import EventCard from '../components/EventCard';
 import EventModal from '../components/EventModal';
 import { Event } from '../types/Event';
-import { fetchEventsByDate } from '../lib/eventApi';
+import { mockEvents } from '../data/mockEvents';
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -12,15 +13,19 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
-  // Fetch events from backend for a specific date
+  // Simulate API call to fetch events for a specific date
   const fetchEventsForDate = async (date: Date) => {
     setIsLoading(true);
-    try {
-      const dayEvents = await fetchEventsByDate(date);
-      setEvents(dayEvents);
-    } catch (e) {
-      setEvents([]);
-    }
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Filter mock events for the selected date
+    const dayEvents = mockEvents.filter(event => 
+      isSameDay(new Date(event.date), date)
+    );
+    
+    setEvents(dayEvents);
     setIsLoading(false);
   };
 
@@ -40,7 +45,9 @@ const Index = () => {
     setSelectedEventId(null);
   };
 
-  const selectedEvent = events.find(event => event.id === selectedEventId) || null;
+  const selectedEvent = selectedEventId 
+    ? mockEvents.find(event => event.id === selectedEventId)
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -48,7 +55,10 @@ const Index = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Today's Schedule
+            Today's{' '}
+            <span className="bg-gradient-to-r from-blue-500 via-purple-500 via-pink-500 to-pink-300 bg-clip-text text-transparent animate-pulse">
+              Schedule
+            </span>
           </h1>
           <p className="text-lg text-gray-600">
             Discover and join amazing events happening around you
@@ -67,8 +77,10 @@ const Index = () => {
             <h2 className="text-2xl font-semibold text-gray-900">
               Events for {format(currentDate, 'EEEE, MMMM d')}
             </h2>
-            <div className="text-sm text-gray-500">
-              {events.length} event{events.length !== 1 ? 's' : ''} found
+            <div className="bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-2 rounded-full border border-blue-200">
+              <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {events.length} amazing event{events.length !== 1 ? 's' : ''} waiting for you
+              </span>
             </div>
           </div>
 

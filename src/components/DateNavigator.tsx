@@ -25,36 +25,27 @@ const DateNavigator = ({ currentDate, onDateChange }: DateNavigatorProps) => {
       onDateChange(addDays(currentDate, 1));
     }
   };
-  
-  const isToday = isSameDay(currentDate, today);
-  const isTomorrow = isSameDay(currentDate, addDays(today, 1));
-  
-  const getDateLabel = () => {
-    if (isToday) return 'Today';
-    if (isTomorrow) return 'Tomorrow';
-    return format(currentDate, 'EEEE');
-  };
 
   return (
-    <div className="flex items-center justify-center bg-white rounded-2xl shadow-lg p-6 mx-auto max-w-md">
+    <div className="flex items-center justify-center bg-gray-700 rounded-2xl shadow-lg p-6 mx-auto max-w-md">
       <button
         onClick={handlePrevious}
         disabled={!canGoPrevious}
         className={`p-3 rounded-full transition-all duration-200 ${
           canGoPrevious
-            ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700 active:scale-95'
-            : 'text-gray-300 cursor-not-allowed'
+            ? 'text-white hover:bg-gray-600 active:scale-95'
+            : 'text-gray-500 cursor-not-allowed'
         }`}
       >
         <ChevronLeft size={24} />
       </button>
       
       <div className="flex-1 text-center mx-6">
-        <div className="text-2xl font-bold text-gray-900 mb-1">
-          {getDateLabel()}
+        <div className="text-2xl font-bold text-white mb-1">
+          {format(currentDate, 'EEEE')}
         </div>
-        <div className="text-sm text-gray-500">
-          {format(currentDate, 'MMMM d, yyyy')}
+        <div className="text-sm text-gray-300">
+          {format(currentDate, 'd MMM')}
         </div>
       </div>
       
@@ -63,8 +54,8 @@ const DateNavigator = ({ currentDate, onDateChange }: DateNavigatorProps) => {
         disabled={!canGoNext}
         className={`p-3 rounded-full transition-all duration-200 ${
           canGoNext
-            ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-700 active:scale-95'
-            : 'text-gray-300 cursor-not-allowed'
+            ? 'text-white hover:bg-gray-600 active:scale-95'
+            : 'text-gray-500 cursor-not-allowed'
         }`}
       >
         <ChevronRight size={24} />
