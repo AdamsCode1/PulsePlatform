@@ -94,7 +94,3 @@ This is a project by Durham students, for Durham students. Got ideas? Found a bu
 - 💡 Suggest features 
 - 🤝 Contribute to development
 - 📢 Spread the word!
-
----
-
-*Built with ❤️ for the Durham University community*
