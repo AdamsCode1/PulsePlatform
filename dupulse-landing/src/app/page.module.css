@@ -159,7 +159,7 @@
   width: 100%;
   margin-top: 0.2rem;
   margin-bottom: 0.2rem;
-}
+  }
 .whatsapp {
   display: block;
   width: 100%;
@@ -177,13 +177,13 @@
 .whatsapp:hover, .whatsapp:focus {
   filter: brightness(1.08) drop-shadow(0 0 8px #25d366cc);
   box-shadow: 0 0 24px 4px #25d36655;
-}
+  }
 .error {
   color: #ff2eb6;
   font-size: 0.98rem;
   margin-bottom: 0.2rem;
-  text-align: center;
-}
+    text-align: center;
+  }
 
 .infoSection {
   max-width: 700px;
@@ -198,15 +198,15 @@
   color: var(--accent);
   margin-bottom: 0.7rem;
   font-weight: 700;
-}
+  }
 .infoSection p {
   color: #23232b;
   font-size: 1.08rem;
   margin-bottom: 1.2rem;
   line-height: 1.7;
-}
+  }
 
-.footer {
+  .footer {
   width: 100vw;
   text-align: center;
   padding: 2.5rem 0 1.2rem 0;

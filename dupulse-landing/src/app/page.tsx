@@ -26,12 +26,6 @@ export default function Home() {
   const [error, setError] = useState("");
   const [duplicate, setDuplicate] = useState(false);
 
-  // Placeholder for duplicate email check (simulate async check)
-  const checkDuplicateEmail = async (email: string) => {
-    // TODO: Replace with Supabase check
-    return false;
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
@@ -55,16 +49,24 @@ export default function Home() {
       setSubmitting(false);
       return;
     }
-    if (await checkDuplicateEmail(form.email)) {
-      setDuplicate(true);
-      setSubmitting(false);
-      return;
+    try {
+      const res = await fetch("/api/early-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name, yearGroup: form.year, email: form.email }),
+      });
+      if (res.status === 201) {
+        setSubmitted(true);
+      } else if (res.status === 409) {
+        setDuplicate(true);
+      } else {
+        const data = await res.json();
+        setError(data.message || "Something went wrong. Please try again.");
+      }
+    } catch (err) {
+      setError("Network error. Please try again.");
     }
-    // TODO: Submit to Supabase when ready
-    setTimeout(() => {
-      setSubmitted(true);
-      setSubmitting(false);
-    }, 1000);
+    setSubmitting(false);
   };
 
   return (
