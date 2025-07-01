@@ -81,13 +81,9 @@
     "globals": "^15.9.0",
     "lovable-tagger": "^1.1.7",
     "postcss": "^8.4.47",
-<<<<<<< HEAD
     "tailwindcss": "^3.4.17",
-=======
-    "tailwindcss": "^3.4.11",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.3",
->>>>>>> 7df9b2e (frontend now uses supabase data)
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1"
