@@ -39,6 +39,18 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
     }
   };
 
+  const handleCheckDetailClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    onClick();
+  };
+
+  const handleLocationClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    const encodedLocation = encodeURIComponent(event.location);
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
+    window.open(googleMapsUrl, '_blank');
+  };
+
   // Check if user has already RSVP'd on component mount
   React.useEffect(() => {
     const existingRSVPs = JSON.parse(localStorage.getItem('rsvps') || '[]');
@@ -47,22 +59,25 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
   }, [event.id]);
 
   return (
-    <div className="bg-gray-50 rounded-2xl border border-gray-200 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 overflow-hidden relative">
+    <div 
+      onClick={onClick}
+      className="bg-gray-50 rounded-2xl border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 overflow-hidden relative cursor-pointer flex flex-col h-full"
+    >
       {/* Colored line at the top */}
       <div className="h-1 bg-gradient-to-r from-pink-400 to-pink-500"></div>
       
-      <div className="p-6">
+      <div className="p-6 flex flex-col flex-1">
         {/* Attend Counter - Top Right */}
         <div className="absolute top-6 right-4 bg-white rounded-full px-3 py-1 flex items-center space-x-1 text-sm font-medium text-gray-700 shadow-sm">
           <Users size={14} />
           <span>{attendeeCount}</span>
         </div>
 
-        {/* Society Name with hover effect */}
-        <div className="inline-block mb-3">
-          <div className="bg-gray-200 hover:bg-black hover:text-white transition-all duration-300 px-3 py-1 rounded-lg text-sm text-gray-700 cursor-pointer">
+        {/* Society Name with hover effect - only text has gray background */}
+        <div className="mb-3">
+          <span className="bg-gray-200 hover:bg-black hover:text-white transition-all duration-300 px-3 py-1 rounded-lg text-sm text-gray-700 cursor-pointer">
             {event.societyName}
-          </div>
+          </span>
         </div>
 
         {/* Event Name */}
@@ -71,7 +86,7 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         </h3>
 
         {/* Event Description */}
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+        <p className="text-gray-600 text-sm mb-4 line-clamp-2 flex-1">
           {event.description}
         </p>
         
@@ -88,10 +103,14 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
             </div>
           )}
           
-          {/* Location */}
-          <div className="flex items-center text-gray-700">
-            <MapPin size={18} className="mr-3 text-pink-500" />
-            <span className="text-sm">{event.location}</span>
+          {/* Location - Now clickable with hover effect */}
+          <div 
+            className="flex items-center text-gray-700 hover:text-pink-600 cursor-pointer transition-colors group"
+            onClick={handleLocationClick}
+            title="Click to open in Google Maps"
+          >
+            <MapPin size={18} className="mr-3 text-pink-500 group-hover:text-pink-600" />
+            <span className="text-sm group-hover:underline">{event.location}</span>
           </div>
         </div>
         
@@ -104,11 +123,11 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
           </div>
         )}
         
-        {/* Bottom buttons */}
-        <div className="flex justify-between items-center">
+        {/* Bottom buttons - Push to bottom */}
+        <div className="flex justify-between items-center mt-auto">
           {/* Check Detail Button */}
           <button
-            onClick={onClick}
+            onClick={handleCheckDetailClick}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors font-medium text-sm"
           >
             Check Detail
