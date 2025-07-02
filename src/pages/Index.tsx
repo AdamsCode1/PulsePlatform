@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import DateNavigator from '../components/DateNavigator';
@@ -8,6 +7,10 @@ import EventFilters from '../components/EventFilters';
 import { Event } from '../types/Event';
 import { mockEvents } from '../data/mockEvents';
 import { start } from 'repl';
+import NavBar from '../components/NavBar';
+import HeroSection from '../components/HeroSection';
+import FAQSection from '../components/FAQSection';
+import Footer from '../components/Footer';
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -138,6 +141,8 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <NavBar />
+      <HeroSection />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -220,6 +225,8 @@ const Index = () => {
           onClose={handleCloseModal}
         />
       )}
+      <FAQSection />
+      <Footer />
     </div>
   );
 };
