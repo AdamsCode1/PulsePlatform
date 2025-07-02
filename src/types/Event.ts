@@ -3,7 +3,8 @@ export interface Event {
   eventName: string;
   date: string;
   location: string;
-  description: string;
+  category?: string;
+  description?: string;
   organiserID: string;
   societyName: string;
   time?: string;

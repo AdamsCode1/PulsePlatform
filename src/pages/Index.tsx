@@ -7,6 +7,7 @@ import EventModal from '../components/EventModal';
 import EventFilters from '../components/EventFilters';
 import { Event } from '../types/Event';
 import { mockEvents } from '../data/mockEvents';
+import { start } from 'repl';
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -16,6 +17,7 @@ const Index = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [currentFilter, setCurrentFilter] = useState('all');
 
+  /*
   // Simulate API call to fetch events for a specific date
   const fetchEventsForDate = async (date: Date) => {
     setIsLoading(true);
@@ -30,6 +32,54 @@ const Index = () => {
     
     setEvents(dayEvents);
     setIsLoading(false);
+  };
+ */
+  // Uncomment the above block to use mock data instead of a real API call
+
+  // API call to fetch events from the server can be implemented here
+  // Attempt using a real API:
+  const fetchEventsForDate = async (date: Date) => {
+    setIsLoading(true);
+
+    try { 
+      const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
+      const response = await fetch(`/api/events/by-date?date=${formattedDate}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
+      }
+      const dayEvents = await response.json();
+
+      // Log the fetched events for debugging
+      console.log('Fetched events for date:', formattedDate, dayEvents);
+
+      // Remap event data to match the Event type
+      const mappedEvents: Event[] = dayEvents.map((event: any) => ({
+        id: event.id,
+        eventName: event.name,
+        date: event.start_time,
+        location: event.location,
+        description: event.description,
+        organiserID: event.society_id,
+        societyName: '"derive using society_id"', // TODO: use society_id to fetch society name from another endpoint
+        time: event.start_time,
+        endTime: event.end_time,
+        attendeeCount: 100, // TODO: calculate using RSVPs table from another endpoint
+        imageUrl: event.imageUrl || '/placeholder.svg', // Default image if not provided
+        requiresOrganizerSignup: event.requiresOrganizerSignup || false,
+        organizerEmail: event.organizerEmail || '',
+        category : event.category || 'general', // Default category if not provided
+      }));
+
+      // Log the mapped events
+      console.log('Mapped events:', mappedEvents);
+
+      setEvents(mappedEvents);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      setEvents([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Apply filters to events
@@ -81,6 +131,7 @@ const Index = () => {
 
   const selectedEvent = selectedEventId 
     ? mockEvents.find(event => event.id === selectedEventId)
+    //? mappedEvents.find(event => event.id === selectedEventId)
     : null;
 
   const displayEvents = filteredEvents.length > 0 ? filteredEvents : events;

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 
 const router = Router();
 
-// Event type matching Supabase schema
+// Event type matching Supabase schema + additional fields
 interface Event {
   id: string;
   created_at: string;
@@ -15,6 +15,8 @@ interface Event {
   location: string;
   category?: string;
   society_id: string;
+  attendee_count?: number; // Optional, can be calculated from RSVPs
+  image_url?: string; // Optional, for event images
 }
 
 // Validation helpers
