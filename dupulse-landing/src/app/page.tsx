@@ -149,11 +149,11 @@ export default function Home() {
                 <a
                   className={styles.whatsapp}
                   href="https://chat.whatsapp.com/HepNMq2g9W63ruiYBQQSvc?mode=r_t"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+            target="_blank"
+            rel="noopener noreferrer"
+          >
                   Join our WhatsApp Community
-                </a>
+          </a>
               </form>
             )}
           </div>
