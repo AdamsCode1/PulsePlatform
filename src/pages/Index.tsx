@@ -169,13 +169,13 @@ const Index = () => {
             <h2 className="text-2xl font-semibold text-gray-900">
               Events for {format(currentDate, 'EEEE, MMMM d')}
             </h2>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
               <EventFilters 
                 onFilterChange={handleFilterChange}
                 currentFilter={currentFilter}
               />
-              <div className="bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-2 rounded-full border border-blue-200">
-                <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <div className="bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-2 rounded-full border border-blue-200 w-full sm:w-auto flex justify-center">
+                <span className="text-base sm:text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   {displayEvents.length} events
                 </span>
               </div>
