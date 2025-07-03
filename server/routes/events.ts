@@ -49,7 +49,7 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
-// GET /events/by-date?date=YYYY-MM-DD - get all events for a specific date
+// GET /events/by-date?date=YYYY-MM-DD - get all events for a specific date, including society name
 router.get('/by-date', async (req: Request, res: Response) => {
   try {
     const { date } = req.query;
@@ -57,18 +57,21 @@ router.get('/by-date', async (req: Request, res: Response) => {
       res.status(400).json({ message: 'Missing or invalid date parameter.' });
       return;
     }
-    // Find events where start_time is on the given date (UTC)
     const startOfDay = new Date(date + 'T00:00:00.000Z').toISOString();
     const endOfDay = new Date(date + 'T23:59:59.999Z').toISOString();
-    console.log(`[by-date] Querying from ${startOfDay} to ${endOfDay}`);
+    // Join event with society to get society name
     const { data, error } = await supabase
       .from('event')
-      .select('*')
+      .select('*, society(name)')
       .gte('start_time', startOfDay)
       .lte('start_time', endOfDay);
-    console.log(`[by-date] Found ${data?.length ?? 0} events`);
     if (error) throw new Error(error.message);
-    res.status(200).json(data);
+    // Attach societyName to each event
+    const eventsWithSociety = (data || []).map((event: any) => ({
+      ...event,
+      societyName: event.society?.name || '',
+    }));
+    res.status(200).json(eventsWithSociety);
   } catch (error: any) {
     console.error('[GET /events/by-date] Error:', error.message);
     res.status(500).json({ message: error.message || 'Could not retrieve events.' });

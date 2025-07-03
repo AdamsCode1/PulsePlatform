@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { MapPin, Clock, Users, Check, ArrowRight } from 'lucide-react';
@@ -93,12 +92,11 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         {/* Event Details */}
         <div className="space-y-3 mb-6">
           {/* Time */}
-          {event.time && (
+          {event.date && event.endTime && (
             <div className="flex items-center text-gray-700">
               <Clock size={18} className="mr-3 text-pink-500" />
               <span className="text-sm font-medium">
-                {event.time}
-                {event.endTime && ` - ${event.endTime}`}
+                {format(new Date(event.date), 'HH:mm')} - {format(new Date(event.endTime), 'HH:mm')}
               </span>
             </div>
           )}

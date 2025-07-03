@@ -64,7 +64,7 @@ const Index = () => {
         location: event.location,
         description: event.description,
         organiserID: event.society_id,
-        societyName: '"derive using society_id"', // TODO: use society_id to fetch society name from another endpoint
+        societyName: event.societyName || '',
         time: event.start_time,
         endTime: event.end_time,
         attendeeCount: 100, // TODO: calculate using RSVPs table from another endpoint
