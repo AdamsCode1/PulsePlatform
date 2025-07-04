@@ -12,6 +12,7 @@ import HeroSection from '../components/HeroSection';
 import FAQSection from '../components/FAQSection';
 import Footer from '../components/Footer';
 import CommunityCTA from '../components/CommunityCTA';
+import { supabase } from '../lib/supabase';
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -46,18 +47,29 @@ const Index = () => {
     setIsLoading(true);
 
     try { 
+      // Format date to YYYY-MM-DD for API request
       const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
-      const response = await fetch(`/api/events/by-date?date=${formattedDate}`);
+      //const response = await fetch(`/api/events/by-date?date=${formattedDate}`);
+      const { data, error } = await supabase
+        .from('event')
+        .select('*')
+        .gte('start_time', `${formattedDate}T00:00:00`)
+        .lte('start_time',`${formattedDate}T23:59:59`)
+
+      if (error) throw error;
+
+      /*
       if (!response.ok) {
         throw new Error('Failed to fetch events');
       }
       const dayEvents = await response.json();
-
+      
       // Log the fetched events for debugging
       console.log('Fetched events for date:', formattedDate, dayEvents);
+      */
 
       // Remap event data to match the Event type
-      const mappedEvents: Event[] = dayEvents.map((event: any) => ({
+      const mappedEvents: Event[] = data.map((event: any) => ({
         id: event.id,
         eventName: event.name,
         date: event.start_time,
