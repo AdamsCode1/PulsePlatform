@@ -50,39 +50,54 @@ const Index = () => {
       // Format date to YYYY-MM-DD for API request
       const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
       //const response = await fetch(`/api/events/by-date?date=${formattedDate}`);
-      const { data, error } = await supabase
+      const { data: eventsData, error: eventsError } = await supabase
         .from('event')
         .select('*')
         .gte('start_time', `${formattedDate}T00:00:00`)
         .lte('start_time',`${formattedDate}T23:59:59`)
 
-      if (error) throw error;
+      if (eventsError) throw eventsError;
+      if (!eventsData) return;
 
       /*
-      if (!response.ok) {
-        throw new Error('Failed to fetch events');
-      }
-      const dayEvents = await response.json();
-      
       // Log the fetched events for debugging
       console.log('Fetched events for date:', formattedDate, dayEvents);
       */
 
+      // Get unique society IDs
+      const societyIDs = [...new Set(eventsData.map(event => event.society_id))];
+
+      // Fetch society details (name and contact_email)
+      const { data: societiesData, error: societiesError } = await supabase
+        .from('society')
+        .select('id, name, contact_email')
+        .in('id', societyIDs);
+
+      if (societiesError) throw societiesError;
+
+      // Create society details mapping
+      const societyDetailsMap = new Map(
+        societiesData?.map(society => [society.id, {
+          name: society.name,
+          email: society.contact_email
+        }])
+      );
+
       // Remap event data to match the Event type
-      const mappedEvents: Event[] = data.map((event: any) => ({
+      const mappedEvents: Event[] = eventsData.map((event: any) => ({
         id: event.id,
         eventName: event.name,
         date: event.start_time,
         location: event.location,
         description: event.description,
         organiserID: event.society_id,
-        societyName: event.societyName || '', // TODO: fetch society name from societies table
+        societyName: societyDetailsMap.get(event.society_id)?.name || 'Miscellaneous', // TODO: fetch society name from societies table
         time: event.start_time,
         endTime: event.end_time,
         attendeeCount: 100, // TODO: calculate using RSVPs table from another endpoint
         imageUrl: event.imageUrl || '/placeholder.svg', // Default image if not provided
         requiresOrganizerSignup: event.requiresOrganizerSignup || false,
-        organizerEmail: event.organizerEmail || '',
+        organizerEmail: societyDetailsMap.get(event.society_id)?.email || event.organizerEmail || 'No email provided',
         category : event.category || 'general', // Default category if not provided
       }));
 

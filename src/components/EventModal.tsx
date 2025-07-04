@@ -53,8 +53,10 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                 </div>
                 {event.time && (
                   <div className="text-gray-600">
-                    {event.time}
-                    {event.endTime && ` - ${event.endTime}`}
+                    {new Date(event.time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    {event.endTime && (
+                      ` - ${new Date(event.endTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+                    )}
                   </div>
                 )}
               </div>
