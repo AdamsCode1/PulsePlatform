@@ -76,7 +76,7 @@ const Index = () => {
         location: event.location,
         description: event.description,
         organiserID: event.society_id,
-        societyName: event.societyName || '',
+        societyName: event.societyName || '', // TODO: fetch society name from societies table
         time: event.start_time,
         endTime: event.end_time,
         attendeeCount: 100, // TODO: calculate using RSVPs table from another endpoint
@@ -86,7 +86,7 @@ const Index = () => {
         category : event.category || 'general', // Default category if not provided
       }));
 
-      // Log the mapped events
+      // DEBUG: Log the mapped events
       console.log('Mapped events:', mappedEvents);
 
       setEvents(mappedEvents);
@@ -146,8 +146,8 @@ const Index = () => {
   };
 
   const selectedEvent = selectedEventId 
-    ? mockEvents.find(event => event.id === selectedEventId)
-    //? mappedEvents.find(event => event.id === selectedEventId)
+    //? mockEvents.find(event => event.id === selectedEventId)
+    ? events.find(event => event.id === selectedEventId)
     : null;
 
   const displayEvents = filteredEvents.length > 0 ? filteredEvents : events;
