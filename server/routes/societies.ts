@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseSchema } from '../lib/supabase';
 
 const router = Router();
 
@@ -34,7 +34,8 @@ const parseAndValidateUTCDate = (val: unknown): string | undefined => {
 router.get('/', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { data, error } = await supabase.from('society').select('*');
+    const tableName = supabaseSchema === 'public' ? 'society' : `${supabaseSchema}.society`;
+    const { data, error } = await supabase.from(tableName).select('*');
     if (error) throw new Error(error.message);
     res.status(200).json(data);
   } catch (error: any) {
@@ -46,7 +47,8 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { data, error } = await supabase.from('society').select('*').eq('id', req.params.id).single();
+    const tableName = supabaseSchema === 'public' ? 'society' : `${supabaseSchema}.society`;
+    const { data, error } = await supabase.from(tableName).select('*').eq('id', req.params.id).single();
     if (error) {
       res.status(404).json({ message: 'Society not found' });
       return;
@@ -80,7 +82,8 @@ router.post('/', async (req: Request, res: Response) => {
     }
     if (!supabase) throw new Error('Supabase client not initialized');
     // Duplicate checks
-    const { data: existing, error: selectError } = await supabase.from('society').select('*').or(`name.eq.${name},contact_email.eq.${contact_email}`);
+    const tableName = supabaseSchema === 'public' ? 'society' : `${supabaseSchema}.society`;
+    const { data: existing, error: selectError } = await supabase.from(tableName).select('*').or(`name.eq.${name},contact_email.eq.${contact_email}`);
     if (selectError) throw new Error(selectError.message);
     if (existing && existing.length > 0) {
       if (existing.some((s: any) => s.name === name)) {
@@ -93,7 +96,7 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
     const id = uuidv4();
-    const { error } = await supabase.from('society').insert([{ id, created_at: createdAt, name, contact_email }]);
+    const { error } = await supabase.from(tableName).insert([{ id, created_at: createdAt, name, contact_email }]);
     if (error) throw new Error(error.message);
     res.status(201).json({ id, created_at: createdAt, name, contact_email });
   } catch (error: any) {
@@ -124,7 +127,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (contact_email !== undefined) orFilters.push(`contact_email.eq.${contact_email}`);
     let existing: any[] = [];
     if (orFilters.length > 0) {
-      const { data, error: selectError } = await supabase.from('society').select('*').or(orFilters.join(","));
+      const tableName = supabaseSchema === 'public' ? 'society' : `${supabaseSchema}.society`;
+      const { data, error: selectError } = await supabase.from(tableName).select('*').or(orFilters.join(","));
       if (selectError) throw new Error(selectError.message);
       existing = data || [];
     }
@@ -140,7 +144,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (contact_email !== undefined) updates.contact_email = contact_email;
     // Remove any undefined fields from updates
     Object.keys(updates).forEach(key => updates[key as keyof Society] === undefined && delete updates[key as keyof Society]);
-    const { error } = await supabase.from('society').update(updates).eq('id', req.params.id);
+    const tableName = supabaseSchema === 'public' ? 'society' : `${supabaseSchema}.society`;
+    const { error } = await supabase.from(tableName).update(updates).eq('id', req.params.id);
     if (error) throw new Error(error.message);
     res.status(200).json({ id: req.params.id, ...updates });
   } catch (error: any) {
@@ -152,7 +157,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { error } = await supabase.from('society').delete().eq('id', req.params.id);
+    const tableName = supabaseSchema === 'public' ? 'society' : `${supabaseSchema}.society`;
+    const { error } = await supabase.from(tableName).delete().eq('id', req.params.id);
     if (error) throw new Error(error.message);
     res.status(200).json({ message: 'Society deleted', id: req.params.id });
   } catch (error: any) {

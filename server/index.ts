@@ -20,8 +20,13 @@ app.get('/', (req, res) => {
 // All API routes
 app.use('/api', apiRouter);
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Express API server is running on port ${PORT}`);
-});
+export default app;
+
+// Only start the server if not in test mode
+if (require.main === module) {
+  const PORT = process.env.PORT || 4000;
+  app.listen(PORT, () => {
+    console.log(`Express API server is running on port ${PORT}`);
+  });
+}
 

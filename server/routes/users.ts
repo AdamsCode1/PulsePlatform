@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseSchema } from '../lib/supabase';
 
 const router = Router();
 console.log('Supabase in users.ts:', !!supabase);
@@ -36,11 +36,13 @@ const parseAndValidateUTCDate = (val: unknown): string | undefined => {
 router.get('/', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { data, error } = await supabase.from('user').select('*');
+    const tableName = supabaseSchema === 'public' ? 'user' : `${supabaseSchema}.user`;
+    const { data, error } = await supabase.from(tableName).select('*');
     if (error) throw new Error(error.message);
     res.status(200).json(data);
   } catch (error: any) {
-    res.status(500).json({ message: error.message || 'Could not fetch users.' });
+    console.error('[GET /users] Error:', error.message);
+    res.status(500).json({ message: error.message || 'Could not retrieve users.' });
   }
 });
 
@@ -48,7 +50,8 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { data, error } = await supabase.from('user').select('*').eq('id', req.params.id).single();
+    const tableName = supabaseSchema === 'public' ? 'user' : `${supabaseSchema}.user`;
+    const { data, error } = await supabase.from(tableName).select('*').eq('id', req.params.id).single();
     if (error) {
       res.status(404).json({ message: 'User not found' });
       return
@@ -81,8 +84,9 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
     if (!supabase) throw new Error('Supabase client not initialized');
+    const tableName = supabaseSchema === 'public' ? 'user' : `${supabaseSchema}.user`;
     // Check for duplicates
-    const { data: existingUsers, error: selectError } = await supabase.from('user').select('*').or(`name.eq.${name},email.eq.${email}`);
+    const { data: existingUsers, error: selectError } = await supabase.from(tableName).select('*').or(`name.eq.${name},email.eq.${email}`);
     if (selectError) throw new Error(selectError.message);
     if (existingUsers && existingUsers.length > 0) {
       if (existingUsers.some((u: any) => u.name === name)) {
@@ -95,7 +99,7 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
     const id = uuidv4();
-    const { error } = await supabase.from('user').insert([{ id, name, email, created_at: createdAt }]);
+    const { error } = await supabase.from(tableName).insert([{ id, name, email, created_at: createdAt }]);
     if (error) throw new Error(error.message);
     res.status(201).json({ id, name, email, created_at: createdAt });
   } catch (error: any) {
@@ -120,8 +124,9 @@ router.put('/:id', async (req: Request, res: Response) => {
       return;
     }
     if (!supabase) throw new Error('Supabase client not initialized');
+    const tableName = supabaseSchema === 'public' ? 'user' : `${supabaseSchema}.user`;
     // Check for duplicates (excluding current user)
-    const { data: existingUsers, error: selectError } = await supabase.from('user').select('*').or(`name.eq.${name},email.eq.${email}`);
+    const { data: existingUsers, error: selectError } = await supabase.from(tableName).select('*').or(`name.eq.${name},email.eq.${email}`);
     if (selectError) throw new Error(selectError.message);
     if (existingUsers && existingUsers.some((u: any) => u.id !== req.params.id && (u.name === name || u.email === email))) {
       if (existingUsers.some((u: any) => u.id !== req.params.id && u.name === name)) {
@@ -136,7 +141,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     const updates: Partial<User> = {};
     if (name !== undefined) updates.name = name;
     if (email !== undefined) updates.email = email;
-    const { error } = await supabase.from('user').update(updates).eq('id', req.params.id);
+    const { error } = await supabase.from(tableName).update(updates).eq('id', req.params.id);
     if (error) throw new Error(error.message);
     res.status(200).json({ id: req.params.id, ...updates });
   } catch (error: any) {
@@ -148,7 +153,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { error } = await supabase.from('user').delete().eq('id', req.params.id);
+    const { error } = await supabase.from(`${supabaseSchema}.user`).delete().eq('id', req.params.id);
     if (error) throw new Error(error.message);
     res.status(200).json({ message: 'User deleted', id: req.params.id });
   } catch (error: any) {
