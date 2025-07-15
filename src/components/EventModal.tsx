@@ -94,7 +94,7 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
             </div>
 
             {/* Attendees */}
-            {event.attendeeCount && (
+            {event.attendeeCount !== undefined && (
               <div className="flex items-start space-x-3">
                 <Users className="text-pink-500 mt-1 flex-shrink-0" size={20} />
                 <div>

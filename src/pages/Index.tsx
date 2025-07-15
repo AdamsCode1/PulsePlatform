@@ -67,8 +67,9 @@ const Index = () => {
       if (eventsError) throw eventsError;
       if (!eventsData) return;
 
-      // Get unique society IDs
+      // Get unique society IDs and event IDs
       const societyIDs = [...new Set(eventsData.map(event => event.society_id))];
+      const eventIds = eventsData.map(event => event.id);
 
       // Fetch society details (name and contact_email)
       const { data: societiesData, error: societiesError } = await supabase
@@ -77,6 +78,17 @@ const Index = () => {
         .in('id', societyIDs);
 
       if (societiesError) throw societiesError;
+
+      // Fetch RSVP counts for all events
+      const { data: rsvpCounts, error: rsvpError } = await supabase
+        .rpc('get_rsvp_counts', { event_ids: eventIds });
+      if (rsvpError) throw rsvpError;
+
+
+      // Create RSVP count mapping
+      const rsvpCountMap = new Map(
+        rsvpCounts?.map(rsvp => [rsvp.event_id, rsvp.count]) || []
+      );
 
       // Create society details mapping
       const societyDetailsMap = new Map(
@@ -97,7 +109,7 @@ const Index = () => {
         societyName: societyDetailsMap.get(event.society_id)?.name || 'Miscellaneous',
         time: event.start_time,
         endTime: event.end_time,
-        attendeeCount: 100,
+        attendeeCount: rsvpCountMap.get(event.id) || 0,
         imageUrl: event.imageUrl || '/placeholder.svg',
         requiresOrganizerSignup: event.requiresOrganizerSignup || false,
         organizerEmail: societyDetailsMap.get(event.society_id)?.email || event.organizerEmail || 'No email provided',
@@ -106,10 +118,6 @@ const Index = () => {
 
       // Filter out test events
       const filteredMappedEvents = filterTestEvents(mappedEvents);
-
-      // DEBUG: Log the mapped events
-      console.log('Mapped events (before filtering):', mappedEvents);
-      console.log('Filtered events (after removing test events):', filteredMappedEvents);
 
       setEvents(filteredMappedEvents);
     } catch (error) {
