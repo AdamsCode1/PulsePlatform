@@ -109,7 +109,7 @@ const Index = () => {
         societyName: societyDetailsMap.get(event.society_id)?.name || 'Miscellaneous',
         time: event.start_time,
         endTime: event.end_time,
-        attendeeCount: rsvpCountMap.get(event.id) || 0,
+        attendeeCount: Number(rsvpCountMap.get(event.id)) || 0,
         imageUrl: event.imageUrl || '/placeholder.svg',
         requiresOrganizerSignup: event.requiresOrganizerSignup || false,
         organizerEmail: societyDetailsMap.get(event.society_id)?.email || event.organizerEmail || 'No email provided',
