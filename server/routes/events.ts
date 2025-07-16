@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseSchema } from '../lib/supabase';
 
 const router = Router();
 
@@ -40,7 +40,8 @@ const parseAndValidateUTCDate = (val: unknown): string | null => {
 router.get('/', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { data, error } = await supabase.from('event').select('*');
+    const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
+    const { data, error } = await supabase.from(tableName).select('*');
     if (error) throw new Error(error.message);
     res.status(200).json(data);
   } catch (error: any) {
@@ -59,9 +60,10 @@ router.get('/by-date', async (req: Request, res: Response) => {
     }
     const startOfDay = new Date(date + 'T00:00:00.000Z').toISOString();
     const endOfDay = new Date(date + 'T23:59:59.999Z').toISOString();
+    const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
     // Join event with society to get society name
     const { data, error } = await supabase
-      .from('event')
+      .from(tableName)
       .select('*, society(name)')
       .gte('start_time', startOfDay)
       .lte('start_time', endOfDay);
@@ -82,8 +84,8 @@ router.get('/by-date', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    console.log(`[GET /events/:id] Requested id: ${req.params.id}`);
-    const { data, error } = await supabase.from('event').select('*').eq('id', req.params.id).single();
+    const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
+    const { data, error } = await supabase.from(tableName).select('*').eq('id', req.params.id).single();
     if (error) {
       console.error(`[GET /events/:id] Supabase error:`, error.message);
       res.status(404).json({ message: 'Event not found' });
@@ -139,8 +141,9 @@ router.post('/', async (req: Request, res: Response) => {
       return;
     }
     if (!supabase) throw new Error('Supabase client not initialized');
+    const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
     // Duplicate check: same name, start_time, and society_id
-    const { data: existingEvents, error: selectError } = await supabase.from('event').select('*').or(`name.eq.${name},start_time.eq.${parsedStart},society_id.eq.${society_id}`);
+    const { data: existingEvents, error: selectError } = await supabase.from(tableName).select('*').or(`name.eq.${name},start_time.eq.${parsedStart},society_id.eq.${society_id}`);
     if (selectError) throw new Error(selectError.message);
     if (existingEvents && existingEvents.some((e: any) => e.name === name && e.start_time === parsedStart && e.society_id === society_id)) {
       res.status(409).json({ message: 'Duplicate event for this society at this time.' });
@@ -148,7 +151,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
     const id = uuidv4();
     const created_at = new Date().toISOString();
-    const { error } = await supabase.from('event').insert([{ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id }]);
+    const { error } = await supabase.from(tableName).insert([{ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id }]);
     if (error) throw new Error(error.message);
     res.status(201).json({ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id });
   } catch (error: any) {
@@ -212,6 +215,7 @@ router.put('/:id', async (req: Request, res: Response) => {
       return;
     }
     if (!supabase) throw new Error('Supabase client not initialized');
+    const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
     // Build duplicate check filter only for provided fields
     let orFilters: string[] = [];
     if (name !== undefined) orFilters.push(`name.eq.${name}`);
@@ -219,7 +223,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (society_id !== undefined) orFilters.push(`society_id.eq.${society_id}`);
     let existingEvents: any[] = [];
     if (orFilters.length > 0) {
-      const { data, error: selectError } = await supabase.from('event').select('*').or(orFilters.join(","));
+      const { data, error: selectError } = await supabase.from(tableName).select('*').or(orFilters.join(","));
       if (selectError) throw new Error(selectError.message);
       existingEvents = data || [];
     }
@@ -242,7 +246,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (society_id !== undefined) updates.society_id = society_id;
     // Remove any undefined fields from updates
     Object.keys(updates).forEach(key => updates[key as keyof Event] === undefined && delete updates[key as keyof Event]);
-    const { error } = await supabase.from('event').update(updates).eq('id', req.params.id);
+    const { error } = await supabase.from(tableName).update(updates).eq('id', req.params.id);
     if (error) throw new Error(error.message);
     res.status(200).json({ id: req.params.id, ...updates });
   } catch (error: any) {
@@ -255,7 +259,8 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { error } = await supabase.from('event').delete().eq('id', req.params.id);
+    const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
+    const { error } = await supabase.from(tableName).delete().eq('id', req.params.id);
     if (error) throw new Error(error.message);
     res.status(200).json({ message: 'Event deleted', id: req.params.id });
   } catch (error: any) {
