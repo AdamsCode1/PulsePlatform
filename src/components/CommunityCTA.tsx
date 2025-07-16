@@ -4,7 +4,7 @@ export default function CommunityCTA() {
       <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-2xl shadow-lg p-6 max-w-xl w-full flex flex-col items-center text-center">
         <h2 className="text-2xl md:text-3xl font-bold mb-2 text-gray-900">Join Our Student Community!</h2>
         <p className="text-gray-700 mb-4 text-base md:text-lg">
-          Get exclusive deals and direct updates by joining our WhatsApp group. Be the first to know about the best events and offers at Durham University!
+          Join our WhatsApp group for exclusive deals and the latest events at Durham — Be the first to know!
         </p>
         <a
           href="https://chat.whatsapp.com/HepNMq2g9W63ruiYBQQSvc?mode=r_t"

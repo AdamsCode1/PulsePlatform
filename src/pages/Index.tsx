@@ -185,7 +185,6 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <NavBar />
       <HeroSection />
-      <CommunityCTA />
       <div className="container mx-auto px-4 py-6 sm:py-8">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
@@ -264,6 +263,7 @@ const Index = () => {
           onClose={handleCloseModal}
         />
       )}
+      <CommunityCTA />
       <FAQSection />
       <Footer />
     </div>
