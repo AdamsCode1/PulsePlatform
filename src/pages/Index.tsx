@@ -135,13 +135,9 @@ const Index = () => {
     if (filterType === 'sort' && value === 'attendees-desc') {
       filtered.sort((a, b) => (b.attendeeCount || 0) - (a.attendeeCount || 0));
     } else if (filterType === 'category' && value !== 'all') {
-      // Simple category filtering based on event name or description
-      filtered = filtered.filter(event => {
-        const searchText = `${event.eventName} ${event.description}`.toLowerCase();
-        return searchText.includes(value.toLowerCase());
-      });
+      filtered = filtered.filter(event => event.category.toLowerCase() === value.toLowerCase());
     }
-
+    
     return filtered;
   };
 
@@ -179,7 +175,8 @@ const Index = () => {
     ? events.find(event => event.id === selectedEventId)
     : null;
 
-  const displayEvents = filteredEvents.length > 0 ? filteredEvents : events;
+  //const displayEvents = filteredEvents.length > 0 ? filteredEvents : events;
+  const displayEvents = filteredEvents;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
