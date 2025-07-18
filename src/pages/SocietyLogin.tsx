@@ -29,8 +29,7 @@ const SocietyLogin = () => {
         toast({ title: "Login failed", description: error.message || "Invalid credentials", variant: "destructive" });
       } else {
         toast({ title: "Success", description: "Society logged in successfully" });
-        // TODO: Store session and redirect
-        // navigate("/dashboard");
+        navigate("/submit-event");
       }
     } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
