@@ -128,7 +128,7 @@ const Index = () => {
     }
   };
 
-  // Apply filters to events
+  // Apply filters to event(s)
   const applyFilters = (eventsToFilter: Event[], filterType: string, value: string) => {
     let filtered = [...eventsToFilter];
 
