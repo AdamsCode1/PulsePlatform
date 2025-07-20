@@ -34,6 +34,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const eventCategories = [
   "academic",
@@ -60,6 +61,8 @@ const formSchema = z.object({
   endTime: z.string().min(1, "End time is required"),
   category: z.enum(eventCategories, { required_error: "Please select a category" }),
   location: z.string().min(1, "Location is required").min(3, "Location must be at least 3 characters"),
+  requiresExternalSignup: z.boolean().optional(),
+  externalSignupLink: z.string().url("Please enter a valid URL").optional().or(z.literal('')),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -78,6 +81,8 @@ export default function EventSubmissionPage() {
       endTime: "",
       category: undefined,
       location: "",
+      requiresExternalSignup: false,
+      externalSignupLink: "",
     },
   });
 
@@ -112,6 +117,7 @@ export default function EventSubmissionPage() {
       location: data.location,
       category: data.category,
       society_id: societyId,
+      signup_link: data.externalSignupLink ? data.externalSignupLink : '',
     };
     try {
       const res = await fetch('/api/events', {
@@ -371,6 +377,46 @@ export default function EventSubmissionPage() {
                       </FormItem>
                     )}
                   />
+                  {/* Requires External Signup Checkbox */}
+                  <FormField
+                    control={form.control}
+                    name="requiresExternalSignup"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2 flex items-center gap-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value || false}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="text-base font-semibold">
+                          Requires external signup
+                        </FormLabel>
+                      </FormItem>
+                    )}
+                  />
+                  {/* External Signup Link (conditionally shown) */}
+                  {form.watch("requiresExternalSignup") && (
+                    <FormField
+                      control={form.control}
+                      name="externalSignupLink"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel className="text-base font-semibold">
+                            External Signup Link
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="https://example.com/signup"
+                              {...field}
+                              className="h-12 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
                 <div className="pt-6">
                   <Button 
