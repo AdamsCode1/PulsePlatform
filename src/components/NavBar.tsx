@@ -1,7 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
   return (
     <nav className="fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[98vw] max-w-2xl rounded-2xl bg-white/80 backdrop-blur-md shadow-xl flex items-center justify-between px-4 py-2 border border-gray-200">
       <div className="flex items-center gap-3">
@@ -14,8 +16,8 @@ export default function NavBar() {
         <a href="#events" className="text-gray-700 font-medium hover:text-pink-500 transition">Events</a>
         <a href="#deals" className="text-gray-700 font-medium hover:text-pink-500 transition">Deals</a>
         <a href="#about" className="text-gray-700 font-medium hover:text-pink-500 transition">About</a>
-        <button className="px-3 py-1 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Login</button>
-        <button className="px-3 py-1 rounded-lg bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition">Sign Up</button>
+        <button onClick={() => navigate('/login')} className="px-3 py-1 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Login</button>
+        <button onClick={() => navigate('/login')} className="px-3 py-1 rounded-lg bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition">Sign Up</button>
       </div>
       {/* Mobile Hamburger */}
       <div className="md:hidden flex items-center">
@@ -32,10 +34,10 @@ export default function NavBar() {
           <a href="#events" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Events</a>
           <a href="#deals" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</a>
           <a href="#about" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">About</a>
-          <button className="w-11/12 px-3 py-2 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Login</button>
-          <button className="w-11/12 px-3 py-2 rounded-lg bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition">Sign Up</button>
+          <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-11/12 px-3 py-2 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Login</button>
+          <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-11/12 px-3 py-2 rounded-lg bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition">Sign Up</button>
         </div>
       )}
     </nav>
   );
-} 
+}

@@ -21,6 +21,15 @@ const SocietyRegister = () => {
       if (error) {
         // handle error
       } else {
+        // Use backend endpoint to create society row
+        const res = await fetch('/api/societies', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, contact_email: email })
+        });
+        if (!res.ok) {
+          // handle error (optionally show a toast or message)
+        }
         // handle success
         navigate("/login/society");
       }

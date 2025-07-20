@@ -83,11 +83,14 @@ export default function EventSubmissionPage() {
 
   useEffect(() => {
     async function fetchSocietyId() {
-      const user = supabase.auth.getUser ? (await supabase.auth.getUser()).data.user : null;
+      const userResult = supabase.auth.getUser ? await supabase.auth.getUser() : null;
+      const user = userResult?.data?.user;
       const email = user?.email;
       if (email) {
         const id = await getSocietyIdByEmail(email);
         setSocietyId(id);
+      } else {
+        console.log('No email found for user.');
       }
       setLoadingSocietyId(false);
     }
