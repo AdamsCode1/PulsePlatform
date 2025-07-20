@@ -153,14 +153,25 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
             <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
           </button>
 
-          {/* RSVP Button with enhanced animations and responsive design */}
-          <button
-            onClick={handleQuickRSVP}
-            className="bg-[#FF1493] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#E6127F] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform flex-shrink-0"
-          >
-            {hasRSVPed ? 'Remove' : 'RSVP'}
-            {hasRSVPed && <Check size={12} className="animate-bounce" />}
-          </button>
+          {/* RSVP or Sign Up Button */}
+          {event.signup_link && event.signup_link.trim() !== '' ? (
+            <a
+              href={event.signup_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#FF1493] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#E6127F] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform flex-shrink-0"
+            >
+              Sign Up
+            </a>
+          ) : (
+            <button
+              onClick={handleQuickRSVP}
+              className="bg-[#FF1493] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#E6127F] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform flex-shrink-0"
+            >
+              {hasRSVPed ? 'Remove' : 'RSVP'}
+              {hasRSVPed && <Check size={12} className="animate-bounce" />}
+            </button>
+          )}
         </div>
       </div>
     </div>

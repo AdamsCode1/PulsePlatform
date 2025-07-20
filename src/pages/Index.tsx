@@ -114,6 +114,7 @@ const Index = () => {
         requiresOrganizerSignup: event.requiresOrganizerSignup || false,
         organizerEmail: societyDetailsMap.get(event.society_id)?.email || event.organizerEmail || 'No email provided',
         category: event.category || 'general',
+        signup_link: event.signup_link || '',
       }));
 
       // Filter out test events
