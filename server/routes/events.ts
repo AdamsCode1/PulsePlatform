@@ -15,6 +15,7 @@ interface Event {
   location: string;
   category?: string;
   society_id: string;
+  signup_link?: string; // Optional, for external signups
   attendee_count?: number; // Optional, can be calculated from RSVPs
   image_url?: string; // Optional, for event images
 }
@@ -107,7 +108,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST /events - add a new event
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, start_time, end_time, location, category, society_id } = req.body;
+    const { name, description, start_time, end_time, location, category, society_id, signup_link } = req.body;
     if (!name || !start_time || !end_time || !location || !category || !society_id) {
       res.status(400).json({ message: 'Missing required fields.' });
       return;
@@ -151,9 +152,9 @@ router.post('/', async (req: Request, res: Response) => {
     }
     const id = uuidv4();
     const created_at = new Date().toISOString();
-    const { error } = await supabase.from(tableName).insert([{ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id }]);
+    const { data: insertResult, error } = await supabase.from(tableName).insert([{ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id, signup_link }]);
     if (error) throw new Error(error.message);
-    res.status(201).json({ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id });
+    res.status(201).json({ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id, signup_link });
   } catch (error: any) {
     console.error('[POST /events] Error:', error.message);
     res.status(500).json({ message: error.message || 'Could not add event.' });
