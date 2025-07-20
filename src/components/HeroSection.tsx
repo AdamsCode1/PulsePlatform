@@ -1,29 +1,39 @@
 
 export default function HeroSection() {
   return (
-    <section className="flex flex-col items-center justify-center pt-32 pb-16">
-      {/* Main content - responsive layout */}
-      <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 mb-8 max-w-6xl mx-auto px-4">
-        {/* Logo */}
-        <div className="flex-shrink-0">
-          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center transition-transform duration-700 ease-in-out hover:rotate-360 overflow-hidden">
-            <img src="/lovable-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png" alt="DUPulse Logo" width={160} height={160} className="w-full h-full object-cover" />
-          </div>
-        </div>
+    <section
+      className="relative flex flex-col items-center justify-center pt-32 pb-16 bg-cover bg-center bg-no-repeat min-h-screen"
+      style={{
+        backgroundImage: `url('/lovable-uploads/e534efa3-6ce7-4d86-b11f-6112a525af9f.png')`
+      }}
+    >
+      {/* Background overlay for better text readability */}
+      <div className="absolute inset-0 bg-black/30"></div>
 
-        {/* Text content with slide-in animation */}
-        <div className="text-center md:text-left animate-slide-in-right">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
-            Discover{" "}
-            <span className="holographic-text inline-block whitespace-nowrap">
-              {"everything".split("").map((letter, index) => (
-                <span
-                  key={index}
-                  className="inline-block animate-wave-jump"
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    animationDuration: "1.5s",
-                    background: `linear-gradient(
+      {/* Content wrapper with relative positioning */}
+      <div className="relative z-10 w-full">
+        {/* Main content - responsive layout */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 mb-8 max-w-6xl mx-auto px-4">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center transition-transform duration-700 ease-in-out hover:rotate-360 overflow-hidden">
+              <img src="/lovable-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png" alt="DUPulse Logo" width={160} height={160} className="w-full h-full object-cover" />
+            </div>
+          </div>
+
+          {/* Text content with slide-in animation */}
+          <div className="text-center md:text-left animate-slide-in-right">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight drop-shadow-lg">
+              Discover{" "}
+              <span className="holographic-text inline-block whitespace-nowrap">
+                {"everything".split("").map((letter, index) => (
+                  <span
+                    key={index}
+                    className="inline-block animate-wave-jump"
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                      animationDuration: "1.5s",
+                      background: `linear-gradient(
                       135deg,
                       #e879f9,
                       #c084fc,
@@ -31,29 +41,58 @@ export default function HeroSection() {
                       #ddd6fe,
                       #e879f9
                     )`,
-                    backgroundSize: '300% 300%',
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    color: 'transparent'
-                  }}
-                >
-                  {letter}
-                </span>
-              ))}
-            </span>
-            <br className="hidden sm:block" />
-            <span className="sm:hidden"> </span>
-            going on around town
-          </h1>
+                      backgroundSize: '300% 300%',
+                      backgroundClip: 'text',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      color: 'transparent'
+                    }}
+                  >
+                    {letter}
+                  </span>
+                ))}
+              </span>
+              <br className="hidden sm:block" />
+              <span className="sm:hidden"> </span>
+              going on around town
+            </h1>
+          </div>
         </div>
-      </div>
 
-      {/* Description with slide-in animation */}
-      <div className="animate-slide-in-right-delayed text-center">
-        <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
-          DUPulse: Your one-stop shop to discover what's happening at Durham University
-        </p>
+        {/* Description with slide-in animation */}
+        <div className="animate-slide-in-right-delayed text-center mb-8">
+          <p className="text-lg md:text-xl max-w-2xl mx-auto px-4 drop-shadow-md text-white">
+            <span className="holographic-text font-semibold">DUPulse</span>: Your
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-purple-300 font-medium"> ultimate companion</span> to discover what's happening at Durham University
+          </p>
+        </div>
+
+        {/* Scroll down arrow */}
+        <div
+          className="flex flex-col items-center text-center animate-bounce cursor-pointer"
+          onClick={() => {
+            // Scroll to show the whole Today's Schedule section
+            const scheduleSection = document.querySelector('section') || document.querySelector('main');
+            if (scheduleSection && scheduleSection !== document.querySelector('section')) {
+              scheduleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+              // Fallback: scroll to next section after hero
+              window.scrollTo({
+                top: window.innerHeight,
+                behavior: 'smooth'
+              });
+            }
+          }}
+        >
+          <div className="flex flex-col items-center text-white/80 hover:text-white transition-colors">
+            <p className="text-sm font-medium mb-2 tracking-wide">scroll down to see timetable</p>
+            <div className="animate-pulse">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </div>
+          </div>
+        </div>
       </div>
 
       <style dangerouslySetInnerHTML={{
