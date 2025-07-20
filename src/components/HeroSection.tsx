@@ -2,27 +2,27 @@
 export default function HeroSection() {
   return (
     <section className="flex flex-col items-center justify-center pt-32 pb-16">
-      {/* Main content with logo and text side by side */}
-      <div className="flex items-center justify-center gap-8 mb-8 max-w-6xl mx-auto px-4">
-        {/* Logo on the left */}
+      {/* Main content - responsive layout */}
+      <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 mb-8 max-w-6xl mx-auto px-4">
+        {/* Logo */}
         <div className="flex-shrink-0">
-          <div className="w-40 h-40 rounded-full flex items-center justify-center transition-transform duration-700 ease-in-out hover:rotate-360">
-            <img src="/lovable-uploads/5a479623-3370-4372-a63c-169e6e212cfd.png" alt="DUPulse Logo" width={160} height={160} className="rounded-full" />
+          <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center transition-transform duration-700 ease-in-out hover:rotate-360 overflow-hidden">
+            <img src="/lovable-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png" alt="DUPulse Logo" width={160} height={160} className="w-full h-full object-cover" />
           </div>
         </div>
 
-        {/* Text content on the right with slide-in animation */}
-        <div className="text-left animate-slide-in-right">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
+        {/* Text content with slide-in animation */}
+        <div className="text-center md:text-left animate-slide-in-right">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4 leading-tight">
             Discover{" "}
-            <span className="holographic-text inline-block">
+            <span className="holographic-text inline-block whitespace-nowrap">
               {"everything".split("").map((letter, index) => (
                 <span
                   key={index}
                   className="inline-block animate-wave-jump"
                   style={{
-                    animationDelay: `${index * 150}ms`,
-                    animationDuration: "2s",
+                    animationDelay: `${index * 100}ms`,
+                    animationDuration: "1.5s",
                     background: `linear-gradient(
                       135deg,
                       #e879f9,
@@ -42,7 +42,9 @@ export default function HeroSection() {
                 </span>
               ))}
             </span>
-            <br /> going on around town
+            <br className="hidden sm:block" />
+            <span className="sm:hidden"> </span>
+            going on around town
           </h1>
         </div>
       </div>
@@ -87,7 +89,7 @@ export default function HeroSection() {
           }
           
           .animate-wave-jump {
-            animation: wave-jump 2s ease-in-out infinite;
+            animation: wave-jump 1.5s ease-in-out infinite;
           }
           
           .animate-slide-in-right {
