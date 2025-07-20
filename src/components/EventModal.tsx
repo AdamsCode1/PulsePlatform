@@ -3,6 +3,8 @@ import { format } from 'date-fns';
 import { X, MapPin, Clock, Users, Calendar, Mail } from 'lucide-react';
 import { Event } from '../types/Event';
 import RSVPForm from './RSVPForm';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface EventModalProps {
   event: Event;
@@ -12,6 +14,7 @@ interface EventModalProps {
 const EventModal = ({ event, onClose }: EventModalProps) => {
   const [showRSVPForm, setShowRSVPForm] = useState(false);
   const [hasRSVPed, setHasRSVPed] = useState(false);
+  const navigate = useNavigate();
 
   const handleRSVPSuccess = () => {
     setHasRSVPed(true);
@@ -199,7 +202,18 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                   </div>
                 )}
                 <button
-                  onClick={() => setShowRSVPForm(true)}
+                  onClick={async () => {
+                    if (event.requiresOrganizerSignup && event.organizerEmail) {
+                      window.location.href = `mailto:${event.organizerEmail}`;
+                      return;
+                    }
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) {
+                      navigate('/login');
+                      return;
+                    }
+                    setShowRSVPForm(true);
+                  }}
                   className="bg-pink-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors text-sm sm:text-base"
                 >
                   {event.requiresOrganizerSignup ? "Register Interest" : "RSVP Now"}

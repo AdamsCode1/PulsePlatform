@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { MapPin, Clock, Users, Check, ArrowRight } from 'lucide-react';
 import { Event } from '../types/Event';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface EventCardProps {
   event: Event;
@@ -13,17 +15,31 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
   const [hasRSVPed, setHasRSVPed] = useState(false);
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
   const [isClicked, setIsClicked] = useState(false);
+  const navigate = useNavigate();
 
-  const handleQuickRSVP = (e: React.MouseEvent) => {
+  const handleQuickRSVP = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent opening the modal
-    
+
+    // If event requires external signup, redirect
+    if (event.requiresOrganizerSignup && event.organizerEmail) {
+      window.location.href = `mailto:${event.organizerEmail}`;
+      return;
+    }
+
+    // Check if user is logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
     const existingRSVPs = JSON.parse(localStorage.getItem('rsvps') || '[]');
-    
+
     if (!hasRSVPed) {
       // Add RSVP
       setHasRSVPed(true);
       setAttendeeCount(prev => prev + 1);
-      
+
       const newRSVP = {
         eventId: event.id,
         timestamp: new Date().toISOString(),
@@ -34,7 +50,7 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
       // Remove RSVP
       setHasRSVPed(false);
       setAttendeeCount(prev => Math.max(0, prev - 1));
-      
+
       const updatedRSVPs = existingRSVPs.filter((rsvp: any) => rsvp.eventId !== event.id);
       localStorage.setItem('rsvps', JSON.stringify(updatedRSVPs));
     }
