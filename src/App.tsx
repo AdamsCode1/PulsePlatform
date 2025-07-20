@@ -11,6 +11,9 @@ import UserTypeSelection from "./pages/UserTypeSelection";
 import SocietyRegister from "./pages/SocietyRegister";
 import StudentLogin from "./pages/StudentLogin";
 import StudentRegister from "./pages/StudentRegister";
+import OrganizationRegister from './pages/OrganizationRegister';
+import OrganizationLogin from './pages/OrganizationLogin';
+import DealsPage from './pages/DealsPage';
 
 const queryClient = new QueryClient();
 
@@ -22,13 +25,16 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/submit-event" element={<EventSubmissionPage />} />
           <Route path="/login" element={<UserTypeSelection />} />
-          <Route path="/login/society" element={<SocietyLogin />} />
-          <Route path="/register/society" element={<SocietyRegister />} />
           <Route path="/login/student" element={<StudentLogin />} />
+          <Route path="/login/society" element={<SocietyLogin />} />
+          <Route path="/login/organization" element={<OrganizationLogin />} />
           <Route path="/register/student" element={<StudentRegister />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/register/society" element={<SocietyRegister />} />
+          <Route path="/register/organization" element={<OrganizationRegister />} />
+          <Route path="/submit-event" element={<EventSubmissionPage />} />
+          <Route path="/user-type" element={<UserTypeSelection />} />
+          <Route path="/deals" element={<DealsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -1,8 +1,9 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { MapPin, Clock, Users, Check, ArrowRight } from 'lucide-react';
 import { Event } from '../types/Event';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface EventCardProps {
   event: Event;
@@ -13,17 +14,31 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
   const [hasRSVPed, setHasRSVPed] = useState(false);
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
   const [isClicked, setIsClicked] = useState(false);
+  const navigate = useNavigate();
 
-  const handleQuickRSVP = (e: React.MouseEvent) => {
+  const handleQuickRSVP = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent opening the modal
-    
+
+    // If event requires external signup, redirect
+    if (event.requiresOrganizerSignup && event.organizerEmail) {
+      window.location.href = `mailto:${event.organizerEmail}`;
+      return;
+    }
+
+    // Check if user is logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
     const existingRSVPs = JSON.parse(localStorage.getItem('rsvps') || '[]');
-    
+
     if (!hasRSVPed) {
       // Add RSVP
       setHasRSVPed(true);
       setAttendeeCount(prev => prev + 1);
-      
+
       const newRSVP = {
         eventId: event.id,
         timestamp: new Date().toISOString(),
@@ -34,7 +49,7 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
       // Remove RSVP
       setHasRSVPed(false);
       setAttendeeCount(prev => Math.max(0, prev - 1));
-      
+
       const updatedRSVPs = existingRSVPs.filter((rsvp: any) => rsvp.eventId !== event.id);
       localStorage.setItem('rsvps', JSON.stringify(updatedRSVPs));
     }
@@ -95,9 +110,20 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         </h3>
 
         {/* Event Description */}
-        <p className="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-2 flex-1 group-hover:text-gray-800 transition-colors duration-300 leading-relaxed">
+        <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-2 flex-1 group-hover:text-gray-800 transition-colors duration-300 leading-relaxed">
           {event.description}
         </p>
+        {/* Signup Link */}
+        {event.signup_link && (
+          <a
+            href={event.signup_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-pink-600 text-xs sm:text-sm mb-4 underline hover:text-pink-800 transition-colors duration-300 block"
+          >
+            External Signup Required: Click here to sign up
+          </a>
+        )}
         
         {/* Event Details */}
         <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
@@ -143,14 +169,25 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
             <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
           </button>
 
-          {/* RSVP Button with enhanced animations and responsive design */}
-          <button
-            onClick={handleQuickRSVP}
-            className="bg-[#FF1493] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#E6127F] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform flex-shrink-0"
-          >
-            {hasRSVPed ? 'Remove' : 'RSVP'}
-            {hasRSVPed && <Check size={12} className="animate-bounce" />}
-          </button>
+          {/* RSVP or Sign Up Button */}
+          {event.signup_link && event.signup_link.trim() !== '' ? (
+            <a
+              href={event.signup_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-[#FF1493] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#E6127F] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform flex-shrink-0"
+            >
+              Sign Up
+            </a>
+          ) : (
+            <button
+              onClick={handleQuickRSVP}
+              className="bg-[#FF1493] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#E6127F] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform flex-shrink-0"
+            >
+              {hasRSVPed ? 'Remove' : 'RSVP'}
+              {hasRSVPed && <Check size={12} className="animate-bounce" />}
+            </button>
+          )}
         </div>
       </div>
     </div>

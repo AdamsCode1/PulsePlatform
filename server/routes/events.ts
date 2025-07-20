@@ -15,6 +15,7 @@ interface Event {
   location: string;
   category?: string;
   society_id: string;
+  signup_link?: string; // Optional, for external signups
   attendee_count?: number; // Optional, can be calculated from RSVPs
   image_url?: string; // Optional, for event images
 }
@@ -107,7 +108,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST /events - add a new event
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, start_time, end_time, location, category, society_id } = req.body;
+    const { name, description, start_time, end_time, location, category, society_id, signup_link } = req.body;
     if (!name || !start_time || !end_time || !location || !category || !society_id) {
       res.status(400).json({ message: 'Missing required fields.' });
       return;
@@ -151,106 +152,95 @@ router.post('/', async (req: Request, res: Response) => {
     }
     const id = uuidv4();
     const created_at = new Date().toISOString();
-    const { error } = await supabase.from(tableName).insert([{ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id }]);
+    const { data: insertResult, error } = await supabase.from(tableName).insert([{ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id, signup_link }]);
     if (error) throw new Error(error.message);
-    res.status(201).json({ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id });
+    res.status(201).json({ id, created_at, name, description, start_time: parsedStart, end_time: parsedEnd, location, category, society_id, signup_link });
   } catch (error: any) {
     console.error('[POST /events] Error:', error.message);
-    res.status(500).json({ message: error.message || 'Could not add event.' });
+    res.status(500).json({ message: error.message || 'Could not create event.' });
   }
 });
 
-// PUT /events/:id - update an event
-router.put('/:id', async (req: Request, res: Response) => {
+// PATCH /events/:id - update an event
+router.patch('/:id', async (req: Request, res: Response) => {
   try {
-    const { name, description, start_time, end_time, location, category, society_id } = req.body;
-    if (
-      name === undefined &&
-      description === undefined &&
-      start_time === undefined &&
-      end_time === undefined &&
-      location === undefined &&
-      category === undefined &&
-      society_id === undefined
-    ) {
-      res.status(400).json({ message: 'At least one field must be provided.' });
+    const { id } = req.params;
+    const { name, description, start_time, end_time, location, category, society_id, signup_link } = req.body;
+    if (!id || !isNonEmptyString(id)) {
+      res.status(400).json({ message: 'Invalid or missing event ID.' });
       return;
     }
-    if (name !== undefined && !isNonEmptyString(name)) {
-      res.status(400).json({ message: 'Invalid or missing name. It must be a non-empty string.' });
-      return;
+    // Only include fields that are provided in the request
+    const updates: any = {};
+    if (name !== undefined) {
+      if (!isNonEmptyString(name)) {
+        res.status(400).json({ message: 'Invalid name. It must be a non-empty string.' });
+        return;
+      }
+      updates.name = name;
     }
-    if (description !== undefined && !isNonEmptyString(description)) {
-      res.status(400).json({ message: 'Invalid or missing description. It must be a non-empty string.' });
-      return;
+    if (description !== undefined) {
+      if (!isNonEmptyString(description)) {
+        res.status(400).json({ message: 'Invalid description. It must be a non-empty string.' });
+        return;
+      }
+      updates.description = description;
     }
-    let parsedStart: string | undefined;
-    let parsedEnd: string | undefined;
     if (start_time !== undefined) {
-      const parsed = parseAndValidateUTCDate(start_time);
-      if (!parsed) {
+      const parsedStart = parseAndValidateUTCDate(start_time);
+      if (!parsedStart) {
         res.status(400).json({ message: 'Invalid start_time format. Use ISO 8601 (UTC).' });
         return;
       }
-      parsedStart = parsed;
+      updates.start_time = parsedStart;
     }
     if (end_time !== undefined) {
-      const parsed = parseAndValidateUTCDate(end_time);
-      if (!parsed) {
+      const parsedEnd = parseAndValidateUTCDate(end_time);
+      if (!parsedEnd) {
         res.status(400).json({ message: 'Invalid end_time format. Use ISO 8601 (UTC).' });
         return;
       }
-      parsedEnd = parsed;
+      updates.end_time = parsedEnd;
     }
-    if (location !== undefined && !isNonEmptyString(location)) {
-      res.status(400).json({ message: 'Invalid or missing location. It must be a non-empty string.' });
-      return;
+    if (location !== undefined) {
+      if (!isNonEmptyString(location)) {
+        res.status(400).json({ message: 'Invalid location. It must be a non-empty string.' });
+        return;
+      }
+      updates.location = location;
     }
-    if (category !== undefined && !isNonEmptyString(category)) {
-      res.status(400).json({ message: 'Invalid or missing category. It must be a non-empty string.' });
-      return;
+    if (category !== undefined) {
+      if (!isNonEmptyString(category)) {
+        res.status(400).json({ message: 'Invalid category. It must be a non-empty string.' });
+        return;
+      }
+      updates.category = category;
     }
-    if (society_id !== undefined && !isNonEmptyString(society_id)) {
-      res.status(400).json({ message: 'Invalid or missing society_id. It must be a non-empty string.' });
+    if (society_id !== undefined) {
+      if (!isNonEmptyString(society_id)) {
+        res.status(400).json({ message: 'Invalid society_id. It must be a non-empty string.' });
+        return;
+      }
+      updates.society_id = society_id;
+    }
+    if (signup_link !== undefined) {
+      if (typeof signup_link !== 'string') {
+        res.status(400).json({ message: 'Invalid signup_link. It must be a string.' });
+        return;
+      }
+      updates.signup_link = signup_link;
+    }
+    if (Object.keys(updates).length === 0) {
+      res.status(400).json({ message: 'No valid fields provided for update.' });
       return;
     }
     if (!supabase) throw new Error('Supabase client not initialized');
     const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
-    // Build duplicate check filter only for provided fields
-    let orFilters: string[] = [];
-    if (name !== undefined) orFilters.push(`name.eq.${name}`);
-    if (start_time !== undefined && parsedStart !== undefined) orFilters.push(`start_time.eq.${parsedStart}`);
-    if (society_id !== undefined) orFilters.push(`society_id.eq.${society_id}`);
-    let existingEvents: any[] = [];
-    if (orFilters.length > 0) {
-      const { data, error: selectError } = await supabase.from(tableName).select('*').or(orFilters.join(","));
-      if (selectError) throw new Error(selectError.message);
-      existingEvents = data || [];
-    }
-    if (
-      name !== undefined &&
-      start_time !== undefined &&
-      society_id !== undefined &&
-      existingEvents.some((e: any) => e.id !== req.params.id && e.name === name && e.start_time === parsedStart && e.society_id === society_id)
-    ) {
-      res.status(409).json({ message: 'Duplicate event for this society at this time.' });
-      return;
-    }
-    const updates: Partial<Event> = {};
-    if (name !== undefined) updates.name = name;
-    if (description !== undefined) updates.description = description;
-    if (start_time !== undefined && parsedStart !== undefined) updates.start_time = parsedStart;
-    if (end_time !== undefined && parsedEnd !== undefined) updates.end_time = parsedEnd;
-    if (location !== undefined) updates.location = location;
-    if (category !== undefined) updates.category = category;
-    if (society_id !== undefined) updates.society_id = society_id;
-    // Remove any undefined fields from updates
-    Object.keys(updates).forEach(key => updates[key as keyof Event] === undefined && delete updates[key as keyof Event]);
-    const { error } = await supabase.from(tableName).update(updates).eq('id', req.params.id);
+    const { error } = await supabase.from(tableName).update(updates).eq('id', id);
     if (error) throw new Error(error.message);
-    res.status(200).json({ id: req.params.id, ...updates });
+    res.status(200).json({ id, ...updates });
   } catch (error: any) {
-    console.error('[PUT /events/:id] Error:', error.message);
+    console.error(`[PATCH /events/:id] Error:`, error.message);
     res.status(500).json({ message: error.message || 'Could not update event.' });
   }
 });
@@ -258,17 +248,20 @@ router.put('/:id', async (req: Request, res: Response) => {
 // DELETE /events/:id - delete an event
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
+    const { id } = req.params;
+    if (!id || !isNonEmptyString(id)) {
+      res.status(400).json({ message: 'Invalid or missing event ID.' });
+      return;
+    }
     if (!supabase) throw new Error('Supabase client not initialized');
     const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
-    const { error } = await supabase.from(tableName).delete().eq('id', req.params.id);
+    const { error } = await supabase.from(tableName).delete().eq('id', id);
     if (error) throw new Error(error.message);
-    res.status(200).json({ message: 'Event deleted', id: req.params.id });
+    res.status(204).send('');
   } catch (error: any) {
-    console.error('[DELETE /events/:id] Error:', error.message);
+    console.error(`[DELETE /events/:id] Error:`, error.message);
     res.status(500).json({ message: error.message || 'Could not delete event.' });
   }
 });
-
-
 
 export default router;

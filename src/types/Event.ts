@@ -13,6 +13,7 @@ export interface Event {
   imageUrl?: string;
   requiresOrganizerSignup?: boolean;
   organizerEmail?: string;
+  signup_link?: string;
 }
 
 export interface User {
