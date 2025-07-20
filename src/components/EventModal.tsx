@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { X, MapPin, Clock, Users, Calendar, Mail } from 'lucide-react';
 import { Event } from '../types/Event';
@@ -14,11 +14,31 @@ interface EventModalProps {
 const EventModal = ({ event, onClose }: EventModalProps) => {
   const [showRSVPForm, setShowRSVPForm] = useState(false);
   const [hasRSVPed, setHasRSVPed] = useState(false);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    }
+    fetchUser();
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+      fetchUser();
+    });
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleRSVPSuccess = () => {
     setHasRSVPed(true);
     setShowRSVPForm(false);
+  };
+
+  const handleQuickRSVP = () => {
+    // Simulate RSVP logic for logged-in users (can be replaced with real API call)
+    setHasRSVPed(true);
   };
 
   // Generate a short description (3-4 lines) that matches what's shown on the card
@@ -177,6 +197,21 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                   </a>
                 )}
               </div>
+            ) : user ? (
+              <div className="text-center">
+                <button
+                  onClick={() => {
+                    if (event.requiresOrganizerSignup && event.organizerEmail) {
+                      window.location.href = `mailto:${event.organizerEmail}`;
+                      return;
+                    }
+                    handleQuickRSVP();
+                  }}
+                  className="bg-pink-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors text-sm sm:text-base"
+                >
+                  {event.requiresOrganizerSignup ? "Register Interest" : "RSVP Now"}
+                </button>
+              </div>
             ) : showRSVPForm ? (
               <RSVPForm
                 event={event}
@@ -207,12 +242,7 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                       window.location.href = `mailto:${event.organizerEmail}`;
                       return;
                     }
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) {
-                      navigate('/login');
-                      return;
-                    }
-                    setShowRSVPForm(true);
+                    navigate('/login');
                   }}
                   className="bg-pink-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors text-sm sm:text-base"
                 >

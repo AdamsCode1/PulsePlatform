@@ -10,6 +10,7 @@ const SocietyRegister = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -17,7 +18,13 @@ const SocietyRegister = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { first_name: firstName }
+        }
+      });
       if (error) {
         // handle error
       } else {
@@ -47,6 +54,10 @@ const SocietyRegister = () => {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name</Label>
+              <Input id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} required />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="name">Society Name</Label>
               <Input id="name" value={name} onChange={e => setName(e.target.value)} required />
