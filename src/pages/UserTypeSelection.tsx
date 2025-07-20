@@ -13,6 +13,7 @@ const UserTypeSelection = () => {
         <CardContent className="space-y-6">
           <Button className="w-full" size="lg" onClick={() => navigate("/login/student")}>Student</Button>
           <Button className="w-full" size="lg" onClick={() => navigate("/login/society")}>Society</Button>
+          <Button className="w-full" size="lg" onClick={() => navigate("/login/organization")}>Organization</Button>
         </CardContent>
       </Card>
     </div>

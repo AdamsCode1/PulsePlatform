@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { MapPin, Clock, Users, Check, ArrowRight } from 'lucide-react';
@@ -111,9 +110,20 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         </h3>
 
         {/* Event Description */}
-        <p className="text-gray-600 text-xs sm:text-sm mb-4 line-clamp-2 flex-1 group-hover:text-gray-800 transition-colors duration-300 leading-relaxed">
+        <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-2 flex-1 group-hover:text-gray-800 transition-colors duration-300 leading-relaxed">
           {event.description}
         </p>
+        {/* Signup Link */}
+        {event.signup_link && (
+          <a
+            href={event.signup_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-pink-600 text-xs sm:text-sm mb-4 underline hover:text-pink-800 transition-colors duration-300 block"
+          >
+            External Signup Required: Click here to sign up
+          </a>
+        )}
         
         {/* Event Details */}
         <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
