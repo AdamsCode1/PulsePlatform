@@ -13,6 +13,7 @@ import StudentLogin from "./pages/StudentLogin";
 import StudentRegister from "./pages/StudentRegister";
 import OrganizationRegister from './pages/OrganizationRegister';
 import OrganizationLogin from './pages/OrganizationLogin';
+import DealsPage from './pages/DealsPage';
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
           <Route path="/register/organization" element={<OrganizationRegister />} />
           <Route path="/submit-event" element={<EventSubmissionPage />} />
           <Route path="/user-type" element={<UserTypeSelection />} />
+          <Route path="/deals" element={<DealsPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
