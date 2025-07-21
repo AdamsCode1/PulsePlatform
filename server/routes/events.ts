@@ -70,6 +70,19 @@ router.get('/by-date', async (req: Request, res: Response) => {
   }
 });
 
+// ADMIN: Get all pending events
+router.get('/pending', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
+    const { data, error } = await supabase.from(tableName).select('*').eq('status', 'pending');
+    if (error) throw new Error(error.message);
+    res.status(200).json(data);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message || 'Could not retrieve pending events.' });
+  }
+});
+
 // GET /events/:id - get one event
 router.get('/:id', async (req: Request, res: Response) => {
   try {
@@ -239,19 +252,6 @@ router.delete('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// ADMIN: Get all pending events
-router.get('/pending', requireAdmin, async (req: Request, res: Response) => {
-  try {
-    if (!supabase) throw new Error('Supabase client not initialized');
-    const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
-    const { data, error } = await supabase.from(tableName).select('*').eq('status', 'pending');
-    if (error) throw new Error(error.message);
-    res.status(200).json(data);
-  } catch (error: any) {
-    res.status(500).json({ message: error.message || 'Could not retrieve pending events.' });
-  }
-});
-
 // ADMIN: Approve an event
 router.post('/:id/approve', requireAdmin, async (req: Request, res: Response) => {
   try {
@@ -280,8 +280,29 @@ router.post('/:id/reject', requireAdmin, async (req: Request, res: Response) => 
     }
     if (!supabase) throw new Error('Supabase client not initialized');
     const tableName = supabaseSchema === 'public' ? 'event' : `${supabaseSchema}.event`;
+    // Get rejection reason from body
+    const reason = req.body?.reason || '';
+    // Fetch event to get society_id
+    const eventRes = await supabase.from(tableName).select('name,society_id').eq('id', id).single();
+    if (eventRes.error || !eventRes.data) throw new Error('Event not found');
+    const eventName = eventRes.data.name;
+    const societyId = eventRes.data.society_id;
+    // Fetch society to get contact_email
+    const societyTable = supabaseSchema === 'public' ? 'society' : `${supabaseSchema}.society`;
+    const societyRes = await supabase.from(societyTable).select('contact_email').eq('id', societyId).single();
+    if (societyRes.error || !societyRes.data) throw new Error('Society not found');
+    const contactEmail = societyRes.data.contact_email;
+    // Update event status
     const { error } = await supabase.from(tableName).update({ status: 'rejected' }).eq('id', id);
     if (error) throw new Error(error.message);
+    // Send rejection email
+    try {
+      const { sendRejectionEmail } = await import('../lib/email');
+      await sendRejectionEmail(contactEmail, eventName, reason);
+    } catch (emailErr) {
+      // Log but don't fail the request if email fails
+      console.error('Failed to send rejection email:', emailErr);
+    }
     res.status(200).json({ id, status: 'rejected' });
   } catch (error: any) {
     res.status(500).json({ message: error.message || 'Could not reject event.' });
