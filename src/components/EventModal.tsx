@@ -172,7 +172,24 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
 
           {/* RSVP Section */}
           <div className="border-t pt-4 sm:pt-6">
-            {hasRSVPed ? (
+            {event.signup_link && event.signup_link.trim() !== '' ? (
+              <div className="text-center py-8">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                  This event requires external signup
+                </h3>
+                <p className="text-gray-600 text-sm sm:text-base px-4 mb-4">
+                  Please use the button below to sign up for this event on the organizer's website.
+                </p>
+                <a
+                  href={event.signup_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-pink-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors text-sm sm:text-base inline-block"
+                >
+                  Sign Up
+                </a>
+              </div>
+            ) : hasRSVPed ? (
               <div className="text-center py-4 sm:py-6">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
                   <svg className="w-6 h-6 sm:w-8 sm:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

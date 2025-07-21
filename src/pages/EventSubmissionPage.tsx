@@ -35,6 +35,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useNavigate } from "react-router-dom";
 
 const eventCategories = [
   "academic",
@@ -70,6 +71,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function EventSubmissionPage() {
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
+  const navigate = useNavigate();
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -85,6 +87,17 @@ export default function EventSubmissionPage() {
       externalSignupLink: "",
     },
   });
+
+  // Redirect to login if not logged in, and return to this page after login
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login', { state: { returnTo: '/submit-event' } });
+      }
+    }
+    checkAuth();
+  }, [navigate]);
 
   useEffect(() => {
     async function fetchSocietyId() {
