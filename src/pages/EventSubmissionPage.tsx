@@ -33,8 +33,6 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useNavigate } from "react-router-dom";
 
 const eventCategories = [
   "academic",
@@ -68,7 +66,36 @@ type FormData = z.infer<typeof formSchema>;
 export default function EventSubmissionPage() {
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
-  const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const steps = [
+    { 
+      id: 1, 
+      title: "Event Details", 
+      subtitle: "Tell us about your event",
+      icon: Tag,
+    },
+    { 
+      id: 2, 
+      title: "Date & Time", 
+      subtitle: "When will your event take place?",
+      icon: CalendarIconAlias,
+    },
+    { 
+      id: 3, 
+      title: "Location & Category", 
+      subtitle: "Where and what type of event?",
+      icon: MapPin,
+    },
+    { 
+      id: 4, 
+      title: "Review & Submit", 
+      subtitle: "Confirm your event details",
+      icon: ChevronRight,
+    },
+  ];
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -82,17 +109,6 @@ export default function EventSubmissionPage() {
       location: "",
     },
   });
-
-  // Redirect to login if not logged in, and return to this page after login
-  useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/login', { state: { returnTo: '/submit-event' } });
-      }
-    }
-    checkAuth();
-  }, [navigate]);
 
   useEffect(() => {
     async function fetchSocietyId() {
