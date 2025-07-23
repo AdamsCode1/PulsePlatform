@@ -14,6 +14,7 @@ import StudentRegister from "./pages/StudentRegister";
 import OrganizationRegister from './pages/OrganizationRegister';
 import OrganizationLogin from './pages/OrganizationLogin';
 import DealsPage from './pages/DealsPage';
+import MeetTheTeam from './pages/MeetTheTeam';
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/submit-event" element={<EventSubmissionPage />} />
           <Route path="/user-type" element={<UserTypeSelection />} />
           <Route path="/deals" element={<DealsPage />} />
+          <Route path="/about" element={<MeetTheTeam />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
