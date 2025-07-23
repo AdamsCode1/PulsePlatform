@@ -36,6 +36,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
+import { CalendarIcon as CalendarIconAlias } from "lucide-react";
 
 const eventCategories = [
   "academic",
@@ -69,6 +70,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function EventSubmissionPage() {
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -603,55 +605,4 @@ export default function EventSubmissionPage() {
       </div>
     </div>
   );
-}
-
-/* Typeform-style card styling */
-.typeform-card {
-  @apply bg-card border border-border shadow-lg backdrop-blur-sm;
-}
-
-/* Form input styling */
-.form-input {
-  @apply border-input bg-background transition-all duration-200 focus:shadow-lg;
-}
-
-/* Animations */
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-.animate-scale-in {
-  animation: scaleIn 0.4s ease-out;
-}
-
-/* Step indicator styles */
-.step-indicator-active {
-  @apply shadow-lg transform scale-110 transition-all duration-300;
-}
-
-.bg-gradient-primary {
-  @apply bg-gradient-to-r from-purple-600 to-blue-600;
-}
-
-/* Keyframe animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
 }
