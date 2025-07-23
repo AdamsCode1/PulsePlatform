@@ -72,7 +72,7 @@ const SocietyLogin = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <Button type="submit" className="w-full" disabled={isLoading} size="lg">
+            <Button type="submit" className="w-full" disabled={isLoading} variant="secondary" size="lg">
               {isLoading ? "Signing In..." : "Sign In"}
             </Button>
             <div className="mt-4 text-center text-sm">
