@@ -508,7 +508,7 @@ export default function EventSubmissionPage() {
               Submit Your Event
             </CardTitle>
             <CardDescription className="text-lg text-muted-foreground mt-2">
-              {steps[currentStep].description}
+              {steps[currentStep].subtitle}
             </CardDescription>
             
             {/* Progress Indicator */}
