@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ const SocietyLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   const handleSubmit = async (e) => {
@@ -29,7 +30,8 @@ const SocietyLogin = () => {
         toast({ title: "Login failed", description: error.message || "Invalid credentials", variant: "destructive" });
       } else {
         toast({ title: "Success", description: "Society logged in successfully" });
-        navigate("/submit-event");
+        const returnTo = location.state?.returnTo || "/submit-event";
+        navigate(returnTo);
       }
     } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -72,7 +74,7 @@ const SocietyLogin = () => {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <Button type="submit" className="w-full" disabled={isLoading} size="lg">
+            <Button type="submit" className="w-full" disabled={isLoading} variant="secondary" size="lg">
               {isLoading ? "Signing In..." : "Sign In"}
             </Button>
             <div className="mt-4 text-center text-sm">
