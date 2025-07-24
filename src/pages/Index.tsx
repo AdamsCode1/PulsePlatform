@@ -11,7 +11,7 @@ import { mockEvents } from '../data/mockEvents';
 import { start } from 'repl';
 import NavBar from '../components/NavBar';
 import HeroSection from '../components/HeroSection';
-import FAQSection from '../components/FAQSection';
+import FAQFeedbackSection from '../components/FAQFeedbackSection';
 import Footer from '../components/Footer';
 import CommunityCTA from '../components/CommunityCTA';
 import DealsGrid from '../components/DealsGrid';
@@ -245,7 +245,7 @@ const Index = () => {
         </div>
         <DealsGrid />
       </div>
-      <FAQSection />
+      <FAQFeedbackSection />
       <Footer />
     </div>
   );
