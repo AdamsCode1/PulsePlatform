@@ -63,7 +63,7 @@ export default function HeroSection() {
         <div className="animate-slide-in-right-delayed text-center mb-8">
           <p className="text-lg md:text-xl max-w-2xl mx-auto px-4 drop-shadow-md text-white">
             <span className="holographic-text font-semibold">DUPulse</span>: Your
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-purple-300 font-medium"> ultimate companion</span> to discover what's happening at Durham University
+            <span className="text-white font-bold drop-shadow-lg text-shadow-strong"> ultimate companion</span> to discover what's happening at Durham University
           </p>
         </div>
 
@@ -139,6 +139,10 @@ export default function HeroSection() {
             opacity: 0;
             transform: translateX(-100px);
             animation: slide-in-right 1s ease-out 0.3s forwards;
+          }
+          
+          .text-shadow-strong {
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8), 1px 1px 2px rgba(0, 0, 0, 0.6);
           }
         `
       }} />

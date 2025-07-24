@@ -11,7 +11,6 @@ const faqs = [
 export default function FAQSection() {
   const [open, setOpen] = useState<number | null>(null);
   return (
-
     <section className="py-24 max-w-4xl mx-auto px-6">
       <div className="text-center mb-16">
         <h2 className="text-5xl font-extrabold mb-4">
@@ -23,10 +22,11 @@ export default function FAQSection() {
         {faqs.map((faq, i) => (
           <div
             key={i}
-            className={`group rounded-xl border transition-all duration-300 overflow-hidden ${open === i
-              ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-lg'
-              : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md'
-              }`}
+            className={`group rounded-xl border transition-all duration-300 overflow-hidden ${
+              open === i 
+                ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 shadow-lg' 
+                : 'bg-white hover:bg-gray-50 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md'
+            }`}
           >
             <button
               className="w-full text-left px-6 py-5 font-semibold text-lg flex justify-between items-center focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all"
@@ -43,7 +43,6 @@ export default function FAQSection() {
             </button>
             {open === i && (
               <div className="px-6 pb-5 text-gray-700 leading-relaxed animate-in slide-in-from-top-2 duration-300">
-
                 {faq.a}
               </div>
             )}
