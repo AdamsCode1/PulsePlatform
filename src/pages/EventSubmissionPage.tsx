@@ -507,9 +507,6 @@ export default function EventSubmissionPage() {
             <CardTitle className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-event-primary to-event-secondary bg-clip-text text-transparent">
               Submit Your Event
             </CardTitle>
-            <CardDescription className="text-lg text-muted-foreground mt-2">
-              {steps[currentStep].description}
-            </CardDescription>
             
             {/* Progress Indicator */}
             <div className="flex justify-center mt-6">
