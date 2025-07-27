@@ -33,6 +33,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
+import { useNavigate } from "react-router-dom";
 
 const eventCategories = [
   "academic",
@@ -59,6 +60,24 @@ const formSchema = z.object({
   endTime: z.string().min(1, "End time is required"),
   category: z.enum(eventCategories, { required_error: "Please select a category" }),
   location: z.string().min(1, "Location is required").min(3, "Location must be at least 3 characters"),
+  requiresExternalSignup: z.boolean().optional(),
+  externalSignupLink: z.string().optional(),
+}).refine((data) => {
+  if (data.requiresExternalSignup && (!data.externalSignupLink || data.externalSignupLink.trim() === '')) {
+    return false;
+  }
+  if (data.requiresExternalSignup && data.externalSignupLink) {
+    try {
+      new URL(data.externalSignupLink);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}, {
+  message: "Valid external signup URL is required when external registration is enabled",
+  path: ["externalSignupLink"]
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -66,6 +85,9 @@ type FormData = z.infer<typeof formSchema>;
 export default function EventSubmissionPage() {
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
+
+  const navigate = useNavigate(); // Use useNavigate hook for navigation (from Jakub's code)
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -90,6 +112,12 @@ export default function EventSubmissionPage() {
     },
     { 
       id: 4, 
+      title: "External Signup", 
+      subtitle: "Does your event require external registration?",
+      icon: Clock,
+    },
+    { 
+      id: 5, 
       title: "Review & Submit", 
       subtitle: "Confirm your event details",
       icon: ChevronRight,
@@ -107,8 +135,21 @@ export default function EventSubmissionPage() {
       endTime: "",
       category: undefined,
       location: "",
+      requiresExternalSignup: false,
+      externalSignupLink: "",
     },
   });
+
+  // Redirect to login if not logged in, and return to this page after login
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/login', { state: { returnTo: '/submit-event' } });
+      }
+    }
+    checkAuth();
+  }, [navigate]);
 
   useEffect(() => {
     async function fetchSocietyId() {
@@ -138,6 +179,13 @@ export default function EventSubmissionPage() {
         break;
       case 2:
         fieldsToValidate = ["location", "category"];
+        break;
+      case 3:
+        // For external signup step, validate externalSignupLink only if requiresExternalSignup is true
+        const requiresExternal = form.getValues("requiresExternalSignup");
+        if (requiresExternal) {
+          fieldsToValidate = ["externalSignupLink"];
+        }
         break;
     }
 
@@ -178,6 +226,9 @@ export default function EventSubmissionPage() {
       location: data.location,
       category: data.category,
       society_id: societyId,
+      //requires_external_signup: data.requiresExternalSignup || false,
+      //external_signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
+      signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
     };
     
     try {
@@ -465,6 +516,72 @@ export default function EventSubmissionPage() {
         );
       
       case 3:
+        const requiresExternalSignup = form.watch("requiresExternalSignup");
+        return (
+          <div className={`${baseClasses} space-y-8`}>
+            <FormField
+              control={form.control}
+              name="requiresExternalSignup"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    External Registration Required
+                  </FormLabel>
+                  <Select 
+                    onValueChange={(value) => field.onChange(value === "yes")} 
+                    value={field.value ? "yes" : "no"}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="form-input text-lg h-14 rounded-xl">
+                        <SelectValue placeholder="Select registration requirement" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="no">No - Sign-up through DUPulse only</SelectItem>
+                      <SelectItem value="yes">Yes - Sign-up through external site</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription className="text-muted-foreground">
+                    Choose whether your event requires participants to register through an external website or platform
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {requiresExternalSignup && (
+              <div className="transition-all duration-300 ease-in-out">
+                <FormField
+                  control={form.control}
+                  name="externalSignupLink"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-primary" />
+                        External Signup URL
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="https://example.com/signup" 
+                          {...field} 
+                          className="form-input text-lg h-14 rounded-xl"
+                          type="url"
+                        />
+                      </FormControl>
+                      <FormDescription className="text-sm text-muted-foreground">
+                        Enter the full URL where participants can register for your event
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+          </div>
+        );
+      
+      case 4:
         const formValues = form.getValues();
         return (
           <div className={`${baseClasses} space-y-8`}>
@@ -509,12 +626,28 @@ export default function EventSubmissionPage() {
                   <span className="font-semibold text-foreground">{formValues.location || 'Not specified'}</span>
                 </div>
                 
-                <div className="flex justify-between">
+                <div className="flex justify-between border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Category:</span>
                   <span className="font-semibold text-foreground capitalize">
                     {formValues.category?.replace(/-/g, ' ') || 'Not specified'}
                   </span>
                 </div>
+                
+                <div className="flex justify-between border-b border-border pb-3">
+                  <span className="font-medium text-muted-foreground">External Registration:</span>
+                  <span className="font-semibold text-foreground">
+                    {formValues.requiresExternalSignup ? 'Required' : 'Not required'}
+                  </span>
+                </div>
+                
+                {formValues.requiresExternalSignup && formValues.externalSignupLink && (
+                  <div className="flex justify-between">
+                    <span className="font-medium text-muted-foreground">Signup URL:</span>
+                    <span className="font-semibold text-foreground max-w-xs text-right break-all">
+                      {formValues.externalSignupLink}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
