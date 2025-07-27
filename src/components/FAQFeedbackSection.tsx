@@ -23,10 +23,13 @@ export default function FAQFeedbackSection() {
               Have Any Questions?
             </h2>
             <p className="text-gray-600 leading-relaxed">
-              Lorem ipsum dolor sit, amet consectetur adipisicing elit. Consequatur quidem eius cum voluptatum quasi delectus assumenda culpa.
+              We'd love to hear from you!
+              Whether it's a question, suggestion, or just a thought—drop us a message anytime.
+
+
             </p>
           </div>
-          
+
           <button
             onClick={() => setIsContactModalOpen(true)}
             className="bg-green-500 hover:bg-green-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors mt-auto"
@@ -43,7 +46,8 @@ export default function FAQFeedbackSection() {
               Frequently Asked Questions
             </h3>
             <p className="text-gray-600">
-              Lorem ipsum dolor sit, amet consectetur adipisicing elit Consequatur quidem eius cum voluptatum quasi delectus.
+              Got questions? We've got answers.
+              Browse through the FAQs below—your solution might be just a scroll away.
             </p>
           </div>
 
@@ -80,9 +84,9 @@ export default function FAQFeedbackSection() {
         </div>
       </div>
 
-      <ContactModal 
-        isOpen={isContactModalOpen} 
-        onClose={() => setIsContactModalOpen(false)} 
+      <ContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
       />
     </section>
   );

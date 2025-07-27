@@ -4,13 +4,13 @@ export default function CommunityCTA() {
   return (
     <section className="w-full flex flex-col items-center justify-center py-8 px-4">
       <div className="bg-gradient-primary rounded-2xl shadow-elegant p-6 max-w-xl w-full flex flex-col items-center text-center">
-        <img 
-          src="/lovable-uploads/999fdaec-0793-4278-8531-4130ba5903b1.png" 
-          alt="WhatsApp" 
+        <img
+          src="/image-uploads/whatsapp-logo.png"
+          alt="WhatsApp"
           className="w-12 h-12 mb-4"
         />
         <h2 className="text-xl font-semibold mb-4 text-primary-foreground">Join our WhatsApp community</h2>
-        <Button 
+        <Button
           asChild
           variant="outline"
           size="lg"
