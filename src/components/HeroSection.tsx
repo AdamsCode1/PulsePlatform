@@ -4,7 +4,7 @@ export default function HeroSection() {
     <section
       className="relative flex flex-col items-center justify-center pt-32 pb-16 bg-cover bg-center bg-no-repeat min-h-screen"
       style={{
-        backgroundImage: `url('/lovable-uploads/e534efa3-6ce7-4d86-b11f-6112a525af9f.png')`
+        backgroundImage: `url('/image-uploads/e534efa3-6ce7-4d86-b11f-6112a525af9f.png')`
       }}
     >
       {/* Background overlay for better text readability */}
@@ -17,7 +17,7 @@ export default function HeroSection() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center transition-transform duration-700 ease-in-out hover:rotate-360 overflow-hidden">
-              <img src="/lovable-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png" alt="DUPulse Logo" width={160} height={160} className="w-full h-full object-cover" />
+              <img src="/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png" alt="DUPulse Logo" width={160} height={160} className="w-full h-full object-cover" />
             </div>
           </div>
 
