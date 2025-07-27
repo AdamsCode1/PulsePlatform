@@ -33,7 +33,6 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useNavigate } from "react-router-dom";
 
 const eventCategories = [
@@ -524,23 +523,29 @@ export default function EventSubmissionPage() {
               control={form.control}
               name="requiresExternalSignup"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                      className="mt-1"
-                    />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-primary" />
-                      External Registration Required
-                    </FormLabel>
-                    <FormDescription className="text-muted-foreground">
-                      Check this if your event requires participants to register through an external website or platform
-                    </FormDescription>
-                  </div>
+                <FormItem>
+                  <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-primary" />
+                    External Registration Required
+                  </FormLabel>
+                  <Select 
+                    onValueChange={(value) => field.onChange(value === "yes")} 
+                    value={field.value ? "yes" : "no"}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="form-input text-lg h-14 rounded-xl">
+                        <SelectValue placeholder="Select registration requirement" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="no">No - Sign-up through DUPulse only</SelectItem>
+                      <SelectItem value="yes">Yes - Sign-up through external site</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription className="text-muted-foreground">
+                    Choose whether your event requires participants to register through an external website or platform
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />
