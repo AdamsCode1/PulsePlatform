@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon, Clock, MapPin, Tag, FileText, Type, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, Tag, FileText, Type, ChevronLeft, ChevronRight, Calendar as CalendarIconAlias, Clock as ClockIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useEffect, useState } from "react";
@@ -30,13 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useNavigate } from "react-router-dom";
-import { CalendarIcon as CalendarIconAlias } from "lucide-react";
 
 const eventCategories = [
   "academic",
@@ -70,7 +66,6 @@ type FormData = z.infer<typeof formSchema>;
 export default function EventSubmissionPage() {
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
-  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -115,17 +110,6 @@ export default function EventSubmissionPage() {
     },
   });
 
-  // Redirect to login if not logged in, and return to this page after login
-  useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/login', { state: { returnTo: '/submit-event' } });
-      }
-    }
-    checkAuth();
-  }, [navigate]);
-
   useEffect(() => {
     async function fetchSocietyId() {
       const userResult = supabase.auth.getUser ? await supabase.auth.getUser() : null;
@@ -157,7 +141,7 @@ export default function EventSubmissionPage() {
         break;
     }
 
-    const isValid = await form.trigger(fieldsToValidate as (keyof FormData)[]);
+    const isValid = await form.trigger(fieldsToValidate as any);
     if (!isValid) return;
 
     if (currentStep < steps.length - 1) {
@@ -237,24 +221,28 @@ export default function EventSubmissionPage() {
   }
 
   const renderStepContent = () => {
+    const baseClasses = `transition-all duration-500 ${
+      isAnimating ? 'opacity-0 transform translate-x-8' : 'opacity-100 transform translate-x-0'
+    }`;
+
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-6">
+          <div className={`${baseClasses} space-y-8`}>
             <FormField
               control={form.control}
               name="eventName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                    <Type className="h-4 w-4 text-event-primary" />
+                  <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <Type className="w-5 h-5 text-primary" />
                     Event Name
                   </FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="Enter event name" 
                       {...field} 
-                      className="h-12 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                      className="form-input text-lg h-14 rounded-xl"
                     />
                   </FormControl>
                   <FormMessage />
@@ -266,18 +254,18 @@ export default function EventSubmissionPage() {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                    <FileText className="h-4 w-4 text-event-primary" />
+                  <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
                     Description
                   </FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="Describe your event in detail..." 
                       {...field} 
-                      className="min-h-[120px] bg-muted/50 border-border/50 focus:border-event-primary transition-colors resize-none"
+                      className="form-input min-h-32 text-lg rounded-xl resize-none"
                     />
                   </FormControl>
-                  <FormDescription>
+                  <FormDescription className="text-sm text-muted-foreground">
                     Provide a detailed description of your event
                   </FormDescription>
                   <FormMessage />
@@ -289,15 +277,15 @@ export default function EventSubmissionPage() {
       
       case 1:
         return (
-          <div className="space-y-6">
+          <div className={`${baseClasses} space-y-8`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="startDate"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                      <CalendarIcon className="h-4 w-4 text-event-primary" />
+                  <FormItem className="flex flex-col space-y-3">
+                    <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                      <CalendarIcon className="w-5 h-5 text-primary" />
                       Start Date
                     </FormLabel>
                     <Popover>
@@ -306,7 +294,7 @@ export default function EventSubmissionPage() {
                           <Button
                             variant="outline"
                             className={cn(
-                              "h-12 pl-3 text-left font-normal bg-muted/50 border-border/50 hover:border-event-primary transition-colors",
+                              "form-input text-lg h-14 rounded-xl pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -339,15 +327,15 @@ export default function EventSubmissionPage() {
                 name="startTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                      <Clock className="h-4 w-4 text-event-primary" />
+                    <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                      <ClockIcon className="w-5 h-5 text-primary" />
                       Start Time
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="time"
                         {...field}
-                        className="h-12 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                        className="form-input text-lg h-14 rounded-xl"
                       />
                     </FormControl>
                     <FormMessage />
@@ -360,9 +348,9 @@ export default function EventSubmissionPage() {
                 control={form.control}
                 name="endDate"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                      <CalendarIcon className="h-4 w-4 text-event-secondary" />
+                  <FormItem className="flex flex-col space-y-3">
+                    <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                      <CalendarIcon className="w-5 h-5 text-primary" />
                       End Date
                     </FormLabel>
                     <Popover>
@@ -371,7 +359,7 @@ export default function EventSubmissionPage() {
                           <Button
                             variant="outline"
                             className={cn(
-                              "h-12 pl-3 text-left font-normal bg-muted/50 border-border/50 hover:border-event-secondary transition-colors",
+                              "form-input text-lg h-14 rounded-xl pl-3 text-left font-normal",
                               !field.value && "text-muted-foreground"
                             )}
                           >
@@ -404,15 +392,15 @@ export default function EventSubmissionPage() {
                 name="endTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                      <Clock className="h-4 w-4 text-event-primary" />
+                    <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                      <ClockIcon className="w-5 h-5 text-primary" />
                       End Time
                     </FormLabel>
                     <FormControl>
                       <Input
                         type="time"
                         {...field}
-                        className="h-12 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                        className="form-input text-lg h-14 rounded-xl"
                       />
                     </FormControl>
                     <FormMessage />
@@ -425,21 +413,21 @@ export default function EventSubmissionPage() {
       
       case 2:
         return (
-          <div className="space-y-6">
+          <div className={`${baseClasses} space-y-8`}>
             <FormField
               control={form.control}
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                    <MapPin className="h-4 w-4 text-event-primary" />
+                  <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-primary" />
                     Location
                   </FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="Enter event location" 
                       {...field} 
-                      className="h-12 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                      className="form-input text-lg h-14 rounded-xl"
                     />
                   </FormControl>
                   <FormMessage />
@@ -451,13 +439,13 @@ export default function EventSubmissionPage() {
               name="category"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                    <Tag className="h-4 w-4 text-event-accent" />
+                  <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-primary" />
                     Category
                   </FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger className="h-12 bg-muted/50 border-border/50 focus:border-event-accent transition-colors">
+                      <SelectTrigger className="form-input text-lg h-14 rounded-xl">
                         <SelectValue placeholder="Select event category" />
                       </SelectTrigger>
                     </FormControl>
@@ -479,16 +467,54 @@ export default function EventSubmissionPage() {
       case 3:
         const formValues = form.getValues();
         return (
-          <div className="space-y-6">
-            <div className="rounded-lg border border-border/50 p-6 bg-muted/20">
-              <h3 className="text-lg font-semibold mb-4 text-foreground">Review Your Event</h3>
-              <div className="space-y-3">
-                <div><strong>Event Name:</strong> {formValues.eventName}</div>
-                <div><strong>Description:</strong> {formValues.description}</div>
-                <div><strong>Start:</strong> {formValues.startDate ? format(formValues.startDate, "PPP") : ""} at {formValues.startTime}</div>
-                <div><strong>End:</strong> {formValues.endDate ? format(formValues.endDate, "PPP") : ""} at {formValues.endTime}</div>
-                <div><strong>Location:</strong> {formValues.location}</div>
-                <div><strong>Category:</strong> {formValues.category}</div>
+          <div className={`${baseClasses} space-y-8`}>
+            <div className="typeform-card rounded-2xl p-8 space-y-6">
+              <h3 className="text-2xl font-bold text-foreground mb-6">Review Your Event</h3>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between border-b border-border pb-3">
+                  <span className="font-medium text-muted-foreground">Event Name:</span>
+                  <span className="font-semibold text-foreground">{formValues.eventName || 'Not specified'}</span>
+                </div>
+                
+                <div className="flex justify-between border-b border-border pb-3">
+                  <span className="font-medium text-muted-foreground">Description:</span>
+                  <span className="font-semibold text-foreground max-w-xs text-right">
+                    {formValues.description || 'Not specified'}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between border-b border-border pb-3">
+                  <span className="font-medium text-muted-foreground">Start:</span>
+                  <span className="font-semibold text-foreground">
+                    {formValues.startDate && formValues.startTime 
+                      ? `${format(formValues.startDate, "PPP")} at ${formValues.startTime}`
+                      : 'Not specified'
+                    }
+                  </span>
+                </div>
+                
+                <div className="flex justify-between border-b border-border pb-3">
+                  <span className="font-medium text-muted-foreground">End:</span>
+                  <span className="font-semibold text-foreground">
+                    {formValues.endDate && formValues.endTime 
+                      ? `${format(formValues.endDate, "PPP")} at ${formValues.endTime}`
+                      : 'Not specified'
+                    }
+                  </span>
+                </div>
+                
+                <div className="flex justify-between border-b border-border pb-3">
+                  <span className="font-medium text-muted-foreground">Location:</span>
+                  <span className="font-semibold text-foreground">{formValues.location || 'Not specified'}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="font-medium text-muted-foreground">Category:</span>
+                  <span className="font-semibold text-foreground capitalize">
+                    {formValues.category?.replace(/-/g, ' ') || 'Not specified'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -500,105 +526,101 @@ export default function EventSubmissionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="mx-auto max-w-4xl">
-        <Card className="shadow-lg border-border/50" style={{ background: "var(--gradient-card)" }}>
-          <CardHeader className="text-center pb-8">
-            <CardTitle className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-event-primary to-event-secondary bg-clip-text text-transparent">
-              Submit Your Event
-            </CardTitle>
-            
-            {/* Progress Indicator */}
-            <div className="flex justify-center mt-6">
-              <div className="flex items-center space-x-2">
-                {steps.map((step, index) => (
-                  <div key={index} className="flex items-center">
-                    <div
-                      className={cn(
-                        "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300",
-                        index > currentStep
-                          ? "bg-muted text-muted-foreground"
-                          : "text-white"
-                      )}
-                      style={
-                        index < currentStep 
-                          ? { backgroundColor: "#EC4899", color: "white" }
-                          : index === currentStep
-                          ? { backgroundColor: "#FF4EA5", color: "white" }
-                          : {}
-                      }
-                    >
-                      {index + 1}
-                    </div>
-                    {index < steps.length - 1 && (
-                      <div
-                        className={cn(
-                          "w-12 h-0.5 mx-2 transition-all duration-300",
-                          index < currentStep ? "bg-gradient-to-r from-event-primary to-event-secondary" : "bg-muted"
-                        )}
-                      />
+    <div className="min-h-screen py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Progress Steps */}
+        <div className="mb-16">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold text-foreground mb-4 animate-fade-in-up">
+              {steps[currentStep].subtitle}
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              {steps[currentStep].title}
+            </p>
+          </div>
+          
+          <div className="flex justify-center items-center space-x-4 md:space-x-8">
+            {steps.map((step, index) => {
+              const isActive = step.id === currentStep + 1;
+              const isCompleted = step.id < currentStep + 1;
+              
+              return (
+                <div key={step.id} className="flex items-center">
+                  <div
+                    className={`
+                      step-indicator relative flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-lg
+                      ${isActive ? 'step-indicator-active' : ''}
+                      ${isCompleted ? 'bg-gradient-primary' : isActive ? 'bg-gradient-primary' : 'bg-gray-300'}
+                    `}
+                  >
+                    {isCompleted ? (
+                      <ChevronRight className="w-6 h-6" />
+                    ) : (
+                      step.id
                     )}
                   </div>
-                ))}
-              </div>
-            </div>
-            
-            {/* Step Title */}
-            <h3 className="text-xl font-semibold mt-4 text-foreground">
-              {steps[currentStep].title}
-            </h3>
-          </CardHeader>
-          
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                {/* Step Content with Animation */}
-                <div 
-                  className={cn(
-                    "transition-all duration-300 ease-in-out",
-                    isAnimating ? "opacity-0 transform translate-x-4" : "opacity-100 transform translate-x-0"
+                  
+                  {index < steps.length - 1 && (
+                    <div 
+                      className={`w-16 md:w-32 h-1 ml-4 transition-all duration-500 ${
+                        isCompleted ? 'bg-gradient-primary' : 'bg-gray-300'
+                      }`} 
+                    />
                   )}
-                >
-                  {renderStepContent()}
                 </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <div className="typeform-card rounded-3xl p-8 md:p-12 max-w-3xl mx-auto animate-scale-in">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              {/* Step Content with Animation */}
+              {renderStepContent()}
+              
+              {/* Navigation Buttons */}
+              <div className="flex justify-between items-center pt-12">
+                <Button
+                  type="button"
+                  variant="purple-outline"
+                  size="lg"
+                  onClick={prevStep}
+                  disabled={currentStep === 0}
+                  className="flex items-center gap-2"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                  Previous
+                </Button>
                 
-                {/* Navigation Buttons */}
-                <div className="flex justify-between pt-6">
+                {currentStep < steps.length - 1 ? (
                   <Button
                     type="button"
-                    variant="outline"
-                    onClick={prevStep}
-                    disabled={currentStep === 0}
-                    className="flex items-center gap-2"
+                    variant="purple"
+                    size="lg"
+                    onClick={nextStep}
+                    className="flex items-center gap-2 px-8"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    Next
+                    <ChevronRight className="w-5 h-5" />
                   </Button>
-                  
-                  {currentStep < steps.length - 1 ? (
-                    <Button
-                      type="button"
-                      onClick={nextStep}
-                      className="flex items-center gap-2 bg-gradient-to-r from-event-primary to-event-secondary hover:from-event-primary/90 hover:to-event-secondary/90"
-                    >
-                      Next
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button 
-                      type="submit" 
-                      className="bg-gradient-to-r from-event-primary to-event-secondary hover:from-event-primary/90 hover:to-event-secondary/90 transition-all duration-300 shadow-lg hover:shadow-xl"
-                      style={{ boxShadow: "var(--shadow-glow)" }}
-                      disabled={loadingSocietyId}
-                    >
-                      Submit Event
-                    </Button>
-                  )}
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+                ) : (
+                  <Button 
+                    type="submit" 
+                    variant="gradient"
+                    size="lg"
+                    className="flex items-center gap-2 px-8"
+                    disabled={loadingSocietyId}
+                  >
+                    Submit Event
+                    <ChevronRight className="w-5 h-5" />
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   );
