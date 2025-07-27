@@ -17,8 +17,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 267 57% 50%;
     --primary-foreground: 210 40% 98%;
+    --primary-light: 267 57% 85%;
+    --primary-dark: 267 57% 35%;
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -26,8 +28,8 @@ All colors MUST be HSL.
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 267 100% 97%;
+    --accent-foreground: 267 57% 50%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
@@ -35,6 +37,20 @@ All colors MUST be HSL.
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
+
+        /* Purple gradient system */
+    --gradient-primary: linear-gradient(135deg, hsl(267 57% 50%), hsl(285 85% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(267 100% 97%), hsl(270 20% 98%));
+    --gradient-background: linear-gradient(180deg, hsl(267 100% 99%), hsl(270 50% 98%));
+    
+    /* Shadows with purple tints */
+    --shadow-elegant: 0 10px 30px -10px hsl(267 57% 50% / 0.2);
+    --shadow-glow: 0 0 40px hsl(267 57% 50% / 0.1);
+    --shadow-card: 0 4px 12px -2px hsl(267 57% 50% / 0.08);
+
+    /* Animation variables */
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --radius: 0.5rem;
 
@@ -92,7 +108,44 @@ All colors MUST be HSL.
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
+  @layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply text-foreground;
+    background: var(--gradient-background);
+    min-height: 100vh;
+    @apply bg-background text-foreground;
+  }
 }
+
+@layer components {
+  /* Form step transitions */
+  .step-transition {
+    transition: var(--transition-smooth);
+  }
+  
+  .step-enter {
+    transform: translateX(100px);
+    opacity: 0;
+  }
+  
+  .step-enter-active {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  
+  .step-exit {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  
+  .step-exit-active {
+    transform: translateX(-100px);
+    opacity: 0;
+  }
 
 @layer base {
   * {
@@ -109,14 +162,33 @@ All colors MUST be HSL.
   @apply bg-card border border-border shadow-lg backdrop-blur-sm;
 }
 
+  /* Typeform-style animations */
+  .typeform-card {
+    background: var(--gradient-secondary);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(10px);
+    border: 1px solid hsl(var(--border));
+  }
+
 /* Form input styling */
 .form-input {
   @apply border-input bg-background transition-all duration-200 focus:shadow-lg;
 }
 
+
+.step-indicator-active {
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-glow);
+  transform: scale(1.1);
+}
+
 /* Animations */
 .animate-fade-in-up {
   animation: fadeInUp 0.6s ease-out;
+}
+
+.step-indicator {
+  transition: var(--transition-bounce);
 }
 
 .animate-scale-in {
@@ -131,7 +203,13 @@ All colors MUST be HSL.
 .bg-gradient-primary {
   @apply bg-gradient-to-r from-purple-600 to-blue-600;
 }
-
+  /* Enhanced input styles */
+  .form-input {
+    background: hsl(var(--input));
+    border: 2px solid hsl(var(--border));
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-card);
+  }
 /* Keyframe animations */
 @keyframes fadeInUp {
   from {
@@ -141,6 +219,13 @@ All colors MUST be HSL.
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+  .form-input:focus {
+    border-color: hsl(var(--primary));
+    box-shadow: var(--shadow-elegant);
+    transform: translateY(-2px);
   }
 }
 
@@ -162,4 +247,4 @@ All colors MUST be HSL.
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-}
+}}
