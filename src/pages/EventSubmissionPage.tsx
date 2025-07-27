@@ -227,8 +227,9 @@ export default function EventSubmissionPage() {
       location: data.location,
       category: data.category,
       society_id: societyId,
-      requires_external_signup: data.requiresExternalSignup || false,
-      external_signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
+      //requires_external_signup: data.requiresExternalSignup || false,
+      //external_signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
+      signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
     };
     
     try {
