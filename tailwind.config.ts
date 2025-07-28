@@ -20,6 +20,16 @@ export default {
 		},
 		extend: {
 			colors: {
+        'dupulse-pink': '#ea01a8',
+        'dupulse-off-white': '#f1eee7',
+        'dupulse-black': '#000000',
+        'dupulse-cyan': '#0cc0df',
+        'dupulse-green': '#79db9d',
+        'dupulse-light-pink': '#ff87dd',
+        'dupulse-purple': '#d492ef',
+        'dupulse-yellow': '#ffd93a',
+        'dupulse-red': '#ff5444',
+        'dupulse-light-blue': '#cef5ff',
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',

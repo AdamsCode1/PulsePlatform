@@ -24,15 +24,15 @@ const faqs = [
   },
 ];
 
-export default function ModernFAQSection() {
-  const [openFAQ, setOpenFAQ] = useState(null);
+export default function FAQFeedbackSection() {
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
-  const toggleFAQ = (index) => {
+  const toggleFAQ = (index: number) => {
     setOpenFAQ(openFAQ === index ? null : index);
   };
 
-  const handleKeyDown = (event, index) => {
+  const handleKeyDown = (event: React.KeyboardEvent, index: number) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       toggleFAQ(index);
@@ -41,94 +41,80 @@ export default function ModernFAQSection() {
 
   return (
     <>
-      <div className="bg-gray-50 min-h-screen py-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-start">
-            {/* Left Side - FAQ */}
-            <div>
-              {/* Enhanced Heading with More Margin */}
-              <div className="mb-16">
-                <h1 className="text-6xl lg:text-7xl font-black text-black mb-6 leading-tight">
-                  Frequently<br />
-                  asked questions
-                </h1>
-                <p className="text-lg text-gray-500 font-light max-w-md">
-                  Find answers to common questions about DUPulse events, tickets, and more.
-                </p>
-              </div>
+      <section className="bg-white py-16 sm:py-20 lg:py-24">
+        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+              Frequently Asked Questions
+            </h2>
+            <p className="mt-4 text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+              Find answers to common questions about DUPulse events, tickets, and more.
+            </p>
+          </div>
 
-              {/* FAQ Items */}
-              <div className="space-y-4">
-                {faqs.map((faq, index) => {
-                  const isOpen = openFAQ === index;
-                  return (
-                    <div key={index} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                      <button
-                        className="w-full text-left p-6 flex justify-between items-center hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-inset"
-                        onClick={() => toggleFAQ(index)}
-                        onKeyDown={(e) => handleKeyDown(e, index)}
-                        aria-expanded={isOpen}
-                        aria-controls={`faq-answer-${index}`}
-                      >
-                        <span className="text-lg font-medium text-black pr-4">
-                          {faq.q}
-                        </span>
-                        <div className="flex-shrink-0">
-                          {/* Chevron Icon */}
-                          <svg
-                            className={`w-6 h-6 text-black transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </button>
-
-                      <div
-                        id={`faq-answer-${index}`}
-                        className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
-                      >
-                        <div className="px-6 pb-6 text-gray-600 leading-relaxed">
-                          {faq.a}
-                        </div>
+          {/* FAQ Accordion */}
+          <div className="mt-12 max-w-3xl mx-auto">
+            <div className="space-y-4">
+              {faqs.map((faq, index) => {
+                const isOpen = openFAQ === index;
+                return (
+                  <div key={index} className="border-b border-gray-200 pb-4">
+                    <button
+                      className="w-full flex justify-between items-center text-left py-2 focus:outline-none"
+                      onClick={() => toggleFAQ(index)}
+                      onKeyDown={(e) => handleKeyDown(e, index)}
+                      aria-expanded={isOpen}
+                      aria-controls={`faq-answer-${index}`}
+                    >
+                      <span className="text-md sm:text-lg font-medium text-gray-900">
+                        {faq.q}
+                      </span>
+                      <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+                        {/* Plus/Minus Icon */}
+                        <svg
+                          className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
                       </div>
+                    </button>
+                    <div
+                      id={`faq-answer-${index}`}
+                      className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96 mt-2' : 'max-h-0'}`}
+                    >
+                      <p className="text-base text-gray-600 pt-2">
+                        {faq.a}
+                      </p>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Right Side - Contact */}
-            <div className="lg:pl-8">
-              <div className="sticky top-8">
-                {/* Speech Bubble */}
-                <div className="relative mb-8">
-                  <div className="bg-black text-white p-6 rounded-2xl rounded-bl-none">
-                    <h3 className="text-xl font-semibold mb-3">Got questions? We've got answers.</h3>
-                    <p className="text-gray-300 leading-relaxed">
-                      Contact us through email or DM us on Instagram for any inquiries or support. We're here to help you make the most of your DUPulse experience!
-                    </p>
                   </div>
-                  {/* Speech bubble tail */}
-                  <div className="absolute -bottom-2 left-6 w-4 h-4 bg-black transform rotate-45"></div>
-                </div>
+                );
+              })}
+            </div>
+          </div>
 
-                {/* Centered Contact Button with Enhanced Hover Effects */}
-                <div className="flex justify-center">
-                  <button
-                    onClick={() => setIsContactModalOpen(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
-                  >
-                    Contact us
-                  </button>
-                </div>
-              </div>
+          {/* Contact CTA */}
+          <div className="text-center mt-8">
+            <h3 className="text-xl sm:text-2xl font-semibold text-gray-900">
+              Still have questions?
+            </h3>
+            <p className="mt-2 text-base text-gray-600">
+              Can't find the answer you're looking for? Please chat to our friendly team.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={() => setIsContactModalOpen(true)}
+                className="bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:ring-offset-2"
+              >
+                Contact us
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Contact Modal */}
       <ContactModal
