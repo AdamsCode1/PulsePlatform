@@ -84,7 +84,7 @@ export default function Footer() {
                         <motion.div variants={itemVariants} className="lg:col-span-1">
                             <div className="mb-8">
                                 <img 
-                                    src="/image-uploads/DUPfooterLogo.PNG" 
+                                    src="/image-uploads/DUPfooterLogo.png" 
                                     alt="DUPulse Logo" 
                                     className="h-12 w-auto mb-6"
                                 />
