@@ -1,0 +1,27 @@
+{
+  "name": "pulsepplatform-api",
+  "version": "1.0.0",
+  "description": "Backend API for PulsePlatform",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "build": "echo 'No build step required'",
+    "dev": "tsx index.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.50.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "tsx": "^4.20.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.10.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
