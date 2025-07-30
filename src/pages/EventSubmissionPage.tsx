@@ -242,7 +242,28 @@ export default function EventSubmissionPage() {
       });
 
       if (res.ok) {
-        toast({ title: "Event Submitted Successfully!", description: `${data.eventName} has been submitted for review.` });
+        toast({ 
+          title: "Event Submitted Successfully!", 
+          description: `${data.eventName} has been submitted for review.`,
+          action: (
+            <div className="flex gap-2 mt-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/events/manage')}
+              >
+                Manage Events
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/')}
+              >
+                Home
+              </Button>
+            </div>
+          )
+        });
         form.reset();
         setCurrentStep(0); // Reset to first step
       } else {

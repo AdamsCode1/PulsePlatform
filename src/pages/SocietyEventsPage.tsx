@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { getSocietyIdByEmail } from '@/lib/getSocietyIdByEmail';
 import { EventSubmissionForm } from '@/components/EventSubmissionForm';
+import { useNavigate } from 'react-router-dom';
 
 interface Event {
   id: string;
@@ -26,6 +27,7 @@ interface Event {
 }
 
 export default function SocietyEventsPage() {
+  const navigate = useNavigate();
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,9 +69,9 @@ export default function SocietyEventsPage() {
     
     setLoading(true);
     try {
+      // Always fetch all events and filter on frontend for better UX
       const params = new URLSearchParams({
-        status: statusFilter === 'all' ? '' : statusFilter,
-        upcoming: timeFilter === 'upcoming' ? 'true' : timeFilter === 'previous' ? 'false' : ''
+        status: 'all' // Always fetch all events regardless of current filter
       });
       
       const response = await fetch(`/api/events/society/${societyId}?${params}`);
@@ -91,6 +93,19 @@ export default function SocietyEventsPage() {
 
   const applyFilters = () => {
     let filtered = events;
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(event => event.status === statusFilter);
+    }
+
+    // Apply time filter
+    const now = new Date();
+    if (timeFilter === 'upcoming') {
+      filtered = filtered.filter(event => new Date(event.start_time) >= now);
+    } else if (timeFilter === 'previous') {
+      filtered = filtered.filter(event => new Date(event.end_time) < now);
+    }
 
     // Apply search filter
     if (searchQuery) {
@@ -188,10 +203,7 @@ export default function SocietyEventsPage() {
         {/* Submit Event Button */}
         <div className="mb-6">
           <Button
-            onClick={() => {
-              setEditingEvent(null);
-              setShowSubmissionForm(true);
-            }}
+            onClick={() => navigate('/events/manage/submit-event')}
             className="bg-primary hover:bg-primary/90"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -289,10 +301,7 @@ export default function SocietyEventsPage() {
                 </p>
                 {events.length === 0 && (
                   <Button
-                    onClick={() => {
-                      setEditingEvent(null);
-                      setShowSubmissionForm(true);
-                    }}
+                    onClick={() => navigate('/events/manage/submit-event')}
                     variant="outline"
                   >
                     Submit Your First Event

@@ -42,23 +42,28 @@ const SocietyRegister = () => {
         return;
       }
 
-      // Step 2: Create society record directly in Supabase
+      // Step 2: Create society record using API
       if (data.user) {
-        const { error: societyError } = await supabase
-          .from('society')
-          .insert([
-            {
+        try {
+          const societyResponse = await fetch('/api/societies', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
               name,
-              contact_email: email,
-              user_id: data.user.id // Link to auth user
-            }
-          ]);
+              contact_email: email
+            })
+          });
 
-        if (societyError) {
+          if (!societyResponse.ok) {
+            const errorData = await societyResponse.json();
+            console.error('Society creation error:', errorData);
+            toast({ title: "Warning", description: "Account created but society profile incomplete. Please contact support.", variant: "destructive" });
+          } else {
+            toast({ title: "Success", description: "Society account created successfully!" });
+          }
+        } catch (societyError) {
           console.error('Society creation error:', societyError);
           toast({ title: "Warning", description: "Account created but society profile incomplete. Please contact support.", variant: "destructive" });
-        } else {
-          toast({ title: "Success", description: "Society account created successfully!" });
         }
       }
       

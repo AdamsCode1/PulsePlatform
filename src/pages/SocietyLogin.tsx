@@ -30,7 +30,7 @@ const SocietyLogin = () => {
         toast({ title: "Login failed", description: error.message || "Invalid credentials", variant: "destructive" });
       } else {
         toast({ title: "Success", description: "Society logged in successfully" });
-        const returnTo = location.state?.returnTo || "/submit-event";
+        const returnTo = location.state?.returnTo || "/events/manage";
         navigate(returnTo);
       }
     } catch (err) {

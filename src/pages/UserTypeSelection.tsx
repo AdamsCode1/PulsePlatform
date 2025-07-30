@@ -37,7 +37,7 @@ const UserTypeSelection = () => {
           
           let returnTo;
           if (selectedType === "society") {
-            returnTo = "/submit-event";
+            returnTo = "/events/manage";
           } else if (selectedType === "organization") {
             returnTo = "/organization/dashboard";
           } else {
