@@ -9,35 +9,52 @@
 
 @layer base {
   :root {
-    --background: 45 33% 97%; /* dupulse-off-white */
-    --foreground: 0 0% 0%; /* dupulse-black */
+    --background: 45 33% 97%;
+    /* dupulse-off-white */
+    --foreground: 0 0% 0%;
+    /* dupulse-black */
 
-    --card: 45 33% 97%; /* dupulse-off-white */
-    --card-foreground: 0 0% 0%; /* dupulse-black */
+    --card: 45 33% 97%;
+    /* dupulse-off-white */
+    --card-foreground: 0 0% 0%;
+    /* dupulse-black */
 
-    --popover: 45 33% 97%; /* dupulse-off-white */
-    --popover-foreground: 0 0% 0%; /* dupulse-black */
+    --popover: 45 33% 97%;
+    /* dupulse-off-white */
+    --popover-foreground: 0 0% 0%;
+    /* dupulse-black */
 
-    --primary: 322 99% 46%; /* dupulse-pink */
-    --primary-foreground: 45 33% 97%; /* dupulse-off-white */
-    --primary-light: 311 100% 77%; /* dupulse-light-pink */
+    --primary: 322 99% 46%;
+    /* dupulse-pink */
+    --primary-foreground: 45 33% 97%;
+    /* dupulse-off-white */
+    --primary-light: 311 100% 77%;
+    /* dupulse-light-pink */
     --primary-dark: 322 99% 36%;
 
-    --secondary: 188 88% 46%; /* dupulse-cyan */
-    --secondary-foreground: 0 0% 0%; /* dupulse-black */
+    --secondary: 188 88% 46%;
+    /* dupulse-cyan */
+    --secondary-foreground: 0 0% 0%;
+    /* dupulse-black */
 
-    --muted: 200 100% 90%; /* dupulse-light-blue */
+    --muted: 200 100% 90%;
+    /* dupulse-light-blue */
     --muted-foreground: 0 0% 20%;
 
-    --accent: 281 78% 75%; /* dupulse-purple */
-    --accent-foreground: 0 0% 0%; /* dupulse-black */
+    --accent: 281 78% 75%;
+    /* dupulse-purple */
+    --accent-foreground: 0 0% 0%;
+    /* dupulse-black */
 
-    --destructive: 5 100% 64%; /* dupulse-red */
-    --destructive-foreground: 45 33% 97%; /* dupulse-off-white */
+    --destructive: 5 100% 64%;
+    /* dupulse-red */
+    --destructive-foreground: 45 33% 97%;
+    /* dupulse-off-white */
 
     --border: 0 0% 85%;
     --input: 0 0% 85%;
-    --ring: 322 99% 46%; /* dupulse-pink */
+    --ring: 322 99% 46%;
+    /* dupulse-pink */
 
     /* Custom colors */
     --dupulse-green: 145 56% 67%;
@@ -46,8 +63,10 @@
   }
 
   .dark {
-    --background: 0 0% 8%; /* Dark background */
-    --foreground: 45 33% 97%; /* dupulse-off-white */
+    --background: 0 0% 8%;
+    /* Dark background */
+    --foreground: 45 33% 97%;
+    /* dupulse-off-white */
 
     --card: 0 0% 12%;
     --card-foreground: 45 33% 97%;
@@ -55,12 +74,14 @@
     --popover: 0 0% 8%;
     --popover-foreground: 45 33% 97%;
 
-    --primary: 322 99% 56%; /* Brighter dupulse-pink for dark mode */
+    --primary: 322 99% 56%;
+    /* Brighter dupulse-pink for dark mode */
     --primary-foreground: 0 0% 0%;
     --primary-light: 311 100% 77%;
     --primary-dark: 322 99% 46%;
 
-    --secondary: 188 88% 56%; /* Brighter dupulse-cyan for dark mode */
+    --secondary: 188 88% 56%;
+    /* Brighter dupulse-cyan for dark mode */
     --secondary-foreground: 0 0% 0%;
 
     --muted: 0 0% 15%;
@@ -88,26 +109,27 @@
 }
 
 @layer components {
+
   /* Form step transitions */
   .step-transition {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  
+
   .step-enter {
     transform: translateX(100px);
     opacity: 0;
   }
-  
+
   .step-enter-active {
     transform: translateX(0);
     opacity: 1;
   }
-  
+
   .step-exit {
     transform: translateX(0);
     opacity: 1;
   }
-  
+
   .step-exit-active {
     transform: translateX(-100px);
     opacity: 0;
@@ -167,6 +189,7 @@
       opacity: 0;
       transform: translateY(30px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);
@@ -178,9 +201,155 @@
       opacity: 0;
       transform: scale(0.95);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
     }
+  }
+
+  /* Floating animations for login page boxes */
+  @keyframes floatUp1 {
+    0% {
+      transform: translateY(100vh) rotate(0deg);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateY(-100px) rotate(5deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes floatUp2 {
+    0% {
+      transform: translateY(100vh) rotate(0deg);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateY(-100px) rotate(-3deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes floatUp3 {
+    0% {
+      transform: translateY(100vh) rotate(0deg);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateY(-100px) rotate(2deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes floatDown1 {
+    0% {
+      transform: translateY(-100px) rotate(0deg);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateY(100vh) rotate(-4deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes floatDown2 {
+    0% {
+      transform: translateY(-100px) rotate(0deg);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateY(100vh) rotate(3deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes floatDown3 {
+    0% {
+      transform: translateY(-100px) rotate(0deg);
+      opacity: 0;
+    }
+
+    10% {
+      opacity: 1;
+    }
+
+    90% {
+      opacity: 1;
+    }
+
+    100% {
+      transform: translateY(100vh) rotate(-2deg);
+      opacity: 0;
+    }
+  }
+
+  .animate-float-up-1 {
+    animation: floatUp1 12s ease-in-out infinite;
+  }
+
+  .animate-float-up-2 {
+    animation: floatUp2 14s ease-in-out infinite;
+  }
+
+  .animate-float-up-3 {
+    animation: floatUp3 16s ease-in-out infinite;
+  }
+
+  .animate-float-down-1 {
+    animation: floatDown1 13s ease-in-out infinite;
+  }
+
+  .animate-float-down-2 {
+    animation: floatDown2 15s ease-in-out infinite;
+  }
+
+  .animate-float-down-3 {
+    animation: floatDown3 17s ease-in-out infinite;
   }
 }
