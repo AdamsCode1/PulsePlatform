@@ -52,23 +52,52 @@ const Index = () => {
     });
   };
 
-  // API call to fetch events from the backend API (only approved events)
+  // API call to fetch events from the server
   const fetchEventsForDate = async (date: Date) => {
     setIsLoading(true);
+
     try {
       // Format date to YYYY-MM-DD for API request
       const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
-      const response = await fetch(`/api/events/by-date?date=${formattedDate}`);
-      if (!response.ok) throw new Error('Failed to fetch events');
-      const eventsData = await response.json();
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('event')
+        .select('*')
+        .gte('start_time', `${formattedDate}T00:00:00`)
+        .lte('start_time', `${formattedDate}T23:59:59`)
+        .eq('status', 'approved')
+
+      if (eventsError) throw eventsError;
       if (!eventsData) return;
 
       // Get unique society IDs and event IDs
-      const societyIDs = [...new Set(eventsData.map((event: any) => event.society_id))];
-      const eventIds = eventsData.map((event: any) => event.id);
+      const societyIDs = [...new Set(eventsData.map(event => event.society_id))];
+      const eventIds = eventsData.map(event => event.id);
 
-      // Fetch RSVP counts for all events (if needed, or use eventsData if already included)
-      // ...existing RSVP logic if needed...
+      // Fetch society details (name and contact_email)
+      const { data: societiesData, error: societiesError } = await supabase
+        .from('society')
+        .select('id, name, contact_email')
+        .in('id', societyIDs);
+
+      if (societiesError) throw societiesError;
+
+      // Fetch RSVP counts for all events
+      const { data: rsvpCounts, error: rsvpError } = await supabase
+        .rpc('get_rsvp_counts', { event_ids: eventIds });
+      if (rsvpError) throw rsvpError;
+
+      // Create RSVP count mapping
+      const rsvpCountMap = new Map(
+        rsvpCounts?.map(rsvp => [rsvp.event_id, rsvp.count]) || []
+      );
+
+      // Create society details mapping
+      const societyDetailsMap = new Map(
+        societiesData?.map(society => [society.id, {
+          name: society.name,
+          email: society.contact_email
+        }])
+      );
 
       // Create society details mapping (use societyName from eventsData)
       // Remap event data to match the Event type
@@ -79,13 +108,13 @@ const Index = () => {
         location: event.location,
         description: event.description,
         organiserID: event.society_id,
-        societyName: event.societyName || 'Miscellaneous',
+        societyName: societyDetailsMap.get(event.society_id)?.name || 'Miscellaneous',
         time: event.start_time,
         endTime: event.end_time,
-        attendeeCount: event.attendee_count || 0,
+        attendeeCount: Number(rsvpCountMap.get(event.id)) || 0,
         imageUrl: event.imageUrl || '/placeholder.svg',
-        requiresOrganizerSignup: false, // set if needed
-        organizerEmail: event.organizerEmail || '',
+        requiresOrganizerSignup: event.requires_organizer_signup || false,
+        organizerEmail: societyDetailsMap.get(event.society_id)?.email || event.organizer_email || 'No email provided',
         category: event.category || 'general',
         signup_link: event.signup_link || '',
       }));
