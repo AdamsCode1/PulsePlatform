@@ -4,7 +4,7 @@ export default function HeroSection() {
     <section
       className="relative flex flex-col items-center justify-center pt-32 pb-16 bg-cover bg-center bg-no-repeat min-h-screen"
       style={{
-        backgroundImage: `url('/image-uploads/e534efa3-6ce7-4d86-b11f-6112a525af9f.png')`
+        backgroundImage: `url('/image-uploads/background_cathedral.png')`
       }}
     >
       {/* Background overlay for better text readability */}

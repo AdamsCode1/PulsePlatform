@@ -15,6 +15,7 @@ import OrganizationRegister from './pages/OrganizationRegister';
 import OrganizationLogin from './pages/OrganizationLogin';
 import DealsPage from './pages/DealsPage';
 import MeetTheTeam from './pages/MeetTheTeam';
+import AdminLogin from './pages/AdminLogin';
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/user-type" element={<UserTypeSelection />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/about" element={<MeetTheTeam />} />
+          <Route path="/admin" element={<AdminLogin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
