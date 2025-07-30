@@ -29,7 +29,7 @@ const StudentRegister = () => {
         // handle error
       } else {
         // Use backend endpoint to create user row
-        const res = await fetch('/api/users', {
+        const res = await fetch('http://localhost:4000/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: firstName, email })

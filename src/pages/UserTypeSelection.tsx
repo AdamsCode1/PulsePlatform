@@ -3,10 +3,12 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useToast } from "@/hooks/use-toast";
 
 const UserTypeSelection = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,10 +23,18 @@ const UserTypeSelection = () => {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
-          // handle error
           console.error("Login error:", error.message);
+          toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: error.message || "Failed to sign in. Please check your credentials and try again.",
+          });
         } else {
-          // handle success
+          toast({
+            title: "Login Successful",
+            description: "Welcome back!",
+          });
+          
           let returnTo;
           if (selectedType === "society") {
             returnTo = "/submit-event";
@@ -36,8 +46,12 @@ const UserTypeSelection = () => {
           navigate(returnTo);
         }
       } catch (err) {
-        // handle error
         console.error("Login error:", err);
+        toast({
+          variant: "destructive",
+          title: "Login Error",
+          description: "An unexpected error occurred. Please try again.",
+        });
       }
       setIsLoading(false);
     }
@@ -177,9 +191,21 @@ const UserTypeSelection = () => {
           <div className="text-center">
             <p className="text-gray-400 text-xs sm:text-sm">
               Don't have an account?{" "}
-              <a href="#" className="text-pink-400 hover:text-pink-300 transition-colors duration-300">
+              <button 
+                type="button"
+                onClick={() => {
+                  if (selectedType === "society") {
+                    navigate("/register/society");
+                  } else if (selectedType === "organization") {
+                    navigate("/register/organization");
+                  } else if (selectedType === "student") {
+                    navigate("/register/student");
+                  }
+                }}
+                className="text-pink-400 hover:text-pink-300 transition-colors duration-300 underline"
+              >
                 Sign up here
-              </a>
+              </button>
             </p>
           </div>
         </form>

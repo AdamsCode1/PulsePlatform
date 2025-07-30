@@ -50,7 +50,7 @@ const Approvals = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
-        const res = await fetch('/api/events/pending', {
+        const res = await fetch('http://localhost:4000/api/events/pending', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to fetch pending events');
