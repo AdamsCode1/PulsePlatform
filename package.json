@@ -10,7 +10,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "server": "tsx server/index.ts",
-    "test": "jest"
+    "test": "jest",
+    "deploy": "./deploy.sh",
+    "deploy:api": "vercel --config vercel-api.json --prod",
+    "deploy:frontend": "vercel --prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
