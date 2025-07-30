@@ -8,7 +8,7 @@ const app = express();
 
 app.use(express.json());
 app.use(cors({
-  origin: 'http://localhost:3000', // Allow Next.js frontend
+  origin: ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:8081'], // Allow multiple frontend ports
   credentials: true
 }));
 

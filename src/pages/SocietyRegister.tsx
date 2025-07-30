@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 
 const SocietyRegister = () => {
@@ -13,35 +14,58 @@ const SocietyRegister = () => {
   const [firstName, setFirstName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!name || !email || !password || !firstName) {
+      toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
+      return;
+    }
     setIsLoading(true);
     try {
+      // Step 1: Create auth user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { first_name: firstName }
+          data: { 
+            first_name: firstName,
+            full_name: name,
+            user_type: 'society'
+          }
         }
       });
+      
       if (error) {
-        // handle error
-      } else {
-        // Use backend endpoint to create society row
-        const res = await fetch('/api/societies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, contact_email: email })
-        });
-        if (!res.ok) {
-          // handle error (optionally show a toast or message)
-        }
-        // handle success
-        navigate("/login/society");
+        toast({ title: "Registration failed", description: error.message, variant: "destructive" });
+        return;
       }
+
+      // Step 2: Create society record directly in Supabase
+      if (data.user) {
+        const { error: societyError } = await supabase
+          .from('society')
+          .insert([
+            {
+              name,
+              contact_email: email,
+              user_id: data.user.id // Link to auth user
+            }
+          ]);
+
+        if (societyError) {
+          console.error('Society creation error:', societyError);
+          toast({ title: "Warning", description: "Account created but society profile incomplete. Please contact support.", variant: "destructive" });
+        } else {
+          toast({ title: "Success", description: "Society account created successfully!" });
+        }
+      }
+      
+      navigate("/login/society");
     } catch (err) {
-      // handle error
+      console.error('Registration error:', err);
+      toast({ title: "Error", description: err.message || "Registration failed", variant: "destructive" });
     }
     setIsLoading(false);
   };
