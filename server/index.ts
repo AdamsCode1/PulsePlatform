@@ -22,8 +22,8 @@ app.use('/api', apiRouter);
 
 export default app;
 
-// Only start the server if not in test mode (ESM compatible)
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Only start the server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
   const PORT = process.env.PORT || 4000;
   app.listen(PORT, () => {
     console.log(`Express API server is running on port ${PORT}`);

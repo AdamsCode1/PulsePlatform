@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../index';
+import app from '../server/index';
 describe('POST /api/login', () => {
   it('should fail with missing fields', async () => {
     const res = await request(app).post('/api/login').send({});
