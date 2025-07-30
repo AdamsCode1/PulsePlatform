@@ -48,6 +48,9 @@ export default function NavBar() {
         <a href="#events" className="text-gray-700 font-medium hover:text-pink-500 transition">Events</a>
         <a href="#deals" className="text-gray-700 font-medium hover:text-pink-500 transition">Deals</a>
         <a href="#about" className="text-gray-700 font-medium hover:text-pink-500 transition">About</a>
+        {user && (
+          <button onClick={() => navigate('/events/manage')} className="text-gray-700 font-medium hover:text-pink-500 transition">Manage Events</button>
+        )}
         {user ? (
           <>
             <span className="text-gray-700 font-medium mr-2">Hello, {firstName}!</span>
@@ -75,6 +78,9 @@ export default function NavBar() {
           <a href="#events" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Events</a>
           <a href="#deals" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</a>
           <a href="#about" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">About</a>
+          {user && (
+            <button onClick={() => { setMenuOpen(false); navigate('/events/manage'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Manage Events</button>
+          )}
           {user ? (
             <>
               <span className="text-gray-700 font-medium mb-2">Hello, {firstName}!</span>

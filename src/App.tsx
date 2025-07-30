@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import EventSubmissionPage from "./pages/EventSubmissionPage";
+import SocietyEventsPage from "./pages/SocietyEventsPage";
 import SocietyLogin from "./pages/SocietyLogin";
 import UserTypeSelection from "./pages/UserTypeSelection";
 import SocietyRegister from "./pages/SocietyRegister";
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/register/society" element={<SocietyRegister />} />
           <Route path="/register/organization" element={<OrganizationRegister />} />
           <Route path="/submit-event" element={<EventSubmissionPage />} />
+          <Route path="/events/manage" element={<SocietyEventsPage />} />
           <Route path="/user-type" element={<UserTypeSelection />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/about" element={<MeetTheTeam />} />

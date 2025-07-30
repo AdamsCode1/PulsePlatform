@@ -4,6 +4,7 @@ import { MapPin, Clock, Users, Check, ArrowRight } from 'lucide-react';
 import { Event } from '../types/Event';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { Badge } from './ui/badge';
 
 interface EventCardProps {
   event: Event;
@@ -98,10 +99,22 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         </div>
 
         {/* Society Name with enhanced hover effect */}
-        <div className="mb-3">
+        <div className="mb-3 flex items-center justify-between">
           <span className="bg-gray-200 hover:bg-black hover:text-white transition-all duration-500 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm text-gray-700 cursor-pointer transform hover:scale-105 inline-block">
             {event.societyName}
           </span>
+          {event.status && (
+            <Badge 
+              variant={
+                event.status === 'approved' ? 'default' : 
+                event.status === 'pending' ? 'secondary' : 
+                'destructive'
+              }
+              className="text-xs"
+            >
+              {event.status}
+            </Badge>
+          )}
         </div>
 
         {/* Event Name with hover effect - Responsive text size */}

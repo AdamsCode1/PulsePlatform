@@ -14,6 +14,7 @@ export interface Event {
   requiresOrganizerSignup?: boolean;
   organizerEmail?: string;
   signup_link?: string;
+  status?: 'pending' | 'approved' | 'rejected';
 }
 
 export interface User {

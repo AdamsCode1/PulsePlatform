@@ -63,16 +63,38 @@ const formSchema = z.object({
   location: z.string().min(1, "Location is required").min(3, "Location must be at least 3 characters"),
 });
 
-export function EventSubmissionForm() {
+interface Event {
+  id: string;
+  name: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  location: string;
+  category?: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+interface EventSubmissionFormProps {
+  editingEvent?: Event | null;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+export function EventSubmissionForm({ editingEvent, onSuccess, onCancel }: EventSubmissionFormProps) {
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
+  const isEditing = Boolean(editingEvent);
+  
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       eventName: "",
       description: "",
+      startDate: undefined,
       startTime: "",
+      endDate: undefined,
       endTime: "",
+      category: undefined,
       location: "",
     },
   });
@@ -90,11 +112,31 @@ export function EventSubmissionForm() {
     fetchSocietyId();
   }, []);
 
+  // Populate form when editing
+  useEffect(() => {
+    if (editingEvent) {
+      const startDate = new Date(editingEvent.start_time);
+      const endDate = new Date(editingEvent.end_time);
+      
+      form.reset({
+        eventName: editingEvent.name,
+        description: editingEvent.description || "",
+        startDate: startDate,
+        startTime: format(startDate, "HH:mm"),
+        endDate: endDate,
+        endTime: format(endDate, "HH:mm"),
+        category: editingEvent.category as any,
+        location: editingEvent.location,
+      });
+    }
+  }, [editingEvent, form]);
+
   async function onSubmit(data) {
     if (!societyId) {
       toast({ title: "Error", description: "Could not determine society ID.", variant: "destructive" });
       return;
     }
+    
     const start = new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`);
     const end = new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`);
     const payload = {
@@ -106,18 +148,32 @@ export function EventSubmissionForm() {
       category: data.category,
       society_id: societyId,
     };
+    
     try {
-      const res = await fetch('/api/events', {
-        method: 'POST',
+      const url = isEditing ? `/api/events/society/${editingEvent.id}?society_id=${societyId}` : '/api/events';
+      const method = isEditing ? 'PUT' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      
       if (res.ok) {
-        toast({ title: "Event Submitted Successfully!", description: `${data.eventName} has been submitted for review.` });
-        form.reset();
+        const action = isEditing ? "updated" : "submitted";
+        toast({ 
+          title: `Event ${action.charAt(0).toUpperCase() + action.slice(1)} Successfully!`, 
+          description: `${data.eventName} has been ${action}${isEditing ? " and reset to pending status" : " for review"}.`
+        });
+        
+        if (!isEditing) {
+          form.reset();
+        }
+        
+        onSuccess?.();
       } else {
         const error = await res.json();
-        toast({ title: "Error", description: error.message || 'Could not submit event.', variant: "destructive" });
+        toast({ title: "Error", description: error.message || `Could not ${isEditing ? "update" : "submit"} event.`, variant: "destructive" });
       }
     } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -130,10 +186,13 @@ export function EventSubmissionForm() {
         <Card className="shadow-lg border-border/50" style={{ background: "var(--gradient-card)" }}>
           <CardHeader className="text-center pb-8">
             <CardTitle className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-event-primary to-event-secondary bg-clip-text text-transparent">
-              Submit Your Event
+              {isEditing ? "Edit Event" : "Submit Your Event"}
             </CardTitle>
             <CardDescription className="text-lg text-muted-foreground mt-2">
-              Fill out the form below to submit your event for approval
+              {isEditing 
+                ? "Update your event details below" 
+                : "Fill out the form below to submit your event for approval"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -163,14 +222,24 @@ export function EventSubmissionForm() {
                   />
                   {/* ...rest of the form fields (copy from source) ... */}
                 </div>
-                <div className="pt-6">
-                  <Button
-                    type="submit"
-                    className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-event-primary to-event-secondary hover:from-event-primary/90 hover:to-event-secondary/90 transition-all duration-300 shadow-lg hover:shadow-xl"
+                <div className="pt-6 flex gap-3">
+                  {onCancel && (
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      onClick={onCancel}
+                      className="flex-1 h-14 text-lg font-semibold"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                  <Button 
+                    type="submit" 
+                    className={`${onCancel ? 'flex-1' : 'w-full'} h-14 text-lg font-semibold bg-gradient-to-r from-event-primary to-event-secondary hover:from-event-primary/90 hover:to-event-secondary/90 transition-all duration-300 shadow-lg hover:shadow-xl`}
                     style={{ boxShadow: "var(--shadow-glow)" }}
                     disabled={loadingSocietyId}
                   >
-                    Submit Event
+                    {isEditing ? "Update Event" : "Submit Event"}
                   </Button>
                 </div>
               </form>
