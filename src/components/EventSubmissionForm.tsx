@@ -151,9 +151,9 @@ export function EventSubmissionForm() {
                           Event Name
                         </FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Enter event name" 
-                            {...field} 
+                          <Input
+                            placeholder="Enter event name"
+                            {...field}
                             className="h-12 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
                           />
                         </FormControl>
@@ -164,8 +164,8 @@ export function EventSubmissionForm() {
                   {/* ...rest of the form fields (copy from source) ... */}
                 </div>
                 <div className="pt-6">
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-event-primary to-event-secondary hover:from-event-primary/90 hover:to-event-secondary/90 transition-all duration-300 shadow-lg hover:shadow-xl"
                     style={{ boxShadow: "var(--shadow-glow)" }}
                     disabled={loadingSocietyId}
