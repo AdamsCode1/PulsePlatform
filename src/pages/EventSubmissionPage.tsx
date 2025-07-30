@@ -135,7 +135,7 @@ export default function EventSubmissionPage() {
       endTime: "",
       category: undefined,
       location: "",
-      requiresExternalSignup: false,
+      requiresExternalSignup: undefined,
       externalSignupLink: "",
     },
   });

@@ -39,10 +39,33 @@
     --input: 0 0% 85%;
     --ring: 322 99% 46%; /* dupulse-pink */
 
+    /* Purple gradient system */
+    --gradient-primary: linear-gradient(135deg, hsl(267 57% 50%), hsl(285 85% 60%));
+    --gradient-secondary: linear-gradient(135deg, hsl(267 100% 97%), hsl(270 20% 98%));
+    --gradient-background: linear-gradient(180deg, hsl(267 100% 99%), hsl(270 50% 98%));
+    
+    /* Shadows with purple tints */
+    --shadow-elegant: 0 10px 30px -10px hsl(267 57% 50% / 0.2);
+    --shadow-glow: 0 0 40px hsl(267 57% 50% / 0.1);
+    --shadow-card: 0 4px 12px -2px hsl(267 57% 50% / 0.08);
+
+    /* Animation variables */
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
     /* Custom colors */
     --dupulse-green: 145 56% 67%;
     --dupulse-yellow: 46 100% 61%;
     --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
@@ -75,13 +98,26 @@
     --border: 0 0% 20%;
     --input: 0 0% 20%;
     --ring: 322 99% 56%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+
+ @layer base {
   * {
     @apply border-border;
   }
 
   body {
+    @apply text-foreground;
+    background: var(--gradient-background);
+    min-height: 100vh;
     @apply bg-background text-foreground;
     min-height: 100vh;
   }
@@ -113,6 +149,21 @@
     opacity: 0;
   }
 
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Typeform-style card styling */
+.typeform-card {
+  @apply bg-card border border-border shadow-lg backdrop-blur-sm;
+}
+
   /* Typeform-style card styling */
   .typeform-card {
     @apply bg-card border border-border shadow-lg backdrop-blur-sm;
@@ -139,6 +190,10 @@
     @apply shadow-lg transform scale-110 transition-all duration-300;
   }
 
+  .animate-scale-in {
+  animation: scaleIn 0.4s ease-out;
+  }
+
   .bg-gradient-primary {
     @apply bg-gradient-to-r from-purple-600 to-blue-600;
   }
@@ -151,6 +206,15 @@
   .animate-scale-in {
     animation: scaleIn 0.4s ease-out;
   }
+
+  /* Form input styling */
+  .form-input {
+    background: hsl(var(--input));
+    @apply border-input bg-background transition-all duration-200 focus:shadow-lg;
+    border: 2px solid hsl(var(--border));
+    transition: var(--transition-smooth);
+    box-shadow: var(--shadow-card);
+  }
 }
 
 @layer utilities {
@@ -160,6 +224,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
 
   /* Keyframe animations */
   @keyframes fadeInUp {
@@ -183,4 +248,5 @@
       transform: scale(1);
     }
   }
+}
 }
