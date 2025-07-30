@@ -1,11 +1,47 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 const UserTypeSelection = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Handle student, society, and organization login
+    if (selectedType === "student" || selectedType === "society" || selectedType === "organization") {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+          // handle error
+          console.error("Login error:", error.message);
+        } else {
+          // handle success
+          let returnTo;
+          if (selectedType === "society") {
+            returnTo = "/submit-event";
+          } else if (selectedType === "organization") {
+            returnTo = "/organization/dashboard";
+          } else {
+            returnTo = location.state?.returnTo || "/";
+          }
+          navigate(returnTo);
+        }
+      } catch (err) {
+        // handle error
+        console.error("Login error:", err);
+      }
+      setIsLoading(false);
+    }
+  };
 
   const renderLoginForm = () => {
     if (!selectedType) {
@@ -89,7 +125,7 @@ const UserTypeSelection = () => {
         </div>
 
         {/* Login Form */}
-        <form className="space-y-4 sm:space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
             <label className="block text-pink-200 text-sm font-medium mb-2">
               {selectedType === "student" ? "Student Email" :
@@ -97,8 +133,11 @@ const UserTypeSelection = () => {
             </label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-pink-500 focus:outline-none transition-colors duration-300 text-sm sm:text-base"
               placeholder={`Enter your ${selectedType} email`}
+              required
             />
           </div>
 
@@ -106,8 +145,11 @@ const UserTypeSelection = () => {
             <label className="block text-pink-200 text-sm font-medium mb-2">Password</label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-pink-500 focus:outline-none transition-colors duration-300 text-sm sm:text-base"
               placeholder="Enter your password"
+              required
             />
           </div>
 
@@ -123,12 +165,13 @@ const UserTypeSelection = () => {
 
           <button
             type="submit"
-            className="w-full p-3 sm:p-4 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
+            disabled={isLoading}
+            className="w-full p-3 sm:p-4 bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl text-white font-semibold hover:from-pink-600 hover:to-purple-600 transition-all duration-300 transform hover:scale-105 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             style={{
               boxShadow: '0 0 20px rgba(236, 72, 153, 0.3)'
             }}
           >
-            Sign In
+            {isLoading ? "Signing In..." : "Sign In"}
           </button>
 
           <div className="text-center">
