@@ -106,7 +106,7 @@ SUPABASE_URL=your_supabase_url
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 SUPABASE_ANON_KEY=your_anon_key  # Fallback for auth middleware
 SUPABASE_SCHEMA=public  # Optional, defaults to 'public'
-ADMIN_EMAILS=admin1@example.com,admin2@example.com
+ADMIN_EMAILS=admin1@example.com,admin2@example.com # change to admin@dupulse.co.uk when i have more energy
 ```
 
 ## Frontend Integration
