@@ -4,11 +4,20 @@ import { supabase } from './_supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Handle CORS
-  const corsResult = handleCors(req, res);
-  if (corsResult) return corsResult;
+  await handleCors(req, res);
 
   const { method, query } = req;
   const { resource, action, id } = query;
+
+  // Debug logging
+  console.log('Unified API Request:', {
+    method,
+    resource,
+    action,
+    id,
+    url: req.url,
+    query: req.query
+  });
 
   try {
     // Route to appropriate handler based on resource
@@ -163,7 +172,7 @@ async function handleSocieties(req: VercelRequest, res: VercelResponse, supabase
   if (method === 'GET') {
     if (id) {
       const { data, error } = await supabase
-        .from('societies')
+        .from('society')
         .select('*')
         .eq('id', id)
         .single();
@@ -171,7 +180,7 @@ async function handleSocieties(req: VercelRequest, res: VercelResponse, supabase
       return res.status(200).json(data);
     } else {
       const { data, error } = await supabase
-        .from('societies')
+        .from('society')
         .select('*')
         .order('name', { ascending: true });
       if (error) return res.status(500).json({ error: error.message });
@@ -181,7 +190,7 @@ async function handleSocieties(req: VercelRequest, res: VercelResponse, supabase
 
   if (method === 'POST') {
     const { data, error } = await supabase
-      .from('societies')
+      .from('society')
       .insert([req.body])
       .select();
     if (error) return res.status(500).json({ error: error.message });
@@ -190,7 +199,7 @@ async function handleSocieties(req: VercelRequest, res: VercelResponse, supabase
 
   if (method === 'PUT' && id) {
     const { data, error } = await supabase
-      .from('societies')
+      .from('society')
       .update(req.body)
       .eq('id', id)
       .select();
@@ -200,7 +209,7 @@ async function handleSocieties(req: VercelRequest, res: VercelResponse, supabase
 
   if (method === 'DELETE' && id) {
     const { error } = await supabase
-      .from('societies')
+      .from('society')
       .delete()
       .eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
