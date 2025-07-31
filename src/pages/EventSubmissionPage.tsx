@@ -34,7 +34,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
 import { useNavigate } from "react-router-dom";
-import { API_BASE_URL } from "@/lib/apiConfig";
 
 const eventCategories = [
   "academic",
@@ -235,13 +234,13 @@ export default function EventSubmissionPage() {
     try {
       console.log("Submitting event with payload:", payload);
 
-      const res = await fetch(`${API_BASE_URL}/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      // Use direct Supabase call instead of API
+      const { data: insertedEvent, error } = await supabase
+        .from('event')
+        .insert([payload])
+        .select();
 
-      if (res.ok) {
+      if (!error && insertedEvent) {
         toast({ 
           title: "Event Submitted Successfully!", 
           description: `${data.eventName} has been submitted for review.`,
@@ -267,24 +266,9 @@ export default function EventSubmissionPage() {
         form.reset();
         setCurrentStep(0); // Reset to first step
       } else {
-        // Check if response has content before trying to parse JSON
-        const contentType = res.headers.get('content-type');
-        let errorMessage = 'Could not submit event.';
-        
-        if (contentType && contentType.includes('application/json')) {
-          try {
-            const error = await res.json();
-            errorMessage = error.message || errorMessage;
-          } catch (jsonError) {
-            console.error('Failed to parse error response as JSON:', jsonError);
-            errorMessage = `Server error: ${res.status} ${res.statusText}`;
-          }
-        } else {
-          // If response isn't JSON, get text content
-          const errorText = await res.text();
-          errorMessage = errorText || `Server error: ${res.status} ${res.statusText}`;
-        }
-        
+        // Handle Supabase error
+        const errorMessage = error?.message || 'Could not submit event.';
+        console.error('Supabase error:', error);
         toast({ title: "Error", description: errorMessage, variant: "destructive" });
       }
     } catch (err) {

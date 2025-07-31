@@ -69,16 +69,16 @@ export default function SocietyEventsPage() {
     
     setLoading(true);
     try {
-      // Always fetch all events and filter on frontend for better UX
-      const params = new URLSearchParams({
-        status: 'all' // Always fetch all events regardless of current filter
-      });
+      // Use direct Supabase call to fetch society events
+      const { data, error } = await supabase
+        .from('event')
+        .select('*')
+        .eq('society_id', societyId)
+        .order('start_time', { ascending: false });
       
-      const response = await fetch(`/api/unified?resource=events&action=society&societyId=${societyId}&status=all`);
-      if (!response.ok) throw new Error('Failed to fetch events');
+      if (error) throw new Error(error.message);
       
-      const data = await response.json();
-      setEvents(data);
+      setEvents(data || []);
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -134,11 +134,12 @@ export default function SocietyEventsPage() {
     if (!eventToDelete || !societyId) return;
 
     try {
-      const response = await fetch(`/api/unified?resource=events&id=${eventToDelete.id}`, {
-        method: 'DELETE'
-      });
+      const { error } = await supabase
+        .from('event')
+        .delete()
+        .eq('id', eventToDelete.id);
 
-      if (!response.ok) throw new Error('Failed to delete event');
+      if (error) throw new Error(error.message);
 
       toast({
         title: "Success",
