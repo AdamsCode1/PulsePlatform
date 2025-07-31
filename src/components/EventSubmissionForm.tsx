@@ -150,7 +150,9 @@ export function EventSubmissionForm({ editingEvent, onSuccess, onCancel }: Event
     };
     
     try {
-      const url = isEditing ? `/api/events/society/${editingEvent.id}?society_id=${societyId}` : '/api/events';
+      const url = isEditing 
+        ? `/api/unified?resource=events&id=${editingEvent.id}` 
+        : '/api/unified?resource=events';
       const method = isEditing ? 'PUT' : 'POST';
       
       const res = await fetch(url, {

@@ -74,7 +74,7 @@ export default function SocietyEventsPage() {
         status: 'all' // Always fetch all events regardless of current filter
       });
       
-      const response = await fetch(`/api/events/society/${societyId}?${params}`);
+      const response = await fetch(`/api/unified?resource=events&action=society&societyId=${societyId}&status=all`);
       if (!response.ok) throw new Error('Failed to fetch events');
       
       const data = await response.json();
@@ -134,7 +134,7 @@ export default function SocietyEventsPage() {
     if (!eventToDelete || !societyId) return;
 
     try {
-      const response = await fetch(`/api/events/society/${eventToDelete.id}?society_id=${societyId}`, {
+      const response = await fetch(`/api/unified?resource=events&id=${eventToDelete.id}`, {
         method: 'DELETE'
       });
 

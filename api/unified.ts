@@ -47,6 +47,28 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
     return res.status(200).json(data);
   }
 
+  if (action === 'society' && method === 'GET') {
+    const { societyId, status } = req.query;
+    
+    let query = supabase
+      .from('events')
+      .select('*')
+      .eq('society_id', societyId);
+    
+    // Filter by status if not 'all'
+    if (status !== 'all') {
+      if (status === 'approved') {
+        query = query.eq('approved', true);
+      } else if (status === 'pending') {
+        query = query.eq('approved', false);
+      }
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json(data);
+  }
+
   if (action === 'by-date' && method === 'GET') {
     const { date } = req.query;
     const { data, error } = await supabase

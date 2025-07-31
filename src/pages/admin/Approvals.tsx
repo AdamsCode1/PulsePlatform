@@ -50,7 +50,7 @@ const Approvals = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
-        const res = await fetch('http://localhost:4000/api/events/pending', {
+        const res = await fetch('/api/unified?resource=events&action=pending', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error('Failed to fetch pending events');
@@ -69,7 +69,7 @@ const Approvals = () => {
   const handleApprove = async (id: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-    await fetch(`/api/events/${id}/approve`, {
+    await fetch(`/api/unified?resource=events&action=approve&id=${id}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -96,7 +96,7 @@ const Approvals = () => {
     if (!rejectEventId) return;
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-    await fetch(`/api/events/${rejectEventId}/reject`, {
+    await fetch(`/api/unified?resource=events&action=reject&id=${rejectEventId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

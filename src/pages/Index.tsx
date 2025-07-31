@@ -81,15 +81,22 @@ const Index = () => {
 
       if (societiesError) throw societiesError;
 
-      // Fetch RSVP counts for all events
+      // Fetch RSVP counts using direct query instead of RPC
       const { data: rsvpCounts, error: rsvpError } = await supabase
-        .rpc('get_rsvp_counts', { event_ids: eventIds });
+        .from('rsvps')
+        .select('event_id')
+        .in('event_id', eventIds);
+      
       if (rsvpError) throw rsvpError;
 
-      // Create RSVP count mapping
-      const rsvpCountMap = new Map(
-        rsvpCounts?.map(rsvp => [rsvp.event_id, rsvp.count]) || []
-      );
+      // Count RSVPs per event
+      const rsvpCountMap = new Map();
+      if (rsvpCounts) {
+        rsvpCounts.forEach(rsvp => {
+          const eventId = rsvp.event_id;
+          rsvpCountMap.set(eventId, (rsvpCountMap.get(eventId) || 0) + 1);
+        });
+      }
 
       // Create society details mapping
       const societyDetailsMap = new Map(

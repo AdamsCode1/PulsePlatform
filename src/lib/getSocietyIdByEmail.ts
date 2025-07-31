@@ -10,8 +10,8 @@ export async function getSocietyIdByEmail(email: string): Promise<string | null>
       return null;
     }
 
-    // Use API endpoint instead of direct Supabase query to respect RLS
-    const response = await fetch(`${API_BASE_URL}/societies`, {
+    // Use unified API endpoint 
+    const response = await fetch(`${API_BASE_URL}/unified?resource=societies`, {
       headers: {
         'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json'

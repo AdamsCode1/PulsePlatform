@@ -45,7 +45,7 @@ const SocietyRegister = () => {
       // Step 2: Create society record using API
       if (data.user) {
         try {
-          const societyResponse = await fetch('/api/societies', {
+          const societyResponse = await fetch('/api/unified?resource=societies', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
