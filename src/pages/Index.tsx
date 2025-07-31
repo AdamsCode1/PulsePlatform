@@ -16,7 +16,6 @@ import Footer from '../components/Footer';
 import CommunityCTA from '../components/CommunityCTA';
 import DealsGrid from '../components/DealsGrid';
 import { supabase } from '../lib/supabaseClient';
-import { API_BASE_URL } from '../lib/apiConfig';
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -58,29 +57,23 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      // Format date to YYYY-MM-DD for API request
+      // Format date to YYYY-MM-DD for database query
       const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
-      
-      // Get session for API authentication
-      const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
 
-      // Fetch events for the specific date using unified API
-      const eventsResponse = await fetch(`${API_BASE_URL}/unified?resource=events&action=by-date&date=${formattedDate}`, {
-        headers
-      });
+      // Fetch events for the specific date using direct Supabase call
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('event')
+        .select('*')
+        .eq('status', 'approved')
+        .gte('start_time', `${formattedDate}T00:00:00`)
+        .lte('start_time', `${formattedDate}T23:59:59`)
+        .order('start_time', { ascending: true });
       
-      if (!eventsResponse.ok) {
-        throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
+      if (eventsError) {
+        console.error('Error fetching events:', eventsError);
+        throw new Error(`Failed to fetch events: ${eventsError.message}`);
       }
       
-      const eventsData = await eventsResponse.json();
       if (!eventsData || eventsData.length === 0) {
         setEvents([]);
         setFilteredEvents([]);
@@ -92,26 +85,25 @@ const Index = () => {
       const societyIDs = [...new Set(eventsData.map((event: any) => event.society_id))];
       const eventIds = eventsData.map((event: any) => event.id);
 
-      // Fetch society details using unified API
-      const societiesResponse = await fetch(`${API_BASE_URL}/unified?resource=societies`, {
-        headers
-      });
+      // Fetch society details using direct Supabase call
+      const { data: allSocieties, error: societiesError } = await supabase
+        .from('society')
+        .select('*');
       
-      if (!societiesResponse.ok) {
-        throw new Error(`Failed to fetch societies: ${societiesResponse.status}`);
+      if (societiesError) {
+        console.error('Error fetching societies:', societiesError);
+        throw new Error(`Failed to fetch societies: ${societiesError.message}`);
       }
       
-      const allSocieties = await societiesResponse.json();
-      const societiesData = allSocieties.filter((society: any) => societyIDs.includes(society.id));
+      const societiesData = allSocieties?.filter((society: any) => societyIDs.includes(society.id)) || [];
 
-      // Fetch RSVP counts using unified API
-      const rsvpsResponse = await fetch(`${API_BASE_URL}/unified?resource=rsvps`, {
-        headers
-      });
+      // Fetch RSVP counts using direct Supabase call
+      const { data: allRsvps, error: rsvpsError } = await supabase
+        .from('rsvp')
+        .select('*');
       
       let rsvpCounts: any[] = [];
-      if (rsvpsResponse.ok) {
-        const allRsvps = await rsvpsResponse.json();
+      if (!rsvpsError && allRsvps) {
         rsvpCounts = allRsvps.filter((rsvp: any) => eventIds.includes(rsvp.event_id));
       }
 
