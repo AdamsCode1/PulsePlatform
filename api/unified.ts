@@ -1,6 +1,32 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { handleCors } from './_utils';
 import { supabase } from './_supabase';
+import { createClient } from '@supabase/supabase-js';
+
+// Create authenticated Supabase client
+async function createAuthenticatedSupabaseClient(req: VercelRequest) {
+  const authHeader = req.headers['authorization'] as string;
+  
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Create client with user token for RLS
+    const supabaseUrl = process.env.SUPABASE_URL!;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
+    const authenticatedSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    });
+    
+    return authenticatedSupabase;
+  }
+  
+  // Return default client for unauthenticated requests
+  return supabase;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Handle CORS
@@ -16,28 +42,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     action,
     id,
     url: req.url,
-    query: req.query
+    hasAuth: !!req.headers['authorization']
   });
 
   try {
+    // Create authenticated Supabase client
+    const authenticatedSupabase = await createAuthenticatedSupabaseClient(req);
+
     // Route to appropriate handler based on resource
     switch (resource) {
       case 'events':
-        return await handleEvents(req, res, supabase, action as string, id as string);
+        return await handleEvents(req, res, authenticatedSupabase, action as string, id as string);
       case 'societies':
-        return await handleSocieties(req, res, supabase, action as string, id as string);
+        return await handleSocieties(req, res, authenticatedSupabase, action as string, id as string);
       case 'users':
-        return await handleUsers(req, res, supabase, action as string, id as string);
+        return await handleUsers(req, res, authenticatedSupabase, action as string, id as string);
       case 'rsvps':
-        return await handleRSVPs(req, res, supabase, action as string, id as string);
+        return await handleRSVPs(req, res, authenticatedSupabase, action as string, id as string);
       case 'login':
-        return await handleLogin(req, res, supabase);
+        return await handleLogin(req, res, authenticatedSupabase);
       default:
         return res.status(404).json({ error: 'Resource not found' });
     }
   } catch (error) {
     console.error('API Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 }
 
