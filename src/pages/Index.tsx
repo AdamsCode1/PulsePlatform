@@ -16,6 +16,7 @@ import Footer from '../components/Footer';
 import CommunityCTA from '../components/CommunityCTA';
 import DealsGrid from '../components/DealsGrid';
 import { supabase } from '../lib/supabaseClient';
+import { API_BASE_URL } from '../lib/apiConfig';
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -52,47 +53,72 @@ const Index = () => {
     });
   };
 
-  // API call to fetch events from the server
+  // API call to fetch events from the server using unified API
   const fetchEventsForDate = async (date: Date) => {
     setIsLoading(true);
 
     try {
       // Format date to YYYY-MM-DD for API request
       const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('event')
-        .select('*')
-        .gte('start_time', `${formattedDate}T00:00:00`)
-        .lte('start_time', `${formattedDate}T23:59:59`)
-        .eq('status', 'approved')
+      
+      // Get session for API authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
 
-      if (eventsError) throw eventsError;
-      if (!eventsData) return;
+      // Fetch events for the specific date using unified API
+      const eventsResponse = await fetch(`${API_BASE_URL}/unified?resource=events&action=by-date&date=${formattedDate}`, {
+        headers
+      });
+      
+      if (!eventsResponse.ok) {
+        throw new Error(`Failed to fetch events: ${eventsResponse.status}`);
+      }
+      
+      const eventsData = await eventsResponse.json();
+      if (!eventsData || eventsData.length === 0) {
+        setEvents([]);
+        setFilteredEvents([]);
+        setIsLoading(false);
+        return;
+      }
 
       // Get unique society IDs and event IDs
-      const societyIDs = [...new Set(eventsData.map(event => event.society_id))];
-      const eventIds = eventsData.map(event => event.id);
+      const societyIDs = [...new Set(eventsData.map((event: any) => event.society_id))];
+      const eventIds = eventsData.map((event: any) => event.id);
 
-      // Fetch society details (name and contact_email)
-      const { data: societiesData, error: societiesError } = await supabase
-        .from('society')
-        .select('id, name, contact_email')
-        .in('id', societyIDs);
-
-      if (societiesError) throw societiesError;
-
-      // Fetch RSVP counts using direct query instead of RPC
-      const { data: rsvpCounts, error: rsvpError } = await supabase
-        .from('rsvps')
-        .select('event_id')
-        .in('event_id', eventIds);
+      // Fetch society details using unified API
+      const societiesResponse = await fetch(`${API_BASE_URL}/unified?resource=societies`, {
+        headers
+      });
       
-      if (rsvpError) throw rsvpError;
+      if (!societiesResponse.ok) {
+        throw new Error(`Failed to fetch societies: ${societiesResponse.status}`);
+      }
+      
+      const allSocieties = await societiesResponse.json();
+      const societiesData = allSocieties.filter((society: any) => societyIDs.includes(society.id));
+
+      // Fetch RSVP counts using unified API
+      const rsvpsResponse = await fetch(`${API_BASE_URL}/unified?resource=rsvps`, {
+        headers
+      });
+      
+      let rsvpCounts: any[] = [];
+      if (rsvpsResponse.ok) {
+        const allRsvps = await rsvpsResponse.json();
+        rsvpCounts = allRsvps.filter((rsvp: any) => eventIds.includes(rsvp.event_id));
+      }
 
       // Count RSVPs per event
       const rsvpCountMap = new Map();
       if (rsvpCounts) {
-        rsvpCounts.forEach(rsvp => {
+        rsvpCounts.forEach((rsvp: any) => {
           const eventId = rsvp.event_id;
           rsvpCountMap.set(eventId, (rsvpCountMap.get(eventId) || 0) + 1);
         });
@@ -100,13 +126,12 @@ const Index = () => {
 
       // Create society details mapping
       const societyDetailsMap = new Map(
-        societiesData?.map(society => [society.id, {
+        societiesData?.map((society: any) => [society.id, {
           name: society.name,
           email: society.contact_email
         }])
       );
 
-      // Create society details mapping (use societyName from eventsData)
       // Remap event data to match the Event type
       const mappedEvents: Event[] = eventsData.map((event: any) => ({
         id: event.id,
@@ -115,13 +140,13 @@ const Index = () => {
         location: event.location,
         description: event.description,
         organiserID: event.society_id,
-        societyName: societyDetailsMap.get(event.society_id)?.name || 'Miscellaneous',
+        societyName: (societyDetailsMap.get(event.society_id) as any)?.name || 'Miscellaneous',
         time: event.start_time,
         endTime: event.end_time,
         attendeeCount: Number(rsvpCountMap.get(event.id)) || 0,
         imageUrl: event.imageUrl || '/placeholder.svg',
         requiresOrganizerSignup: event.requires_organizer_signup || false,
-        organizerEmail: societyDetailsMap.get(event.society_id)?.email || event.organizer_email || 'No email provided',
+        organizerEmail: (societyDetailsMap.get(event.society_id) as any)?.email || event.organizer_email || 'No email provided',
         category: event.category || 'general',
         signup_link: event.signup_link || '',
       }));

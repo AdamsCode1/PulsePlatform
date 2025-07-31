@@ -102,9 +102,9 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
   if (action === 'pending' && method === 'GET') {
     const { data, error } = await supabase
-      .from('events')
+      .from('event')
       .select('*')
-      .eq('approved', false)
+      .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
     if (error) return res.status(500).json({ error: error.message });
@@ -115,16 +115,16 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
     const { societyId, status } = req.query;
     
     let query = supabase
-      .from('events')
+      .from('event')
       .select('*')
       .eq('society_id', societyId);
     
     // Filter by status if not 'all'
     if (status !== 'all') {
       if (status === 'approved') {
-        query = query.eq('approved', true);
+        query = query.eq('status', 'approved');
       } else if (status === 'pending') {
-        query = query.eq('approved', false);
+        query = query.eq('status', 'pending');
       }
     }
     
@@ -136,12 +136,12 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
   if (action === 'by-date' && method === 'GET') {
     const { date } = req.query;
     const { data, error } = await supabase
-      .from('events')
+      .from('event')
       .select('*')
-      .eq('approved', true)
-      .gte('event_date', date)
-      .lte('event_date', `${date}T23:59:59`)
-      .order('event_date', { ascending: true });
+      .eq('status', 'approved')
+      .gte('start_time', `${date}T00:00:00`)
+      .lte('start_time', `${date}T23:59:59`)
+      .order('start_time', { ascending: true });
 
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
@@ -149,8 +149,8 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
   if (action === 'approve' && method === 'POST' && id) {
     const { data, error } = await supabase
-      .from('events')
-      .update({ approved: true })
+      .from('event')
+      .update({ status: 'approved' })
       .eq('id', id)
       .select();
 
@@ -160,7 +160,7 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
   if (action === 'reject' && method === 'POST' && id) {
     const { error } = await supabase
-      .from('events')
+      .from('event')
       .delete()
       .eq('id', id);
 
@@ -172,7 +172,7 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
   if (method === 'GET') {
     if (id) {
       const { data, error } = await supabase
-        .from('events')
+        .from('event')
         .select('*')
         .eq('id', id)
         .single();
@@ -180,10 +180,10 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
       return res.status(200).json(data);
     } else {
       const { data, error } = await supabase
-        .from('events')
+        .from('event')
         .select('*')
-        .eq('approved', true)
-        .order('event_date', { ascending: true });
+        .eq('status', 'approved')
+        .order('start_time', { ascending: true });
       if (error) return res.status(500).json({ error: error.message });
       return res.status(200).json(data);
     }
@@ -191,7 +191,7 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
   if (method === 'POST') {
     const { data, error } = await supabase
-      .from('events')
+      .from('event')
       .insert([req.body])
       .select();
     if (error) return res.status(500).json({ error: error.message });
@@ -200,7 +200,7 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
   if (method === 'PUT' && id) {
     const { data, error } = await supabase
-      .from('events')
+      .from('event')
       .update(req.body)
       .eq('id', id)
       .select();
@@ -210,7 +210,7 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
   if (method === 'DELETE' && id) {
     const { error } = await supabase
-      .from('events')
+      .from('event')
       .delete()
       .eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
@@ -300,7 +300,7 @@ async function handleUsers(req: VercelRequest, res: VercelResponse, supabase: an
   if (method === 'GET') {
     if (id) {
       const { data, error } = await supabase
-        .from('users')
+        .from('user')
         .select('*')
         .eq('id', id)
         .single();
@@ -308,7 +308,7 @@ async function handleUsers(req: VercelRequest, res: VercelResponse, supabase: an
       return res.status(200).json(data);
     } else {
       const { data, error } = await supabase
-        .from('users')
+        .from('user')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
@@ -318,7 +318,7 @@ async function handleUsers(req: VercelRequest, res: VercelResponse, supabase: an
 
   if (method === 'POST') {
     const { data, error } = await supabase
-      .from('users')
+      .from('user')
       .insert([req.body])
       .select();
     if (error) return res.status(500).json({ error: error.message });
@@ -327,7 +327,7 @@ async function handleUsers(req: VercelRequest, res: VercelResponse, supabase: an
 
   if (method === 'PUT' && id) {
     const { data, error } = await supabase
-      .from('users')
+      .from('user')
       .update(req.body)
       .eq('id', id)
       .select();
@@ -337,7 +337,7 @@ async function handleUsers(req: VercelRequest, res: VercelResponse, supabase: an
 
   if (method === 'DELETE' && id) {
     const { error } = await supabase
-      .from('users')
+      .from('user')
       .delete()
       .eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
@@ -354,7 +354,7 @@ async function handleRSVPs(req: VercelRequest, res: VercelResponse, supabase: an
   if (method === 'GET') {
     if (id) {
       const { data, error } = await supabase
-        .from('rsvps')
+        .from('rsvp')
         .select('*')
         .eq('id', id)
         .single();
@@ -362,7 +362,7 @@ async function handleRSVPs(req: VercelRequest, res: VercelResponse, supabase: an
       return res.status(200).json(data);
     } else {
       const { data, error } = await supabase
-        .from('rsvps')
+        .from('rsvp')
         .select('*')
         .order('created_at', { ascending: false });
       if (error) return res.status(500).json({ error: error.message });
@@ -372,7 +372,7 @@ async function handleRSVPs(req: VercelRequest, res: VercelResponse, supabase: an
 
   if (method === 'POST') {
     const { data, error } = await supabase
-      .from('rsvps')
+      .from('rsvp')
       .insert([req.body])
       .select();
     if (error) return res.status(500).json({ error: error.message });
@@ -381,7 +381,7 @@ async function handleRSVPs(req: VercelRequest, res: VercelResponse, supabase: an
 
   if (method === 'PUT' && id) {
     const { data, error } = await supabase
-      .from('rsvps')
+      .from('rsvp')
       .update(req.body)
       .eq('id', id)
       .select();
@@ -391,7 +391,7 @@ async function handleRSVPs(req: VercelRequest, res: VercelResponse, supabase: an
 
   if (method === 'DELETE' && id) {
     const { error } = await supabase
-      .from('rsvps')
+      .from('rsvp')
       .delete()
       .eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
@@ -417,13 +417,13 @@ async function handleLogin(req: VercelRequest, res: VercelResponse, supabase: an
     let tableName;
     switch (userType) {
       case 'student':
-        tableName = 'users';
+        tableName = 'user';
         break;
       case 'society':
-        tableName = 'societies';
+        tableName = 'society';
         break;
       case 'organization':
-        tableName = 'organizations';
+        tableName = 'organization';
         break;
       default:
         return res.status(400).json({ error: 'Invalid user type' });
