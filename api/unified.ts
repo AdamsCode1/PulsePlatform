@@ -1,58 +1,31 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { handleCors } from './_utils';
-import { supabase } from './_supabase';
 import { createClient } from '@supabase/supabase-js';
 
-// Create authenticated Supabase client
-async function createAuthenticatedSupabaseClient(req: VercelRequest) {
-  console.log('Creating authenticated client, auth header:', req.headers['authorization']?.substring(0, 20) + '...');
-  
-  const authHeader = req.headers['authorization'] as string;
-  
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.replace('Bearer ', '');
-    console.log('Extracted token length:', token.length);
-    
-    try {
-      // Create client with user token for RLS
-      const supabaseUrl = process.env.SUPABASE_URL!;
-      const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
-      
-      console.log('Creating authenticated client with URL:', supabaseUrl);
-      
-      const authenticatedSupabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      });
-      
-      console.log('Authenticated client created successfully');
-      return authenticatedSupabase;
-    } catch (error) {
-      console.error('Error creating authenticated client:', error);
-      return supabase; // Fallback to default client
-    }
-  }
-  
-  console.log('No auth header, using default client');
-  // Return default client for unauthenticated requests
-  return supabase;
+// Create Supabase client
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Simple CORS handler
+function setCorsHeaders(res: VercelResponse) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('=== UNIFIED API REQUEST START ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  console.log('Headers:', Object.keys(req.headers));
   console.log('Query:', req.query);
 
   try {
-    // Handle CORS first
-    console.log('Handling CORS...');
-    await handleCors(req, res);
-    console.log('CORS handled successfully');
+    // Handle CORS
+    setCorsHeaders(res);
+    
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
 
     const { method, query } = req;
     const { resource, action, id } = query;
@@ -63,33 +36,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       resource,
       action,
       id,
-      url: req.url,
-      hasAuth: !!req.headers['authorization']
+      url: req.url
     });
-
-    // Create authenticated Supabase client
-    console.log('Creating authenticated Supabase client...');
-    const authenticatedSupabase = await createAuthenticatedSupabaseClient(req);
-    console.log('Authenticated Supabase client created');
 
     // Route to appropriate handler based on resource
     console.log('Routing to handler for resource:', resource);
     switch (resource) {
       case 'events':
         console.log('Routing to handleEvents');
-        return await handleEvents(req, res, authenticatedSupabase, action as string, id as string);
+        return await handleEvents(req, res, supabase, action as string, id as string);
       case 'societies':
         console.log('Routing to handleSocieties');
-        return await handleSocieties(req, res, authenticatedSupabase, action as string, id as string);
+        return await handleSocieties(req, res, supabase, action as string, id as string);
       case 'users':
         console.log('Routing to handleUsers');
-        return await handleUsers(req, res, authenticatedSupabase, action as string, id as string);
+        return await handleUsers(req, res, supabase, action as string, id as string);
       case 'rsvps':
         console.log('Routing to handleRSVPs');
-        return await handleRSVPs(req, res, authenticatedSupabase, action as string, id as string);
+        return await handleRSVPs(req, res, supabase, action as string, id as string);
       case 'login':
         console.log('Routing to handleLogin');
-        return await handleLogin(req, res, authenticatedSupabase);
+        return await handleLogin(req, res, supabase);
       default:
         console.log('Resource not found:', resource);
         return res.status(404).json({ error: 'Resource not found' });
