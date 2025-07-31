@@ -150,33 +150,40 @@ export function EventSubmissionForm({ editingEvent, onSuccess, onCancel }: Event
     };
     
     try {
-      const url = isEditing 
-        ? `/api/unified?resource=events&id=${editingEvent.id}` 
-        : '/api/unified?resource=events';
-      const method = isEditing ? 'PUT' : 'POST';
-      
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      if (isEditing) {
+        // Update existing event
+        const { error } = await supabase
+          .from('event')
+          .update(payload)
+          .eq('id', editingEvent.id);
+
+        if (error) {
+          toast({ title: "Error", description: error.message || "Could not update event.", variant: "destructive" });
+          return;
+        }
+      } else {
+        // Create new event
+        const { error } = await supabase
+          .from('event')
+          .insert([payload]);
+
+        if (error) {
+          toast({ title: "Error", description: error.message || "Could not submit event.", variant: "destructive" });
+          return;
+        }
+      }
+
+      const action = isEditing ? "updated" : "submitted";
+      toast({ 
+        title: `Event ${action.charAt(0).toUpperCase() + action.slice(1)} Successfully!`, 
+        description: `${data.eventName} has been ${action}${isEditing ? " and reset to pending status" : " for review"}.`
       });
       
-      if (res.ok) {
-        const action = isEditing ? "updated" : "submitted";
-        toast({ 
-          title: `Event ${action.charAt(0).toUpperCase() + action.slice(1)} Successfully!`, 
-          description: `${data.eventName} has been ${action}${isEditing ? " and reset to pending status" : " for review"}.`
-        });
-        
-        if (!isEditing) {
-          form.reset();
-        }
-        
-        onSuccess?.();
-      } else {
-        const error = await res.json();
-        toast({ title: "Error", description: error.message || `Could not ${isEditing ? "update" : "submit"} event.`, variant: "destructive" });
+      if (!isEditing) {
+        form.reset();
       }
+      
+      onSuccess?.();
     } catch (err) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

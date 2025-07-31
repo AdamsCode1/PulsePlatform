@@ -28,14 +28,14 @@ const StudentRegister = () => {
       if (error) {
         // handle error
       } else {
-        // Use backend endpoint to create user row
-        const res = await fetch('http://localhost:4000/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: firstName, email })
-        });
-        if (!res.ok) {
-          // handle error (optionally show a toast or message)
+        // Create user row in database directly
+        const { error: dbError } = await supabase
+          .from('users')
+          .insert([{ name: firstName, email }]);
+        
+        if (dbError) {
+          console.error('Database error:', dbError);
+          // User account created but profile incomplete - they can still log in
         }
         // handle success
         navigate("/login/student");

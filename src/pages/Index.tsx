@@ -52,7 +52,7 @@ const Index = () => {
     });
   };
 
-  // API call to fetch events from the server using unified API
+  // Fetch events from the database directly
   const fetchEventsForDate = async (date: Date) => {
     setIsLoading(true);
 

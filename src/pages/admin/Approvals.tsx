@@ -48,14 +48,17 @@ const Approvals = () => {
     const fetchPendingEvents = async () => {
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        const res = await fetch('/api/unified?resource=events&action=pending', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Failed to fetch pending events');
-        const data = await res.json();
-        setPendingEvents(data);
+        const { data, error } = await supabase
+          .from('event')
+          .select('*')
+          .eq('status', 'pending')
+          .order('start_time', { ascending: true });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        setPendingEvents(data || []);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -67,13 +70,21 @@ const Approvals = () => {
 
   // Approve event
   const handleApprove = async (id: string) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    await fetch(`/api/unified?resource=events&action=approve&id=${id}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    setPendingEvents(events => events.filter(e => e.id !== id));
+    try {
+      const { error } = await supabase
+        .from('event')
+        .update({ status: 'approved' })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error approving event:', error);
+        return;
+      }
+
+      setPendingEvents(events => events.filter(e => e.id !== id));
+    } catch (err) {
+      console.error('Error approving event:', err);
+    }
   };
 
   // Open modal
@@ -94,18 +105,26 @@ const Approvals = () => {
   // Reject event with reason
   const handleRejectWithReason = async () => {
     if (!rejectEventId) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    await fetch(`/api/unified?resource=events&action=reject&id=${rejectEventId}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ reason: rejectReason })
-    });
-    setPendingEvents(events => events.filter(e => e.id !== rejectEventId));
-    closeRejectModal();
+    
+    try {
+      const { error } = await supabase
+        .from('event')
+        .update({ 
+          status: 'rejected',
+          rejection_reason: rejectReason 
+        })
+        .eq('id', rejectEventId);
+
+      if (error) {
+        console.error('Error rejecting event:', error);
+        return;
+      }
+
+      setPendingEvents(events => events.filter(e => e.id !== rejectEventId));
+      closeRejectModal();
+    } catch (err) {
+      console.error('Error rejecting event:', err);
+    }
   };
 
   // Sort events by start_time
