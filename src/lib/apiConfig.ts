@@ -1,12 +1,12 @@
-// API configuration for frontend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+// API configuration for frontend requests
+const isProduction = window.location.hostname !== 'localhost';
 
-export const apiUrl = (path: string) => `${API_BASE_URL}${path}`;
+// In production, API routes are serverless functions at /api
+// In development, API server runs on different port
+export const API_BASE_URL = isProduction 
+  ? '/api'  // Serverless functions on same domain
+  : import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
-export default {
-  baseUrl: API_BASE_URL,
-  events: `${API_BASE_URL}/api/events`,
-  users: `${API_BASE_URL}/api/users`,
-  societies: `${API_BASE_URL}/api/societies`,
-  rsvps: `${API_BASE_URL}/api/rsvps`,
-};
+console.log('Frontend API config:');
+console.log('Environment:', isProduction ? 'production' : 'development');
+console.log('API Base URL:', API_BASE_URL);

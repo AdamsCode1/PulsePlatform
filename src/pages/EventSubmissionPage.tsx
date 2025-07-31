@@ -34,7 +34,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
 import { useNavigate } from "react-router-dom";
-import apiConfig from "@/lib/apiConfig";
+import { API_BASE_URL } from "@/lib/apiConfig";
 
 const eventCategories = [
   "academic",
@@ -235,7 +235,7 @@ export default function EventSubmissionPage() {
     try {
       console.log("Submitting event with payload:", payload);
 
-      const res = await fetch(apiConfig.events, {
+      const res = await fetch(`${API_BASE_URL}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

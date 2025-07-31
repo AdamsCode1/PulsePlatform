@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
-import apiConfig from '@/lib/apiConfig';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
 export async function getSocietyIdByEmail(email: string): Promise<string | null> {
   try {
@@ -11,7 +11,7 @@ export async function getSocietyIdByEmail(email: string): Promise<string | null>
     }
 
     // Use API endpoint instead of direct Supabase query to respect RLS
-    const response = await fetch(`${apiConfig.baseUrl}/societies`, {
+    const response = await fetch(`${API_BASE_URL}/societies`, {
       headers: {
         'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json'
