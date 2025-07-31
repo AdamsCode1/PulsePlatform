@@ -169,22 +169,41 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 async function handleSocieties(req: VercelRequest, res: VercelResponse, supabase: any, action?: string, id?: string) {
   const { method } = req;
 
+  console.log('handleSocieties called:', { method, action, id });
+
   if (method === 'GET') {
-    if (id) {
-      const { data, error } = await supabase
-        .from('society')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json(data);
-    } else {
-      const { data, error } = await supabase
-        .from('society')
-        .select('*')
-        .order('name', { ascending: true });
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json(data);
+    try {
+      if (id) {
+        console.log('Fetching single society with id:', id);
+        const { data, error } = await supabase
+          .from('society')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        console.log('Single society result:', { data, error });
+        if (error) {
+          console.error('Supabase error:', error);
+          return res.status(500).json({ error: error.message, details: error });
+        }
+        return res.status(200).json(data);
+      } else {
+        console.log('Fetching all societies');
+        const { data, error } = await supabase
+          .from('society')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        console.log('All societies result:', { data, error, count: data?.length });
+        if (error) {
+          console.error('Supabase error:', error);
+          return res.status(500).json({ error: error.message, details: error });
+        }
+        return res.status(200).json(data);
+      }
+    } catch (dbError) {
+      console.error('Database operation failed:', dbError);
+      return res.status(500).json({ error: 'Database operation failed', details: dbError });
     }
   }
 
