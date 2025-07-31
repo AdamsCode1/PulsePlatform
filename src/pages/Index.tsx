@@ -15,7 +15,7 @@ import FAQFeedbackSection from '../components/FAQFeedbackSection';
 import Footer from '../components/Footer';
 import CommunityCTA from '../components/CommunityCTA';
 import DealsGrid from '../components/DealsGrid';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 
 const Index = () => {
   const [currentDate, setCurrentDate] = useState(new Date());

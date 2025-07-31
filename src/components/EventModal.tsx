@@ -4,7 +4,7 @@ import { X, MapPin, Clock, Users, Calendar, Mail } from 'lucide-react';
 import { Event } from '../types/Event';
 import RSVPForm from './RSVPForm';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
 
 interface EventModalProps {
   event: Event;

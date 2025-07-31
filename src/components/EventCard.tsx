@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { MapPin, Clock, Users, Check, ArrowRight } from 'lucide-react';
+import { MapPin, Clock, Users, Check, ArrowRight, Calendar } from 'lucide-react';
 import { Event } from '../types/Event';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabaseClient';
+import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Card, CardContent } from './ui/card';
 
 interface EventCardProps {
   event: Event;
