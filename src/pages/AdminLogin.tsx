@@ -1,15 +1,54 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+
+// List of admin emails (should match the one in Approvals.tsx)
+const ADMIN_EMAILS = [
+  'admin@dupulse.co.uk',
+];
 
 const AdminLogin = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Add admin login logic here
-        console.log("Admin login attempt:", { email, password });
+        setLoading(true);
+        setError("");
+
+        try {
+            // Check if email is an admin email
+            if (!ADMIN_EMAILS.includes(email)) {
+                setError("This email is not authorized for admin access.");
+                setLoading(false);
+                return;
+            }
+
+            // Attempt to sign in with Supabase
+            const { data, error: signInError } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password,
+            });
+
+            if (signInError) {
+                setError(signInError.message);
+                setLoading(false);
+                return;
+            }
+
+            if (data.user) {
+                // Successfully logged in, redirect to admin approvals
+                navigate("/admin/approvals");
+            }
+        } catch (err: any) {
+            setError("An unexpected error occurred. Please try again.");
+            console.error("Login error:", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -58,6 +97,13 @@ const AdminLogin = () => {
 
                     {/* Login Form */}
                     <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+                        {/* Error Message */}
+                        {error && (
+                            <div className="p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+                                {error}
+                            </div>
+                        )}
+
                         {/* Email Input */}
                         <div>
                             <input
@@ -67,6 +113,7 @@ const AdminLogin = () => {
                                 className="w-full p-4 bg-white/60 border-2 border-purple-200 rounded-xl text-purple-800 placeholder-purple-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors duration-300 text-sm sm:text-base backdrop-blur-sm"
                                 placeholder="Email"
                                 required
+                                disabled={loading}
                             />
                         </div>
 
@@ -79,18 +126,20 @@ const AdminLogin = () => {
                                 className="w-full p-4 bg-white/60 border-2 border-purple-200 rounded-xl text-purple-800 placeholder-purple-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors duration-300 text-sm sm:text-base backdrop-blur-sm"
                                 placeholder="Password"
                                 required
+                                disabled={loading}
                             />
                         </div>
 
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            className="w-full p-4 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 rounded-xl text-white font-semibold transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
+                            disabled={loading}
+                            className="w-full p-4 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 rounded-xl text-white font-semibold transition-all duration-300 transform hover:scale-105 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                             style={{
                                 boxShadow: '0 0 20px rgba(168, 85, 247, 0.3)'
                             }}
                         >
-                            Submit
+                            {loading ? "Signing In..." : "Submit"}
                         </button>
 
                         {/* Support Text */}

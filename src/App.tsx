@@ -17,6 +17,7 @@ import OrganizationLogin from './pages/OrganizationLogin';
 import DealsPage from './pages/DealsPage';
 import MeetTheTeam from './pages/MeetTheTeam';
 import AdminLogin from './pages/AdminLogin';
+import Approvals from './pages/admin/Approvals';
 
 const queryClient = new QueryClient();
 
@@ -25,7 +26,12 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<UserTypeSelection />} />
@@ -42,6 +48,7 @@ const App = () => (
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/about" element={<MeetTheTeam />} />
           <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/approvals" element={<Approvals />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

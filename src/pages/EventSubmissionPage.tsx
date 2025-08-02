@@ -213,9 +213,13 @@ export default function EventSubmissionPage() {
 
   async function onSubmit(data) {
     if (!societyId) {
-      toast({ title: "Error", description: "Could not determine society ID.", variant: "destructive" });
+      console.error("No society ID found. User needs to be associated with a society.");
+      toast({ title: "Error", description: "Could not determine society ID. Please ensure you're logged in as a society member.", variant: "destructive" });
       return;
     }
+    
+    console.log("Current societyId:", societyId);
+    
     const start = new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`);
     const end = new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`);
     const payload = {
@@ -226,8 +230,7 @@ export default function EventSubmissionPage() {
       location: data.location,
       category: data.category,
       society_id: societyId,
-      //requires_external_signup: data.requiresExternalSignup || false,
-      //external_signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
+      status: 'pending', // Explicitly set status
       signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
     };
     
@@ -240,10 +243,12 @@ export default function EventSubmissionPage() {
         .insert([payload])
         .select();
 
+      console.log("Supabase response:", { insertedEvent, error });
+
       if (!error && insertedEvent) {
         toast({ 
           title: "Event Submitted Successfully!", 
-          description: `${data.eventName} has been submitted for review.`,
+          description: `${data.eventName} has been submitted for review. Event ID: ${insertedEvent[0]?.id}`,
           action: (
             <div className="flex gap-2 mt-2">
               <Button 
@@ -268,8 +273,12 @@ export default function EventSubmissionPage() {
       } else {
         // Handle Supabase error
         const errorMessage = error?.message || 'Could not submit event.';
-        console.error('Supabase error:', error);
-        toast({ title: "Error", description: errorMessage, variant: "destructive" });
+        console.error('Supabase error details:', error);
+        toast({ 
+          title: "Error", 
+          description: `${errorMessage}. Check console for details.`, 
+          variant: "destructive" 
+        });
       }
     } catch (err) {
       console.error('Network or other error:', err);
