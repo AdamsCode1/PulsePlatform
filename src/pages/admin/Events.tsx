@@ -10,6 +10,7 @@ import { Calendar, Users, Search, MapPin, Clock, CheckCircle, XCircle, Eye } fro
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 
@@ -86,14 +87,19 @@ export default function AdminEvents() {
 
   const fetchEvents = async () => {
     try {
+      console.log('Admin fetching events...');
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current admin user:', user?.email);
+      
       const { data, error } = await supabase
-        .from('events')
+        .from('event')
         .select(`
           *,
-          society:societies(name, email),
-          rsvps:rsvps(count())
+          society:society(name, contact_email)
         `)
         .order('created_at', { ascending: false });
+
+      console.log('Events query result:', { data, error });
 
       if (error) throw error;
       setEvents(data || []);
@@ -129,7 +135,7 @@ export default function AdminEvents() {
   const approveEvent = async (eventId: string) => {
     try {
       const { error } = await supabase
-        .from('events')
+        .from('event')
         .update({ status: 'approved' })
         .eq('id', eventId);
 
@@ -159,7 +165,7 @@ export default function AdminEvents() {
   const rejectEvent = async (eventId: string, reason: string) => {
     try {
       const { error } = await supabase
-        .from('events')
+        .from('event')
         .update({ 
           status: 'rejected',
           rejection_reason: reason 

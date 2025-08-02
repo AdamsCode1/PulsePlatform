@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Users, CheckCircle, Clock, XCircle, BarChart3 } from 'lucide-react';
+import { Calendar, Users, CheckCircle, XCircle, Clock, Building2, BarChart3, Plus } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Event {
@@ -69,17 +70,25 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      // Fetch event stats
+      console.log('Admin fetching stats...');
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current admin user:', user?.email);
+      
+      // Fetch event stats using regular client (RLS should allow admin access)
       const { data: events, error: eventsError } = await supabase
-        .from('events')
+        .from('event')
         .select('status');
+
+      console.log('Events stats query result:', { events, error: eventsError });
 
       if (eventsError) throw eventsError;
 
-      // Fetch society count
+      // Fetch society count using regular client
       const { count: societyCount, error: societyError } = await supabase
-        .from('societies')
+        .from('society')
         .select('*', { count: 'exact', head: true });
+
+      console.log('Society count query result:', { societyCount, error: societyError });
 
       if (societyError) throw societyError;
 
@@ -105,13 +114,15 @@ export default function AdminDashboard() {
   const fetchRecentEvents = async () => {
     try {
       const { data, error } = await supabase
-        .from('events')
+        .from('event')
         .select(`
           *,
-          society:societies(name)
+          society:society(name)
         `)
         .order('created_at', { ascending: false })
         .limit(10);
+
+      console.log('Recent events query result:', { data, error });
 
       if (error) throw error;
       setRecentEvents(data || []);

@@ -11,15 +11,15 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Event {
   id: string;
-  title: string;
+  name: string;
   description: string;
-  date: string;
-  time: string;
+  start_time: string;
+  end_time: string;
   location: string;
-  max_attendees: number;
+  category: string;
   status: 'pending' | 'approved' | 'rejected';
   image_url?: string;
-  rsvps?: {
+  rsvp?: {
     count: number;
   }[];
 }
@@ -71,18 +71,18 @@ export default function SocietyDashboard() {
   const fetchSociety = async (email: string) => {
     try {
       const { data, error } = await supabase
-        .from('societies')
+        .from('society')
         .select('*')
-        .eq('email', email)
+        .eq('contact_email', email)
         .single();
 
       if (error) {
         console.error('Society not found:', error);
         // Create a default society entry if one doesn't exist
         const { data: newSociety, error: createError } = await supabase
-          .from('societies')
+          .from('society')
           .insert([{
-            email: email,
+            contact_email: email,
             name: user?.user_metadata?.full_name || 'Your Society',
             description: 'Welcome to your society dashboard. Please update your information.',
           }])
@@ -92,12 +92,12 @@ export default function SocietyDashboard() {
         if (createError) {
           console.error('Error creating society:', createError);
           // Still continue with a default society object
-          setSociety({
-            id: 'temp',
-            name: user?.user_metadata?.full_name || 'Your Society',
-            description: 'Welcome to your society dashboard. Please update your information.',
-            email: email
-          });
+        setSociety({
+          id: 'temp',
+          name: user?.user_metadata?.full_name || 'Your Society',
+          description: 'Welcome to your society dashboard. Please update your information.',
+          email: email
+        });
         } else {
           setSociety(newSociety);
         }
@@ -120,22 +120,22 @@ export default function SocietyDashboard() {
     try {
       // First get society ID
       const { data: societyData, error: societyError } = await supabase
-        .from('societies')
+        .from('society')
         .select('id')
-        .eq('email', email)
+        .eq('contact_email', email)
         .single();
 
       if (societyError) throw societyError;
 
       // Then get events for this society
       const { data, error } = await supabase
-        .from('events')
+        .from('event')
         .select(`
           *,
-          rsvps:rsvps(count())
+          rsvp(count)
         `)
         .eq('society_id', societyData.id)
-        .order('date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       setEvents(data || []);
@@ -161,7 +161,7 @@ export default function SocietyDashboard() {
     const approved = events.filter(e => e.status === 'approved').length;
     const pending = events.filter(e => e.status === 'pending').length;
     const totalRSVPs = events.reduce((sum, event) => 
-      sum + (event.rsvps?.[0]?.count || 0), 0
+      sum + (event.rsvp?.[0]?.count || 0), 0
     );
     
     return { approved, pending, totalRSVPs, total: events.length };
@@ -316,7 +316,7 @@ export default function SocietyDashboard() {
                     {events.slice(0, 5).map((event) => (
                       <div key={event.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold">{event.title}</h3>
+                          <h3 className="font-semibold">{event.name}</h3>
                           {getStatusBadge(event.status)}
                         </div>
                         
@@ -327,7 +327,7 @@ export default function SocietyDashboard() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2" />
-                            {new Date(event.date).toLocaleDateString()} at {event.time}
+                            {new Date(event.start_time).toLocaleDateString()} at {new Date(event.start_time).toLocaleTimeString()}
                           </div>
                           <div className="flex items-center">
                             <MapPin className="w-4 h-4 mr-2" />
@@ -335,11 +335,11 @@ export default function SocietyDashboard() {
                           </div>
                           <div className="flex items-center">
                             <Users className="w-4 h-4 mr-2" />
-                            {event.rsvps?.[0]?.count || 0} RSVPs
+                            {event.rsvp?.[0]?.count || 0} RSVPs
                           </div>
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 mr-2" />
-                            Max {event.max_attendees} attendees
+                            {event.category}
                           </div>
                         </div>
                       </div>

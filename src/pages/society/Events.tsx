@@ -66,19 +66,19 @@ export default function SocietyEvents() {
     try {
       // First get society ID
       const { data: societyData, error: societyError } = await supabase
-        .from('societies')
+        .from('society')
         .select('id')
-        .eq('email', email)
+        .eq('contact_email', email)
         .single();
 
       if (societyError) throw societyError;
 
       // Then get events for this society
       const { data, error } = await supabase
-        .from('events')
+        .from('event')
         .select(`
           *,
-          rsvps:rsvps(count())
+          rsvp(count)
         `)
         .eq('society_id', societyData.id)
         .order('created_at', { ascending: false });
@@ -120,7 +120,7 @@ export default function SocietyEvents() {
 
     try {
       const { error } = await supabase
-        .from('events')
+        .from('event')
         .delete()
         .eq('id', eventId);
 

@@ -73,15 +73,15 @@ export default function StudentDashboard() {
   const fetchUpcomingEvents = async () => {
     try {
       const { data, error } = await supabase
-        .from('events')
+        .from('event')
         .select(`
           *,
-          society:societies(name),
-          rsvps:rsvps(count())
+          society:society(name),
+          rsvp(count)
         `)
         .eq('status', 'approved')
-        .gte('date', new Date().toISOString().split('T')[0])
-        .order('date', { ascending: true })
+        .gte('start_time', new Date().toISOString())
+        .order('start_time', { ascending: true })
         .limit(6);
 
       if (error) throw error;
