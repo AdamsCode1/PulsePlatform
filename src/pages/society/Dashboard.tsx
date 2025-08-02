@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,25 +31,30 @@ interface Society {
   email: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  user_metadata?: {
+    full_name?: string;
+    first_name?: string;
+  };
+}
+
 export default function SocietyDashboard() {
   const navigate = useNavigate();
   const [society, setSociety] = useState<Society | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         navigate('/login/society');
         return;
       }
-      setUser(user);
+      setUser(user as User);
       await Promise.all([fetchSociety(user.email), fetchSocietyEvents(user.email)]);
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -57,7 +62,11 @@ export default function SocietyDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const fetchSociety = async (email: string) => {
     try {

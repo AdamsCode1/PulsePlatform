@@ -43,7 +43,7 @@ const AdminLogin = () => {
                 // Successfully logged in, redirect to admin dashboard
                 navigate("/admin/dashboard");
             }
-        } catch (err: any) {
+        } catch (err: unknown) {
             setError("An unexpected error occurred. Please try again.");
             console.error("Login error:", err);
         } finally {

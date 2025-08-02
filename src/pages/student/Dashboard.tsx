@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,25 +33,30 @@ interface RSVP {
   created_at: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  user_metadata?: {
+    full_name?: string;
+    first_name?: string;
+  };
+}
+
 export default function StudentDashboard() {
   const navigate = useNavigate();
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [userRSVPs, setUserRSVPs] = useState<RSVP[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         navigate('/login/student');
         return;
       }
-      setUser(user);
+      setUser(user as User);
       await Promise.all([fetchUpcomingEvents(), fetchUserRSVPs(user.id)]);
     } catch (error) {
       console.error('Auth check failed:', error);
@@ -59,7 +64,11 @@ export default function StudentDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   const fetchUpcomingEvents = async () => {
     try {

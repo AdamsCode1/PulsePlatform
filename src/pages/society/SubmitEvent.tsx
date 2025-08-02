@@ -180,13 +180,14 @@ export default function EventSubmissionPage() {
       case 2:
         fieldsToValidate = ["location", "category"];
         break;
-      case 3:
+      case 3: {
         // For external signup step, validate externalSignupLink only if requiresExternalSignup is true
         const requiresExternal = form.getValues("requiresExternalSignup");
         if (requiresExternal) {
           fieldsToValidate = ["externalSignupLink"];
         }
         break;
+      }
     }
 
     const isValid = await form.trigger(fieldsToValidate as any);
@@ -530,7 +531,7 @@ export default function EventSubmissionPage() {
           </div>
         );
       
-      case 3:
+      case 3: {
         const requiresExternalSignup = form.watch("requiresExternalSignup");
         return (
           <div className={`${baseClasses} space-y-8`}>
@@ -595,8 +596,9 @@ export default function EventSubmissionPage() {
             )}
           </div>
         );
+      }
       
-      case 4:
+      case 4: {
         const formValues = form.getValues();
         return (
           <div className={`${baseClasses} space-y-8`}>
@@ -667,9 +669,11 @@ export default function EventSubmissionPage() {
             </div>
           </div>
         );
+      }
       
-      default:
+      default: {
         return null;
+      }
     }
   };
 
