@@ -13,6 +13,20 @@ const UserTypeSelection = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Determine if this is login or register mode
+  const isLoginMode = location.pathname.includes('/login');
+  const isRegisterMode = location.pathname.includes('/register');
+
+  const handleTypeSelection = (type: string) => {
+    if (isLoginMode) {
+      navigate(`/login/${type === 'organization' ? 'partner' : type}`);
+    } else if (isRegisterMode) {
+      navigate(`/register/${type === 'organization' ? 'partner' : type}`);
+    } else {
+      setSelectedType(type);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,11 +51,11 @@ const UserTypeSelection = () => {
           
           let returnTo;
           if (selectedType === "society") {
-            returnTo = "/events/manage";
+            returnTo = "/society/dashboard";
           } else if (selectedType === "organization") {
-            returnTo = "/organization/dashboard";
+            returnTo = "/partner/dashboard";
           } else {
-            returnTo = location.state?.returnTo || "/";
+            returnTo = location.state?.returnTo || "/student/dashboard";
           }
           navigate(returnTo);
         }
@@ -63,14 +77,16 @@ const UserTypeSelection = () => {
         <div className="w-full max-w-sm">
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
-            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">Get Started</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3 sm:mb-4">
+              {isLoginMode ? "Sign In" : isRegisterMode ? "Sign Up" : "Get Started"}
+            </h1>
             <p className="text-pink-200 text-base sm:text-lg">Choose account type</p>
           </div>
 
           {/* Account Type Buttons */}
           <div className="space-y-4 sm:space-y-6">
             <button
-              onClick={() => setSelectedType("student")}
+              onClick={() => handleTypeSelection("student")}
               className="w-full p-4 sm:p-6 bg-pink-500/20 border-2 border-pink-500/50 rounded-xl sm:rounded-2xl hover:bg-pink-500 hover:border-pink-400 transition-all duration-300 group backdrop-blur-sm transform hover:scale-105"
               style={{
                 boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)'
@@ -80,7 +96,7 @@ const UserTypeSelection = () => {
             </button>
 
             <button
-              onClick={() => setSelectedType("society")}
+              onClick={() => handleTypeSelection("society")}
               className="w-full p-4 sm:p-6 bg-pink-500/20 border-2 border-pink-500/50 rounded-xl sm:rounded-2xl hover:bg-pink-500 hover:border-pink-400 transition-all duration-300 group backdrop-blur-sm transform hover:scale-105"
               style={{
                 boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)'
@@ -90,13 +106,13 @@ const UserTypeSelection = () => {
             </button>
 
             <button
-              onClick={() => setSelectedType("organization")}
+              onClick={() => handleTypeSelection("organization")}
               className="w-full p-4 sm:p-6 bg-pink-500/20 border-2 border-pink-500/50 rounded-xl sm:rounded-2xl hover:bg-pink-500 hover:border-pink-400 transition-all duration-300 group backdrop-blur-sm transform hover:scale-105"
               style={{
                 boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)'
               }}
             >
-              <span className="text-pink-200 group-hover:text-white font-semibold text-lg sm:text-xl">Organization</span>
+              <span className="text-pink-200 group-hover:text-white font-semibold text-lg sm:text-xl">Partner</span>
             </button>
           </div>
         </div>
@@ -133,7 +149,7 @@ const UserTypeSelection = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             {selectedType === "student" && "Student Login"}
             {selectedType === "society" && "Society Login"}
-            {selectedType === "organization" && "Organization Login"}
+            {selectedType === "organization" && "Partner Login"}
           </h1>
           <p className="text-pink-200 text-sm sm:text-base">Enter your credentials</p>
         </div>
@@ -143,7 +159,7 @@ const UserTypeSelection = () => {
           <div>
             <label className="block text-pink-200 text-sm font-medium mb-2">
               {selectedType === "student" ? "Student Email" :
-                selectedType === "society" ? "Society Email" : "Organization Email"}
+                selectedType === "society" ? "Society Email" : "Partner Email"}
             </label>
             <input
               type="email"
@@ -213,7 +229,7 @@ const UserTypeSelection = () => {
     );
   };
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-purple-900 via-black to-pink-900 px-2 sm:px-4 py-6 sm:py-12 animate-fade-in relative overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-purple-900 via-black to-pink-900 px-2 sm:px-4 py-6 sm:py-12 animate-fade-in relative overflow-hidden pulse-pattern">
       {/* Back Arrow Button */}
       <button
         onClick={() => navigate("/")}

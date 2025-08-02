@@ -40,8 +40,8 @@ const AdminLogin = () => {
             }
 
             if (data.user) {
-                // Successfully logged in, redirect to admin approvals
-                navigate("/admin/approvals");
+                // Successfully logged in, redirect to admin dashboard
+                navigate("/admin/dashboard");
             }
         } catch (err: any) {
             setError("An unexpected error occurred. Please try again.");
