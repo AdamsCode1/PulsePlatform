@@ -36,18 +36,42 @@ export default function NavBar() {
     navigate('/');
   };
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
+  const handleNavigation = (path: string, sectionId?: string) => {
+    if (window.location.pathname === '/' && sectionId) {
+      // We're on the home page, just scroll to section
+      scrollToSection(sectionId);
+    } else if (sectionId) {
+      // We're on a different page, navigate to home then scroll
+      navigate('/');
+      setTimeout(() => scrollToSection(sectionId), 100);
+    } else {
+      // Regular navigation
+      navigate(path);
+    }
+  };
+
   return (
     <nav className="fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[98vw] max-w-2xl rounded-2xl bg-white/80 backdrop-blur-md shadow-xl flex items-center justify-between px-4 py-2 border border-gray-200">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigation('/', 'hero')}>
         <img src="/favicon.ico" alt="DUPulse Logo" width={36} height={36} className="rounded-full" />
         <span className="font-extrabold text-lg text-gray-900 tracking-tight">DUPulse</span>
       </div>
       {/* Desktop Nav */}
       <div className="hidden md:flex gap-4 items-center">
-        <a href="#" className="text-gray-700 font-medium hover:text-pink-500 transition">Home</a>
-        <a href="#events" className="text-gray-700 font-medium hover:text-pink-500 transition">Events</a>
-        <a href="#deals" className="text-gray-700 font-medium hover:text-pink-500 transition">Deals</a>
-        <a href="#about" className="text-gray-700 font-medium hover:text-pink-500 transition">About</a>
+        <button onClick={() => handleNavigation('/', 'hero')} className="text-gray-700 font-medium hover:text-pink-500 transition">Home</button>
+        <button onClick={() => handleNavigation('/', 'schedule')} className="text-gray-700 font-medium hover:text-pink-500 transition">Events</button>
+        <button onClick={() => navigate('/deals')} className="text-gray-700 font-medium hover:text-pink-500 transition">Deals</button>
+        <button onClick={() => navigate('/about')} className="text-gray-700 font-medium hover:text-pink-500 transition">About</button>
         {user && (
           <button onClick={() => navigate('/events/manage')} className="text-gray-700 font-medium hover:text-pink-500 transition">Manage Events</button>
         )}
@@ -74,10 +98,10 @@ export default function NavBar() {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="absolute top-16 left-0 w-full bg-white/95 rounded-b-2xl shadow-lg flex flex-col items-center py-4 gap-3 md:hidden animate-fade-in z-50">
-          <a href="#" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Home</a>
-          <a href="#events" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Events</a>
-          <a href="#deals" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</a>
-          <a href="#about" className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">About</a>
+          <button onClick={() => { setMenuOpen(false); handleNavigation('/', 'hero'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Home</button>
+          <button onClick={() => { setMenuOpen(false); handleNavigation('/', 'schedule'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Events</button>
+          <button onClick={() => { setMenuOpen(false); navigate('/deals'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</button>
+          <button onClick={() => { setMenuOpen(false); navigate('/about'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">About</button>
           {user && (
             <button onClick={() => { setMenuOpen(false); navigate('/events/manage'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Manage Events</button>
           )}

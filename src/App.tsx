@@ -17,6 +17,8 @@ import OrganizationLogin from './pages/OrganizationLogin';
 import DealsPage from './pages/DealsPage';
 import MeetTheTeam from './pages/MeetTheTeam';
 import AdminLogin from './pages/AdminLogin';
+import AboutPage from './pages/AboutPage';
+import Schedule from './pages/Schedule';
 
 const queryClient = new QueryClient();
 
@@ -37,10 +39,11 @@ const App = () => (
           <Route path="/register/organization" element={<OrganizationRegister />} />
           <Route path="/submit-event" element={<EventSubmissionPage />} />
           <Route path="/events/manage" element={<SocietyEventsPage />} />
-          <Route path="/events/manage/submit-event" element={<EventSubmissionPage />} />
           <Route path="/user-type" element={<UserTypeSelection />} />
           <Route path="/deals" element={<DealsPage />} />
-          <Route path="/about" element={<MeetTheTeam />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/team" element={<MeetTheTeam />} />
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
