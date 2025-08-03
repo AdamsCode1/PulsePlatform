@@ -145,7 +145,7 @@ export default function EventSubmissionPage() {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        navigate('/login', { state: { returnTo: '/submit-event' } });
+        navigate('/login/society', { state: { returnTo: '/society/submit-event' } });
       }
     }
     checkAuth();
@@ -255,16 +255,16 @@ export default function EventSubmissionPage() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => navigate('/events/manage')}
+                onClick={() => navigate('/society/events')}
               >
                 Manage Events
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/society/dashboard')}
               >
-                Home
+                Dashboard
               </Button>
             </div>
           )

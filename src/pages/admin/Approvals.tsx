@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/supabaseClient';
 
 // List of admin emails allowed to access admin pages
 const ADMIN_EMAILS = [
-  'jakubnosek72@gmail.com', // Replace with real admin emails
+  'admin@dupulse.co.uk',
 ];
 
 interface PendingEvent {

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabaseClient";
 import { useToast } from "@/hooks/use-toast";
 
-const SocietyLogin = () => {
+const PartnerLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -32,9 +32,9 @@ const SocietyLogin = () => {
       } else {
         toast({
           title: "Login Successful",
-          description: "Welcome back to your society dashboard!",
+          description: "Welcome to your partner dashboard!",
         });
-        const returnTo = location.state?.returnTo || "/society/dashboard";
+        const returnTo = location.state?.returnTo || "/partner/dashboard";
         navigate(returnTo);
       }
     } catch (err) {
@@ -91,10 +91,10 @@ const SocietyLogin = () => {
           <div className="absolute top-20 left-8 bg-gradient-to-br from-pink-500/20 to-purple-500/20 backdrop-blur-sm border border-pink-500/30 rounded-2xl p-6 w-48 animate-float-up-1">
             <div className="flex items-center mb-2">
               <div className="w-3 h-3 bg-pink-400 rounded-full mr-3"></div>
-              <span className="text-2xl font-bold text-pink-400">150+</span>
+              <span className="text-2xl font-bold text-pink-400">25+</span>
             </div>
-            <p className="text-white text-sm font-medium">Active societies</p>
-            <p className="text-gray-300 text-xs">Building communities</p>
+            <p className="text-white text-sm font-medium">Partner businesses</p>
+            <p className="text-gray-300 text-xs">Supporting students</p>
           </div>
         </div>
 
@@ -103,21 +103,21 @@ const SocietyLogin = () => {
           <div className="w-full max-w-sm">
             {/* Login Form Header */}
             <div className="text-center mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Society Login</h1>
-              <p className="text-pink-200 text-sm sm:text-base">Access your society dashboard</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Partner Login</h1>
+              <p className="text-pink-200 text-sm sm:text-base">Access your partner dashboard</p>
             </div>
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-pink-200 text-sm font-medium mb-2">
-                  Society Email
+                  Business Email
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your society email"
+                  placeholder="Enter your business email"
                   className="w-full px-4 py-3 sm:py-4 bg-gray-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300 backdrop-blur-sm"
                   required
                 />
@@ -181,7 +181,7 @@ const SocietyLogin = () => {
                   Don't have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => navigate("/register/society")}
+                    onClick={() => navigate("/register/partner")}
                     className="text-pink-400 hover:text-pink-300 transition-colors duration-300 underline"
                   >
                     Sign up here
@@ -197,4 +197,4 @@ const SocietyLogin = () => {
   );
 };
 
-export default SocietyLogin;
+export default PartnerLogin;

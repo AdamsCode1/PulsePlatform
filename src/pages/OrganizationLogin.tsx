@@ -21,7 +21,7 @@ const OrganizationLogin = () => {
         // handle error
       } else {
         // handle success
-        navigate("/organization/dashboard");
+        navigate("/partner/dashboard");
       }
     } catch (err) {
       // handle error

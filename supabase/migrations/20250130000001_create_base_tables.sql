@@ -74,6 +74,15 @@ ALTER TABLE public.deals ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Societies can view their own data" ON public.society
     FOR SELECT USING (auth.uid() = user_id);
 
+CREATE POLICY "Admin can view all societies" ON public.society
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM auth.users 
+            WHERE auth.users.id = auth.uid() 
+            AND auth.users.email = 'admin@dupulse.co.uk'
+        )
+    );
+
 CREATE POLICY "Societies can update their own data" ON public.society
     FOR UPDATE USING (auth.uid() = user_id);
 
@@ -83,6 +92,24 @@ CREATE POLICY "Anyone can create a society" ON public.society
 -- RLS Policies for Event table
 CREATE POLICY "Anyone can view approved events" ON public.event
     FOR SELECT USING (status = 'approved');
+
+CREATE POLICY "Admin can view all events" ON public.event
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM auth.users 
+            WHERE auth.users.id = auth.uid() 
+            AND auth.users.email = 'admin@dupulse.co.uk'
+        )
+    );
+
+CREATE POLICY "Admin can manage all events" ON public.event
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM auth.users 
+            WHERE auth.users.id = auth.uid() 
+            AND auth.users.email = 'admin@dupulse.co.uk'
+        )
+    );
 
 CREATE POLICY "Societies can manage their own events" ON public.event
     FOR ALL USING (

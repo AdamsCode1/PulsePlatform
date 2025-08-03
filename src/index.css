@@ -352,4 +352,55 @@
   .animate-float-down-3 {
     animation: floatDown3 17s ease-in-out infinite;
   }
+
+  /* PULSE Pattern Background */
+  .pulse-pattern {
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 100px,
+        rgba(236, 72, 153, 0.03) 100px,
+        rgba(236, 72, 153, 0.03) 200px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 100px,
+        rgba(147, 51, 234, 0.03) 100px,
+        rgba(147, 51, 234, 0.03) 200px
+      );
+    position: relative;
+  }
+
+  .pulse-pattern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      repeating-linear-gradient(
+        0deg,
+        transparent 0px,
+        transparent 80px,
+        rgba(236, 72, 153, 0.05) 80px,
+        rgba(236, 72, 153, 0.05) 120px,
+        transparent 120px,
+        transparent 200px
+      );
+    background-size: 200px 200px;
+    animation: pulseMove 20s linear infinite;
+    pointer-events: none;
+  }
+
+  @keyframes pulseMove {
+    0% {
+      transform: translateY(0);
+    }
+    100% {
+      transform: translateY(200px);
+    }
+  }
 }
