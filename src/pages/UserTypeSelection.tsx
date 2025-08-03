@@ -10,8 +10,11 @@ const UserTypeSelection = () => {
   const location = useLocation();
   const { toast } = useToast();
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
   // Determine if this is login or register mode
@@ -31,6 +34,60 @@ const UserTypeSelection = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (isRegistering) {
+      // Handle registration
+      if (password !== confirmPassword) {
+        toast({
+          variant: "destructive",
+          title: "Registration Failed",
+          description: "Passwords do not match.",
+        });
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name: name,
+              user_type: selectedType,
+            }
+          }
+        });
+
+        if (error) {
+          console.error("Registration error:", error.message);
+          toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: error.message || "Failed to create account. Please try again.",
+          });
+        } else {
+          toast({
+            title: "Registration Successful",
+            description: "Please check your email to verify your account.",
+          });
+          // Switch back to login mode after successful registration
+          setIsRegistering(false);
+          setPassword("");
+          setConfirmPassword("");
+          setName("");
+        }
+      } catch (err) {
+        console.error("Registration error:", err);
+        toast({
+          variant: "destructive",
+          title: "Registration Failed",
+          description: "An unexpected error occurred. Please try again.",
+        });
+      }
+      setIsLoading(false);
+      return;
+    }
+
     // Handle student, society, and organization login
     if (selectedType === "student" || selectedType === "society" || selectedType === "organization") {
       setIsLoading(true);
@@ -48,7 +105,7 @@ const UserTypeSelection = () => {
             title: "Login Successful",
             description: "Welcome back!",
           });
-          
+
           let returnTo;
           if (selectedType === "society") {
             returnTo = "/society/dashboard";
@@ -144,18 +201,37 @@ const UserTypeSelection = () => {
           </svg>
         </button>
 
-        {/* Login Form Header */}
+        {/* Login/Registration Form Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+            {selectedType === "student" && (isRegistering ? "Student Registration" : "Student Login")}
+            {selectedType === "society" && (isRegistering ? "Society Registration" : "Society Login")}
+            {selectedType === "organization" && (isRegistering ? "Organization Registration" : "Organization Login")}
             {selectedType === "student" && "Student Login"}
             {selectedType === "society" && "Society Login"}
             {selectedType === "organization" && "Partner Login"}
           </h1>
-          <p className="text-pink-200 text-sm sm:text-base">Enter your credentials</p>
+          <p className="text-pink-200 text-sm sm:text-base">
+            {isRegistering ? "Create your account" : "Enter your credentials"}
+          </p>
         </div>
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          {isRegistering && (
+            <div>
+              <label className="block text-pink-200 text-sm font-medium mb-2">Full Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full p-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-pink-500 focus:outline-none transition-colors duration-300 text-sm sm:text-base"
+                placeholder="Enter your full name"
+                required
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-pink-200 text-sm font-medium mb-2">
               {selectedType === "student" ? "Student Email" :
@@ -178,20 +254,36 @@ const UserTypeSelection = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-pink-500 focus:outline-none transition-colors duration-300 text-sm sm:text-base"
-              placeholder="Enter your password"
+              placeholder={isRegistering ? "Create a password" : "Enter your password"}
               required
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs sm:text-sm">
-            <label className="flex items-center text-pink-200">
-              <input type="checkbox" className="mr-2 accent-pink-500" />
-              <span className="text-xs sm:text-sm">Remember me</span>
-            </label>
-            <a href="#" className="text-pink-400 hover:text-pink-300 transition-colors duration-300 text-xs sm:text-sm">
-              Forgot password?
-            </a>
-          </div>
+          {isRegistering && (
+            <div>
+              <label className="block text-pink-200 text-sm font-medium mb-2">Confirm Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full p-3 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:border-pink-500 focus:outline-none transition-colors duration-300 text-sm sm:text-base"
+                placeholder="Confirm your password"
+                required
+              />
+            </div>
+          )}
+
+          {!isRegistering && (
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <label className="flex items-center text-pink-200">
+                <input type="checkbox" className="mr-2 accent-pink-500" />
+                <span className="text-xs sm:text-sm">Remember me</span>
+              </label>
+              <a href="#" className="text-pink-400 hover:text-pink-300 transition-colors duration-300 text-xs sm:text-sm">
+                Forgot password?
+              </a>
+            </div>
+          )}
 
           <button
             type="submit"
@@ -201,26 +293,23 @@ const UserTypeSelection = () => {
               boxShadow: '0 0 20px rgba(236, 72, 153, 0.3)'
             }}
           >
-            {isLoading ? "Signing In..." : "Sign In"}
+            {isLoading ? (isRegistering ? "Creating Account..." : "Signing In...") : (isRegistering ? "Create Account" : "Sign In")}
           </button>
 
           <div className="text-center">
             <p className="text-gray-400 text-xs sm:text-sm">
-              Don't have an account?{" "}
-              <button 
+              {isRegistering ? "Already have an account?" : "Don't have an account?"}{" "}
+              <button
                 type="button"
                 onClick={() => {
-                  if (selectedType === "society") {
-                    navigate("/register/society");
-                  } else if (selectedType === "organization") {
-                    navigate("/register/organization");
-                  } else if (selectedType === "student") {
-                    navigate("/register/student");
-                  }
+                  setIsRegistering(!isRegistering);
+                  setPassword("");
+                  setConfirmPassword("");
+                  setName("");
                 }}
                 className="text-pink-400 hover:text-pink-300 transition-colors duration-300 underline"
               >
-                Sign up here
+                {isRegistering ? "Sign in here" : "Sign up here"}
               </button>
             </p>
           </div>

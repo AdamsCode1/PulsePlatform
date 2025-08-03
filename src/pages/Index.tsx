@@ -68,12 +68,12 @@ const Index = () => {
         .gte('start_time', `${formattedDate}T00:00:00`)
         .lte('start_time', `${formattedDate}T23:59:59`)
         .order('start_time', { ascending: true });
-      
+
       if (eventsError) {
         console.error('Error fetching events:', eventsError);
         throw new Error(`Failed to fetch events: ${eventsError.message}`);
       }
-      
+
       if (!eventsData || eventsData.length === 0) {
         setEvents([]);
         setFilteredEvents([]);
@@ -89,19 +89,19 @@ const Index = () => {
       const { data: allSocieties, error: societiesError } = await supabase
         .from('society')
         .select('*');
-      
+
       if (societiesError) {
         console.error('Error fetching societies:', societiesError);
         throw new Error(`Failed to fetch societies: ${societiesError.message}`);
       }
-      
+
       const societiesData = allSocieties?.filter((society: any) => societyIDs.includes(society.id)) || [];
 
       // Fetch RSVP counts using direct Supabase call
       const { data: allRsvps, error: rsvpsError } = await supabase
         .from('rsvp')
         .select('*');
-      
+
       let rsvpCounts: any[] = [];
       if (!rsvpsError && allRsvps) {
         rsvpCounts = allRsvps.filter((rsvp: any) => eventIds.includes(rsvp.event_id));
@@ -163,7 +163,7 @@ const Index = () => {
     } else if (filterType === 'category' && value !== 'all') {
       filtered = filtered.filter(event => event.category.toLowerCase() === value.toLowerCase());
     }
-    
+
     return filtered;
   };
 
@@ -208,7 +208,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <NavBar />
       <HeroSection />
-      <div className="container mx-auto px-4 py-6 sm:py-8">
+      <div id="schedule" className="container mx-auto px-4 py-6 sm:py-8">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">

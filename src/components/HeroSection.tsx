@@ -2,6 +2,7 @@
 export default function HeroSection() {
   return (
     <section
+      id="hero"
       className="relative flex flex-col items-center justify-center pt-32 pb-16 bg-cover bg-center bg-no-repeat min-h-screen"
       style={{
         backgroundImage: `url('/image-uploads/background_cathedral.png')`

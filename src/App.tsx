@@ -37,6 +37,8 @@ import PartnerSubmitDeal from "./pages/partner/SubmitDeal";
 
 // Admin Components
 import AdminLogin from './pages/AdminLogin';
+import AboutPage from './pages/AboutPage';
+import Schedule from './pages/Schedule';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminEvents from './pages/admin/Events';
 import AdminDeals from './pages/admin/Deals';
@@ -68,6 +70,14 @@ const App = () => (
           <Route path="/login/partner" element={<PartnerLogin />} />
           <Route path="/register/student" element={<StudentRegister />} />
           <Route path="/register/society" element={<SocietyRegister />} />
+          <Route path="/register/organization" element={<OrganizationRegister />} />
+          <Route path="/submit-event" element={<EventSubmissionPage />} />
+          <Route path="/events/manage" element={<SocietyEventsPage />} />
+          <Route path="/user-type" element={<UserTypeSelection />} />
+          <Route path="/deals" element={<DealsPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/team" element={<MeetTheTeam />} />
           <Route path="/register/partner" element={<PartnerRegister />} />
           
           {/* Student Dashboard Routes */}
