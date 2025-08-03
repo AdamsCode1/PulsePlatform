@@ -9,6 +9,8 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import DealsPage from './pages/DealsPage';
 import MeetTheTeam from './pages/MeetTheTeam';
+import EventSubmissionPage from './pages/EventSubmissionPage';
+import SocietyEventsPage from './pages/SocietyEventsPage';
 
 // Authentication
 import UserTypeSelection from "./pages/UserTypeSelection";
@@ -70,7 +72,7 @@ const App = () => (
           <Route path="/login/partner" element={<PartnerLogin />} />
           <Route path="/register/student" element={<StudentRegister />} />
           <Route path="/register/society" element={<SocietyRegister />} />
-          <Route path="/register/organization" element={<OrganizationRegister />} />
+          <Route path="/register/organization" element={<PartnerRegister />} />
           <Route path="/submit-event" element={<EventSubmissionPage />} />
           <Route path="/events/manage" element={<SocietyEventsPage />} />
           <Route path="/user-type" element={<UserTypeSelection />} />
