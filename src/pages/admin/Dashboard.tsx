@@ -14,8 +14,8 @@ interface Event {
   id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
+  start_time: string;
+  end_time: string;
   location: string;
   status: 'pending' | 'approved' | 'rejected';
   society: {
@@ -324,11 +324,11 @@ export default function AdminDashboard() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2" />
-                            {new Date(event.date).toLocaleDateString()} at {event.time}
+                            {new Date(event.start_time).toLocaleDateString()} at {new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                           <div className="flex items-center">
                             <Users className="w-4 h-4 mr-2" />
-                            {/* {event.society.name} */} {/* RETRIEVE THE NAMES PROPERLY */}
+                            {event.society.name}
                           </div>
                         </div>
 
