@@ -18,8 +18,8 @@ interface Event {
   id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
+  start_time: string;
+  end_time: string;
   location: string;
   max_attendees: number;
   status: 'pending' | 'approved' | 'rejected';
@@ -95,7 +95,7 @@ export default function AdminEvents() {
         .from('event')
         .select(`
           *,
-          society:society(name, contact_email)
+          society:society_id(name, contact_email)
         `)
         .order('created_at', { ascending: false });
 
@@ -340,7 +340,7 @@ export default function AdminEvents() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div className="flex items-center text-sm text-gray-600">
                       <Calendar className="w-4 h-4 mr-2" />
-                      {new Date(event.date).toLocaleDateString()} at {event.time}
+                      {new Date(event.start_time).toLocaleDateString()} at {new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="w-4 h-4 mr-2" />
@@ -435,7 +435,7 @@ export default function AdminEvents() {
                   <div>
                     <h4 className="font-medium text-gray-900">Date & Time</h4>
                     <p className="text-gray-600">
-                      {new Date(selectedEvent.date).toLocaleDateString()} at {selectedEvent.time}
+                      {new Date(selectedEvent.start_time).toLocaleDateString()} at {new Date(selectedEvent.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                   <div>
@@ -452,7 +452,9 @@ export default function AdminEvents() {
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900">Max Attendees</h4>
-                    <p className="text-gray-600">{selectedEvent.max_attendees}</p>
+                    <p className="text-gray-600">
+                      {selectedEvent.max_attendees == null ? "Not specified" : selectedEvent.max_attendees}
+                    </p>
                   </div>
                 </div>
 
