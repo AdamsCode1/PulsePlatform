@@ -117,7 +117,7 @@ export default function AdminDashboard() {
         .from('event')
         .select(`
           *,
-          society:society(name)
+          society:society_id(name)
         `)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -328,7 +328,7 @@ export default function AdminDashboard() {
                           </div>
                           <div className="flex items-center">
                             <Users className="w-4 h-4 mr-2" />
-                            {event.society.name}
+                            {/* {event.society.name} */} {/* RETRIEVE THE NAMES PROPERLY */}
                           </div>
                         </div>
 
