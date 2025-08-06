@@ -10,6 +10,9 @@ const StudentLogin = () => {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -17,30 +20,80 @@ const StudentLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ 
-        email, 
-        password 
-      });
-      
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: error.message || "Failed to sign in. Please check your credentials and try again.",
+      if (isRegisterMode) {
+        // Registration logic
+        if (password !== confirmPassword) {
+          toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: "Passwords do not match.",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { first_name: firstName }
+          }
         });
+
+        if (error) {
+          toast({
+            variant: "destructive",
+            title: "Registration Failed",
+            description: error.message || "Failed to create account. Please try again.",
+          });
+        } else {
+          // Create user row in database
+          const { error: dbError } = await supabase
+            .from('users')
+            .insert([{ name: firstName, email }]);
+
+          if (dbError) {
+            console.error('Database error:', dbError);
+          }
+
+          toast({
+            title: "Registration Successful",
+            description: "Your account has been created! Please check your email to verify your account.",
+          });
+
+          // Switch to login mode after successful registration
+          setIsRegisterMode(false);
+          setFirstName("");
+          setConfirmPassword("");
+        }
       } else {
-        toast({
-          title: "Login Successful",
-          description: "Welcome back!",
+        // Login logic
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
         });
-        const returnTo = location.state?.returnTo || "/student/dashboard";
-        navigate(returnTo);
+
+        if (error) {
+          toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: error.message || "Failed to sign in. Please check your credentials and try again.",
+          });
+        } else {
+          toast({
+            title: "Login Successful",
+            description: "Welcome back!",
+          });
+          const returnTo = location.state?.returnTo || "/student/dashboard";
+          navigate(returnTo);
+        }
       }
     } catch (err) {
       toast({
         variant: "destructive",
-        title: "Login Error",
+        title: isRegisterMode ? "Registration Error" : "Login Error",
         description: "An unexpected error occurred. Please try again.",
       });
     }
@@ -86,7 +139,7 @@ const StudentLogin = () => {
             alt="DuPulse Background"
             className="w-full h-full object-cover"
           />
-          
+
           {/* Floating Stats - Left Side */}
           <div className="absolute top-20 left-8 bg-gradient-to-br from-pink-500/20 to-purple-500/20 backdrop-blur-sm border border-pink-500/30 rounded-2xl p-6 w-48 animate-float-up-1">
             <div className="flex items-center mb-2">
@@ -103,12 +156,32 @@ const StudentLogin = () => {
           <div className="w-full max-w-sm">
             {/* Login Form Header */}
             <div className="text-center mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">Student Login</h1>
-              <p className="text-pink-200 text-sm sm:text-base">Enter your credentials</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+                {isRegisterMode ? "Student Registration" : "Student Login"}
+              </h1>
+              <p className="text-pink-200 text-sm sm:text-base">
+                {isRegisterMode ? "Create your student account" : "Enter your credentials"}
+              </p>
             </div>
 
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+              {isRegisterMode && (
+                <div>
+                  <label className="block text-pink-200 text-sm font-medium mb-2">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Enter your first name"
+                    className="w-full px-4 py-3 sm:py-4 bg-gray-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300 backdrop-blur-sm"
+                    required={isRegisterMode}
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="block text-pink-200 text-sm font-medium mb-2">
                   Student Email
@@ -137,33 +210,51 @@ const StudentLogin = () => {
                 />
               </div>
 
-              {/* Remember Me and Forgot Password */}
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center text-pink-200">
+              {isRegisterMode && (
+                <div>
+                  <label className="block text-pink-200 text-sm font-medium mb-2">
+                    Confirm Password
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="mr-2 w-4 h-4 text-pink-500 bg-gray-800 border-gray-600 rounded focus:ring-pink-500 focus:ring-2"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className="w-full px-4 py-3 sm:py-4 bg-gray-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all duration-300 backdrop-blur-sm"
+                    required={isRegisterMode}
                   />
-                  Remember me
-                </label>
-                <button
-                  type="button"
-                  className="text-pink-400 hover:text-pink-300 transition-colors duration-300"
-                  onClick={() => {
-                    // TODO: Implement forgot password
-                    toast({
-                      title: "Feature Coming Soon",
-                      description: "Password reset functionality will be available soon.",
-                    });
-                  }}
-                >
-                  Forgot password?
-                </button>
-              </div>
+                </div>
+              )}
 
-              {/* Sign In Button */}
+              {/* Remember Me and Forgot Password */}
+              {!isRegisterMode && (
+                <div className="flex items-center justify-between text-sm">
+                  <label className="flex items-center text-pink-200">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="mr-2 w-4 h-4 text-pink-500 bg-gray-800 border-gray-600 rounded focus:ring-pink-500 focus:ring-2"
+                    />
+                    Remember me
+                  </label>
+                  <button
+                    type="button"
+                    className="text-pink-400 hover:text-pink-300 transition-colors duration-300"
+                    onClick={() => {
+                      // TODO: Implement forgot password
+                      toast({
+                        title: "Feature Coming Soon",
+                        description: "Password reset functionality will be available soon.",
+                      });
+                    }}
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
+
+              {/* Sign In/Register Button */}
               <button
                 type="submit"
                 disabled={isLoading}
@@ -172,19 +263,30 @@ const StudentLogin = () => {
                   boxShadow: '0 0 20px rgba(236, 72, 153, 0.3)'
                 }}
               >
-                {isLoading ? "Signing In..." : "Sign In"}
+                {isLoading
+                  ? (isRegisterMode ? "Creating Account..." : "Signing In...")
+                  : (isRegisterMode ? "Create Account" : "Sign In")
+                }
               </button>
 
-              {/* Sign Up Link */}
+              {/* Toggle between Login and Register */}
               <div className="text-center">
                 <p className="text-gray-400 text-sm">
-                  Don't have an account?{' '}
+                  {isRegisterMode ? "Already have an account?" : "Don't have an account?"}{' '}
                   <button
                     type="button"
-                    onClick={() => navigate("/register/student")}
+                    onClick={() => {
+                      setIsRegisterMode(!isRegisterMode);
+                      // Clear form fields when switching modes
+                      setEmail("");
+                      setPassword("");
+                      setFirstName("");
+                      setConfirmPassword("");
+                      setRememberMe(false);
+                    }}
                     className="text-pink-400 hover:text-pink-300 transition-colors duration-300 underline"
                   >
-                    Sign up here
+                    {isRegisterMode ? "Sign in here" : "Sign up here"}
                   </button>
                 </p>
               </div>
@@ -192,6 +294,84 @@ const StudentLogin = () => {
           </div>
         </div>
 
+      </div>
+
+      {/* Left Side Floating Boxes - Moving Upward */}
+      <div className="absolute left-0 top-0 w-64 h-full pointer-events-none hidden xl:block">
+        <div
+          className="absolute top-20 left-8 bg-gradient-to-br from-pink-500/60 to-purple-500/60 backdrop-blur-sm border-2 border-pink-500/80 rounded-2xl p-6 w-48 animate-float-up-1 shadow-xl"
+          style={{ animationDelay: '0s' }}
+        >
+          <div className="flex items-center mb-2">
+            <div className="w-3 h-3 bg-pink-400 rounded-full mr-3"></div>
+            <span className="text-2xl font-bold text-pink-400">50+</span>
+          </div>
+          <p className="text-white text-sm font-medium">Events every week</p>
+          <p className="text-gray-300 text-xs">Keeping Durham vibrant</p>
+        </div>
+
+        <div
+          className="absolute top-80 left-16 bg-gradient-to-br from-cyan-500/60 to-blue-500/60 backdrop-blur-sm border-2 border-cyan-500/80 rounded-2xl p-6 w-52 animate-float-up-2 shadow-xl"
+          style={{ animationDelay: '2s' }}
+        >
+          <div className="flex items-center mb-2">
+            <div className="w-3 h-3 bg-cyan-400 rounded-full mr-3"></div>
+            <span className="text-2xl font-bold text-cyan-400">5K+</span>
+          </div>
+          <p className="text-white text-sm font-medium">Students connected</p>
+          <p className="text-gray-300 text-xs">Growing network</p>
+        </div>
+
+        <div
+          className="absolute top-96 left-4 bg-gradient-to-br from-purple-500/60 to-pink-500/60 backdrop-blur-sm border-2 border-purple-500/80 rounded-2xl p-5 w-44 animate-float-up-3 shadow-xl"
+          style={{ animationDelay: '4s' }}
+        >
+          <div className="flex items-center mb-2">
+            <div className="w-3 h-3 bg-purple-400 rounded-full mr-3"></div>
+            <span className="text-xl font-bold text-purple-400">100%</span>
+          </div>
+          <p className="text-white text-sm font-medium">Free platform</p>
+          <p className="text-gray-300 text-xs">Always accessible</p>
+        </div>
+      </div>
+
+      {/* Right Side Floating Boxes - Moving Downward */}
+      <div className="absolute right-0 top-0 w-64 h-full pointer-events-none hidden xl:block">
+        <div
+          className="absolute top-16 right-8 bg-gradient-to-br from-cyan-500/60 to-teal-500/60 backdrop-blur-sm border-2 border-cyan-500/80 rounded-2xl p-6 w-52 animate-float-down-1 shadow-xl"
+          style={{ animationDelay: '1s' }}
+        >
+          <div className="flex items-center mb-2">
+            <div className="w-3 h-3 bg-cyan-400 rounded-full mr-3"></div>
+            <span className="text-2xl font-bold text-cyan-400">24/7</span>
+          </div>
+          <p className="text-white text-sm font-medium">Platform access</p>
+          <p className="text-gray-300 text-xs">Always available</p>
+        </div>
+
+        <div
+          className="absolute top-72 right-12 bg-gradient-to-br from-pink-500/60 to-red-500/60 backdrop-blur-sm border-2 border-pink-500/80 rounded-2xl p-6 w-48 animate-float-down-2 shadow-xl"
+          style={{ animationDelay: '3s' }}
+        >
+          <div className="flex items-center mb-2">
+            <div className="w-3 h-3 bg-pink-400 rounded-full mr-3"></div>
+            <span className="text-2xl font-bold text-pink-400">Easy</span>
+          </div>
+          <p className="text-white text-sm font-medium">Registration</p>
+          <p className="text-gray-300 text-xs">Quick & simple</p>
+        </div>
+
+        <div
+          className="absolute top-[26rem] right-6 bg-gradient-to-br from-purple-500/20 to-indigo-500/20 backdrop-blur-sm border border-purple-500/30 rounded-2xl p-5 w-46 animate-float-down-3"
+          style={{ animationDelay: '5s' }}
+        >
+          <div className="flex items-center mb-2">
+            <div className="w-3 h-3 bg-purple-400 rounded-full mr-3"></div>
+            <span className="text-xl font-bold text-purple-400">RSVP</span>
+          </div>
+          <p className="text-white text-sm font-medium">Event tracking</p>
+          <p className="text-gray-300 text-xs">Never miss out</p>
+        </div>
       </div>
     </div>
   );

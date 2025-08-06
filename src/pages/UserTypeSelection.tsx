@@ -109,7 +109,7 @@ const UserTypeSelection = () => {
                   boxShadow: '0 0 20px rgba(236, 72, 153, 0.2)'
                 }}
               >
-                <span className="text-pink-200 group-hover:text-white font-semibold text-lg sm:text-xl">Organization</span>
+                <span className="text-pink-200 group-hover:text-white font-semibold text-lg sm:text-xl">Partner</span>
               </button>
             </div>
           </div>
