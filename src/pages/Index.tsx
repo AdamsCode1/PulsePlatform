@@ -7,7 +7,6 @@ import EventModal from '../components/EventModal';
 import EventFilters from '../components/EventFilters';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Event } from '../types/Event';
-import { mockEvents } from '../data/mockEvents';
 import { start } from 'repl';
 import NavBar from '../components/NavBar';
 import HeroSection from '../components/HeroSection';

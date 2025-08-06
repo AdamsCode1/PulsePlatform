@@ -53,14 +53,17 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
           </a>
 
           {/* Gmail */}
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+          <a
+            href="mailto:hello@dupulse.co.uk"
+            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+          >
             <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center">
               <svg width="16" height="16" fill="currentColor" className="text-white" viewBox="0 0 24 24">
                 <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-.887.711-1.603 1.598-1.62L12 10.773l10.402-6.936A1.636 1.636 0 0 1 24 5.457z" />
               </svg>
             </div>
-            <span className="text-gray-700 font-medium">hello@dupulse.co.uk</span>
-          </div>
+            <span className="text-gray-700 group-hover:text-gray-900 font-medium">hello@dupulse.co.uk</span>
+          </a>
         </div>
       </div>
     </div>
