@@ -61,30 +61,33 @@ export default function NavBar() {
   };
 
   return (
-    <nav className="fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[98vw] max-w-2xl rounded-2xl bg-white/80 backdrop-blur-md shadow-xl flex items-center justify-between px-4 py-2 border border-gray-200">
-      <div className="flex items-center gap-3 cursor-pointer" onClick={() => handleNavigation('/', 'hero')}>
-        <img src="/favicon.ico" alt="DUPulse Logo" width={36} height={36} className="rounded-full" />
-        <span className="font-extrabold text-lg text-gray-900 tracking-tight">DUPulse</span>
+    <nav className="fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[95vw] max-w-3xl rounded-xl bg-white/80 backdrop-blur-md shadow-xl flex items-center justify-between px-3 py-1.5 border border-gray-200">
+      {/* Logo and Brand */}
+      <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleNavigation('/', 'hero')}>
+        <img src="/favicon.ico" alt="DUPulse Logo" width={32} height={32} className="rounded-full" />
+        <span className="font-extrabold text-base text-gray-900 tracking-tight">DUPulse</span>
       </div>
+
       {/* Desktop Nav */}
-      <div className="hidden md:flex gap-4 items-center">
-        <button onClick={() => handleNavigation('/', 'hero')} className="text-gray-700 font-medium hover:text-pink-500 transition">Home</button>
-        <button onClick={() => handleNavigation('/', 'schedule')} className="text-gray-700 font-medium hover:text-pink-500 transition">Events</button>
-        <button onClick={() => navigate('/deals')} className="text-gray-700 font-medium hover:text-pink-500 transition">Deals</button>
-        <button onClick={() => navigate('/about')} className="text-gray-700 font-medium hover:text-pink-500 transition">About</button>
+      <div className="hidden md:flex gap-3 items-center">
+        <button onClick={() => handleNavigation('/', 'schedule')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Events</button>
+        <button onClick={() => navigate('/deals')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Deals</button>
+        <button onClick={() => navigate('/about')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">About</button>
         {user && (
-          <button onClick={() => navigate('/events/manage')} className="text-gray-700 font-medium hover:text-pink-500 transition">Manage Events</button>
+          <button onClick={() => navigate('/events/manage')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Manage</button>
         )}
+
+        {/* User Section */}
         {user ? (
-          <>
-            <span className="text-gray-700 font-medium mr-2">Hello, {firstName}!</span>
-            <button onClick={handleSignOut} className="px-3 py-1 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Sign Out</button>
-          </>
+          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-300">
+            <span className="text-gray-700 font-medium text-xs">Hi, {firstName}!</span>
+            <button onClick={handleSignOut} className="px-2 py-1 rounded-md border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition text-xs whitespace-nowrap">Sign Out</button>
+          </div>
         ) : (
-          <>
-            <button onClick={() => navigate('/login')} className="px-3 py-1 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Login</button>
-            <button onClick={() => navigate('/login')} className="px-3 py-1 rounded-lg bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition">Sign Up</button>
-          </>
+          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-gray-300">
+            <button onClick={() => navigate('/login')} className="px-2 py-1 rounded-md border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition text-xs whitespace-nowrap">Login</button>
+            <button onClick={() => navigate('/login')} className="px-2 py-1 rounded-md bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition text-xs whitespace-nowrap">Sign Up</button>
+          </div>
         )}
       </div>
       {/* Mobile Hamburger */}
@@ -98,23 +101,24 @@ export default function NavBar() {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="absolute top-16 left-0 w-full bg-white/95 rounded-b-2xl shadow-lg flex flex-col items-center py-4 gap-3 md:hidden animate-fade-in z-50">
-          <button onClick={() => { setMenuOpen(false); handleNavigation('/', 'hero'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Home</button>
           <button onClick={() => { setMenuOpen(false); handleNavigation('/', 'schedule'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Events</button>
           <button onClick={() => { setMenuOpen(false); navigate('/deals'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</button>
           <button onClick={() => { setMenuOpen(false); navigate('/about'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">About</button>
           {user && (
             <button onClick={() => { setMenuOpen(false); navigate('/events/manage'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Manage Events</button>
           )}
+
+          {/* Mobile User Section */}
           {user ? (
-            <>
-              <span className="text-gray-700 font-medium mb-2">Hello, {firstName}!</span>
-              <button onClick={handleSignOut} className="w-11/12 px-3 py-2 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Sign Out</button>
-            </>
+            <div className="w-full flex flex-col items-center gap-3 pt-3 border-t border-gray-300">
+              <span className="text-gray-700 font-medium">Hi, {firstName}!</span>
+              <button onClick={() => { setMenuOpen(false); handleSignOut(); }} className="w-11/12 px-3 py-2 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Sign Out</button>
+            </div>
           ) : (
-            <>
+            <div className="w-full flex flex-col items-center gap-3 pt-3 border-t border-gray-300">
               <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-11/12 px-3 py-2 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Login</button>
               <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-11/12 px-3 py-2 rounded-lg bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition">Sign Up</button>
-            </>
+            </div>
           )}
         </div>
       )}
