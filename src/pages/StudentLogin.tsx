@@ -48,7 +48,7 @@ const StudentLogin = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-black via-gray-950 to-black px-2 sm:px-4 py-6 sm:py-12 animate-fade-in relative overflow-hidden pulse-pattern">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-purple-900 via-black to-pink-900 px-2 sm:px-4 py-6 sm:py-12 animate-fade-in relative overflow-hidden pulse-pattern">
       {/* Back Arrow Button */}
       <button
         onClick={() => navigate("/login")}
