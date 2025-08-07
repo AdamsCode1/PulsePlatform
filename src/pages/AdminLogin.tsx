@@ -40,8 +40,15 @@ const AdminLogin = () => {
             }
 
             if (data.user) {
-                // Successfully logged in, redirect to admin dashboard
-                navigate("/admin/dashboard");
+                // Check if user already has admin role
+                if (data.user.app_metadata?.role === 'admin') {
+                    // Successfully logged in with admin role, redirect to admin dashboard
+                    navigate("/admin/dashboard");
+                } else {
+                    // User exists but doesn't have admin role - this shouldn't happen for admin emails
+                    setError("This account is not properly configured for admin access. Please contact support.");
+                    setLoading(false);
+                }
             }
         } catch (err: unknown) {
             setError("An unexpected error occurred. Please try again.");
