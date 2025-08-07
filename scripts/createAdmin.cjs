@@ -29,7 +29,7 @@ async function createAdminUser() {
       email: 'admin@dupulse.co.uk',
       password: 'admin123!', // Change this to a secure password
       email_confirm: true, // Skip email verification
-      user_metadata: {
+      app_metadata: {
         role: 'admin'
       }
     });

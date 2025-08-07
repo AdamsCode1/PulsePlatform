@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Users, CheckCircle, XCircle, Clock, Building2, BarChart3, Plus } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Calendar, Users, CheckCircle, XCircle, Clock, Building2, BarChart3, Plus, Settings as SettingsIcon } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { API_BASE_URL } from '@/lib/apiConfig';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface Event {
@@ -31,6 +33,12 @@ interface AdminStats {
   rejectedEvents: number;
   totalSocieties: number;
   totalStudents: number;
+  totalPartners: number;
+}
+
+interface UserSummary {
+    id: string;
+    role: string;
 }
 
 export default function AdminDashboard() {
@@ -42,20 +50,44 @@ export default function AdminDashboard() {
     rejectedEvents: 0,
     totalSocieties: 0,
     totalStudents: 0,
+    totalPartners: 0,
   });
   const [recentEvents, setRecentEvents] = useState<Event[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+
+  const fetchChartData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        // Format data for the chart
+        const formattedData = data.map((item: any) => ({
+          date: new Date(item.submission_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          count: item.count,
+        }));
+        setChartData(formattedData);
+      }
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+    }
+  };
 
   const checkAuth = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.email !== 'admin@dupulse.co.uk') {
+      // Secure role-based check
+      if (!user || user.app_metadata?.role !== 'admin') {
         navigate('/admin/login');
         return;
       }
       setUser(user);
-      await Promise.all([fetchStats(), fetchRecentEvents()]);
+      await Promise.all([fetchStats(), fetchRecentEvents(), fetchChartData()]);
     } catch (error) {
       console.error('Auth check failed:', error);
       navigate('/admin/login');
@@ -70,41 +102,29 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      console.log('Admin fetching stats...');
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current admin user:', user?.email);
-      
-      // Fetch event stats using regular client (RLS should allow admin access)
-      const { data: events, error: eventsError } = await supabase
-        .from('event')
-        .select('status');
-
-      console.log('Events stats query result:', { events, error: eventsError });
-
+      // Fetch event stats
+      const { count: totalEvents, error: eventsError } = await supabase.from('event').select('*', { count: 'exact', head: true });
       if (eventsError) throw eventsError;
+      const { count: pendingEvents } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      const { count: approvedEvents } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'approved');
+      const { count: rejectedEvents } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
 
-      // Fetch society count using regular client
-      const { count: societyCount, error: societyError } = await supabase
-        .from('society')
-        .select('*', { count: 'exact', head: true });
+      // Fetch user stats using the RPC function
+      const { data: users, error: usersError } = await supabase.rpc('get_all_users') as { data: UserSummary[], error: any };
+      if (usersError) throw usersError;
 
-      console.log('Society count query result:', { societyCount, error: societyError });
-
-      if (societyError) throw societyError;
-
-      // Calculate event stats
-      const totalEvents = events?.length || 0;
-      const pendingEvents = events?.filter(e => e.status === 'pending').length || 0;
-      const approvedEvents = events?.filter(e => e.status === 'approved').length || 0;
-      const rejectedEvents = events?.filter(e => e.status === 'rejected').length || 0;
+      const totalStudents = users.filter(u => u.role === 'student').length;
+      const totalSocieties = users.filter(u => u.role === 'society').length;
+      const totalPartners = users.filter(u => u.role === 'partner').length;
 
       setStats({
-        totalEvents,
-        pendingEvents,
-        approvedEvents,
-        rejectedEvents,
-        totalSocieties: societyCount || 0,
-        totalStudents: 0, // We'll implement this when we have student tracking
+        totalEvents: totalEvents || 0,
+        pendingEvents: pendingEvents || 0,
+        approvedEvents: approvedEvents || 0,
+        rejectedEvents: rejectedEvents || 0,
+        totalSocieties,
+        totalStudents,
+        totalPartners,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -215,44 +235,62 @@ export default function AdminDashboard() {
               <div className="text-2xl font-bold text-indigo-600">{stats.totalStudents}</div>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg">Partners</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-pink-600">{stats.totalPartners}</div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Actions */}
-          <div className="lg:col-span-1">
-            <Card>
+          {/* Recent Activity Chart */}
+          <div className="lg:col-span-2">
+             <Card>
+              <CardHeader>
+                <CardTitle>Recent Event Submissions</CardTitle>
+                <CardDescription>Event submissions over the last 7 days.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" fill="#8884d8" name="Submissions" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions & Status */}
+          <div className="lg:col-span-1 space-y-8">
+             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button 
-                  onClick={() => navigate('/admin/events')}
-                  className="w-full justify-start"
-                >
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Manage Events
+                <Button onClick={() => navigate('/admin/events')} className="w-full justify-start">
+                  <Calendar className="w-4 h-4 mr-2" /> Manage Events
                 </Button>
-                <Button 
-                  onClick={() => navigate('/admin/deals')}
-                  className="w-full justify-start"
-                  variant="outline"
-                >
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Manage Deals
+                <Button onClick={() => navigate('/admin/deals')} className="w-full justify-start">
+                  <BarChart3 className="w-4 h-4 mr-2" /> Manage Deals
                 </Button>
-                <Button 
-                  onClick={() => navigate('/')}
-                  className="w-full justify-start"
-                  variant="outline"
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  View Public Site
+                <Button onClick={() => navigate('/admin/users')} className="w-full justify-start">
+                  <Users className="w-4 h-4 mr-2" /> Manage Users
+                </Button>
+                 <Button onClick={() => navigate('/admin/settings')} className="w-full justify-start" variant="outline">
+                  <SettingsIcon className="w-4 h-4 mr-2" /> Manage Settings
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Event Status Summary */}
-            <Card className="mt-6">
+            <Card>
               <CardHeader>
                 <CardTitle>Event Status Overview</CardTitle>
               </CardHeader>
