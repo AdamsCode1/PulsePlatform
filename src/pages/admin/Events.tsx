@@ -102,24 +102,29 @@ export default function AdminEvents() {
         return;
       }
       setUser(user);
-      fetchEvents(currentPage);
     } catch (error) {
       console.error('Auth check failed:', error);
       navigate('/admin/login');
     }
-  }, [navigate, fetchEvents, currentPage]);
+  }, [navigate]);
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status && ['pending', 'approved', 'rejected'].includes(status)) {
+      setStatusFilter(status);
+    }
+  }, [searchParams]);
+
   // This useEffect is to refetch data when filters change
   useEffect(() => {
     if (user) { // only fetch if user is authenticated
-      fetchEvents(1); // Reset to page 1 when filters change
-      if (currentPage !== 1) setCurrentPage(1);
+      fetchEvents(currentPage);
     }
-  }, [searchTerm, statusFilter, user]); // Removed fetchEvents from dependencies to avoid loop
+  }, [searchTerm, statusFilter, user, currentPage, fetchEvents]);
 
   useEffect(() => {
     // Check if we need to open review dialog from URL params
@@ -147,7 +152,7 @@ export default function AdminEvents() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ eventId, payload: { status, rejection_reason: reason } }),
+        body: JSON.stringify({ eventId, status, rejection_reason: reason }),
       });
 
       const result = await response.json();

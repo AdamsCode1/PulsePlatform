@@ -169,7 +169,7 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card onClick={() => handleCardClick('/admin/events')} className="cursor-pointer hover:bg-gray-100 transition-colors">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total Events</CardTitle>
               <CardDescription>{stats.totalEvents.pending} pending</CardDescription>
@@ -237,8 +237,8 @@ export default function AdminDashboard() {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button onClick={() => navigate('/admin/events')} className="w-full justify-start">
-                  <Calendar className="w-4 h-4 mr-2" /> Manage Events
+                <Button onClick={() => handleCardClick('/admin/events?status=pending')} className="w-full justify-start">
+                  <Calendar className="w-4 h-4 mr-2" /> Review Pending Events
                 </Button>
                 <Button onClick={() => navigate('/admin/deals')} className="w-full justify-start">
                   <BarChart3 className="w-4 h-4 mr-2" /> Manage Deals
@@ -258,21 +258,21 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center">
+                  <div onClick={() => handleCardClick('/admin/events?status=pending')} className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors">
                     <div className="flex items-center">
                       <Clock className="w-4 h-4 mr-2 text-yellow-500" />
                       <span className="text-sm">Pending Review</span>
                     </div>
                     <Badge variant="outline">{stats.totalEvents.pending}</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div onClick={() => handleCardClick('/admin/events?status=approved')} className="flex justify-between items-center cursor-pointer hover:bg-ray-100 p-2 rounded-md transition-colors">
                     <div className="flex items-center">
                       <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
                       <span className="text-sm">Approved</span>
                     </div>
                     <Badge variant="outline">{stats.totalEvents.approved}</Badge>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div onClick={() => handleCardClick('/admin/events?status=rejected')} className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors">
                     <div className="flex items-center">
                       <XCircle className="w-4 h-4 mr-2 text-red-500" />
                       <span className="text-sm">Rejected</span>
