@@ -4,41 +4,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, Users, CheckCircle, XCircle, Clock, Server, Database, BarChart3, Plus, Settings as SettingsIcon } from 'lucide-react';
+import { Calendar, Users, CheckCircle, XCircle, Clock, Server, Database, BarChart3, Settings as SettingsIcon, FileClock } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { API_BASE_URL } from '@/lib/apiConfig';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { formatDistanceToNow } from 'date-fns';
 
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  start_time: string;
-  end_time: string;
-  location: string;
-  status: 'pending' | 'approved' | 'rejected';
-  society: {
-    name: string;
-  };
-  created_at: string;
-}
 
 interface DashboardStats {
   totalEvents: { total: number, pending: number, approved: number, rejected: number };
   totalUsers: { students: number, societies: number, partners: number, admins: number };
-  recentActivity: ActivityLog[];
   systemHealth: { api_status: 'healthy' | 'degraded', db_status: 'healthy' | 'degraded' };
 }
 
 interface ActivityLog {
     id: string;
-    timestamp: string;
-    user: string;
+    created_at: string;
     action: string;
-    details: string;
+    target_entity: string;
+    target_id: string;
+    details: {
+        eventName?: string;
+        rejection_reason?: string;
+    };
+    user_email: string;
 }
 
 interface UserSummary {
@@ -46,18 +37,38 @@ interface UserSummary {
     role: string;
 }
 
+const formatTimeAgo = (dateString: string) => {
+    if (!dateString) return '';
+    return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalEvents: { total: 0, pending: 0, approved: 0, rejected: 0 },
     totalUsers: { students: 0, societies: 0, partners: 0, admins: 0 },
-    recentActivity: [],
     systemHealth: { api_status: 'healthy', db_status: 'healthy' },
   });
-  const [recentEvents, setRecentEvents] = useState<Event[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+
+  const fetchActivityLog = async () => {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const response = await fetch(`${API_BASE_URL}/admin/activity`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+        });
+        const data = await response.json();
+        if (response.ok) {
+            setActivityLog(data);
+        }
+    } catch (error) {
+        console.error('Error fetching activity log:', error);
+    }
+  };
 
   const fetchChartData = async () => {
     try {
@@ -89,7 +100,7 @@ export default function AdminDashboard() {
         return;
       }
       setUser(user);
-      await Promise.all([fetchStats(), fetchChartData()]); // Removed fetchRecentEvents
+      await Promise.all([fetchStats(), fetchChartData(), fetchActivityLog()]);
     } catch (error) {
       console.error('Auth check failed:', error);
       navigate('/admin/login');
@@ -137,39 +148,6 @@ export default function AdminDashboard() {
       }));
     } catch (error) {
       console.error('Error fetching stats:', error);
-    }
-  };
-
-  const fetchRecentEvents = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('event')
-        .select(`
-          *,
-          society:society_id(name)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      console.log('Recent events query result:', { data, error });
-
-      if (error) throw error;
-      setRecentEvents(data || []);
-    } catch (error) {
-      console.error('Error fetching recent events:', error);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case 'rejected':
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
@@ -342,9 +320,37 @@ export default function AdminDashboard() {
                 <CardDescription>A log of recent administrative actions.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8">
-                    <p className="text-gray-500">Recent activity log coming soon.</p>
-                </div>
+                 {activityLog.length > 0 ? (
+                    <ul className="space-y-4">
+                        {activityLog.map((log) => (
+                            <li key={log.id} className="flex items-start space-x-4">
+                                <div className="flex-shrink-0">
+                                    <FileClock className="w-5 h-5 text-gray-400 mt-1" />
+                                </div>
+                                <div className="flex-grow">
+                                    <p className="text-sm font-medium text-gray-800">
+                                        {log.action.replace('event.', 'Event ')}
+                                        <span className="font-normal text-gray-600">
+                                            {log.details.eventName ? ` - "${log.details.eventName}"` : ''}
+                                        </span>
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        By {log.user_email} · {formatTimeAgo(log.created_at)}
+                                    </p>
+                                    {log.action === 'event.rejected' && log.details.rejection_reason && (
+                                        <p className="text-xs text-red-600 mt-1">
+                                            Reason: {log.details.rejection_reason}
+                                        </p>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <div className="text-center py-8">
+                        <p className="text-gray-500">No recent administrative activity found.</p>
+                    </div>
+                )}
               </CardContent>
             </Card>
           </div>

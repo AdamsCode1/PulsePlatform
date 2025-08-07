@@ -36,7 +36,7 @@ const requireAdmin = async (req: VercelRequest) => {
 const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
   try {
     // First, ensure the user is an admin
-    await requireAdmin(req);
+    const adminUser = await requireAdmin(req);
 
     const { eventId, status, rejection_reason } = req.body;
 
@@ -64,6 +64,24 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
     if (error) {
       console.error('Error updating event:', error);
       throw new Error(error.message);
+    }
+
+    // Log the admin activity
+    if (status === 'approved' || status === 'rejected') {
+        const { error: logError } = await supabaseAdmin.rpc('log_admin_activity', {
+            action: `event.${status}`,
+            target_entity: 'event',
+            target_id: eventId,
+            details: {
+                rejection_reason: status === 'rejected' ? rejection_reason : undefined,
+                eventName: data.name // Also log the event name for context
+            }
+        });
+
+        if (logError) {
+            // If logging fails, we should probably note it but not fail the whole request
+            console.error('Failed to log admin activity:', logError);
+        }
     }
 
     return res.status(200).json(data);

@@ -11,6 +11,8 @@ let adminToken: string;
 let societyToken: string;
 let testEventId: string;
 let testSocietyId: string;
+let adminUserId: string;
+let societyUserId: string;
 
 const adminEmail = `test-admin-${Date.now()}@example.com`;
 const societyEmail = `test-society-for-admin-test-${Date.now()}@example.com`;
@@ -27,6 +29,7 @@ describe('Admin API', () => {
       app_metadata: { role: 'admin' }
     });
     if (adminError) console.error('Error creating admin user for test:', adminError);
+    adminUserId = adminData.user!.id;
 
     // 2. Create a society user
     const { data: societyUserData, error: societyUserError } = await supabase.auth.admin.createUser({
@@ -36,6 +39,7 @@ describe('Admin API', () => {
       app_metadata: { role: 'society' }
     });
     if (societyUserError) console.error('Error creating society user for test:', societyUserError);
+    societyUserId = societyUserData.user!.id;
 
     // 3. Get tokens for both users
     const { data: adminLoginData, error: adminLoginError } = await supabase.auth.signInWithPassword({ email: adminEmail, password: testPassword });
@@ -68,27 +72,27 @@ describe('Admin API', () => {
   // Test route protection
   it('should deny access to a non-admin user', async () => {
     const res = await request(app)
-      .patch('/api/admin/events')
+      .patch(`/api/admin/events`)
       .set('Authorization', `Bearer ${societyToken}`)
-      .send({ eventId: testEventId, payload: { status: 'approved' } });
+      .send({ eventId: testEventId, status: 'approved' });
 
     expect(res.status).toBe(403);
   });
 
   it('should deny access if no token is provided', async () => {
     const res = await request(app)
-      .patch('/api/admin/events')
-      .send({ eventId: testEventId, payload: { status: 'approved' } });
+      .patch(`/api/admin/events`)
+      .send({ eventId: testEventId, status: 'approved' });
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
   });
 
   // Test admin functionality
   it('should allow an admin to approve a pending event', async () => {
     const res = await request(app)
-      .patch('/api/admin/events')
+      .patch(`/api/admin/events`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ eventId: testEventId, payload: { status: 'approved' } });
+      .send({ eventId: testEventId, status: 'approved' });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('approved');
@@ -96,12 +100,36 @@ describe('Admin API', () => {
 
   it('should allow an admin to reject an approved event', async () => {
     const res = await request(app)
-      .patch('/api/admin/events')
+      .patch(`/api/admin/events`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ eventId: testEventId, payload: { status: 'rejected' } });
+      .send({ eventId: testEventId, status: 'rejected', rejection_reason: 'Test rejection' });
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('rejected');
+  });
+
+  it('should log admin actions, which can be retrieved from the activity endpoint', async () => {
+    // First, perform an action to log (approve the event again)
+    await request(app)
+        .patch(`/api/admin/events`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ eventId: testEventId, status: 'approved' });
+
+    // Now, fetch the activity log
+    const res = await request(app)
+        .get('/api/admin/activity')
+        .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+
+    // The most recent action should be the one we just performed
+    const latestLog = res.body[0];
+    expect(latestLog.action).toBe('event.approved');
+    expect(latestLog.target_entity).toBe('event');
+    expect(latestLog.target_id).toBe(testEventId);
+    expect(latestLog.user_email).toBe(adminEmail);
   });
 
   it('should allow an admin to get all users', async () => {
@@ -127,8 +155,8 @@ describe('Admin API', () => {
 
   afterAll(async () => {
     // Clean up created users
-    await supabase.auth.admin.deleteUser(adminEmail);
-    await supabase.auth.admin.deleteUser(societyEmail);
+    if (adminUserId) await supabase.auth.admin.deleteUser(adminUserId);
+    if (societyUserId) await supabase.auth.admin.deleteUser(societyUserId);
     // The event and society profile should be cleaned up by cascade delete
   });
 });
