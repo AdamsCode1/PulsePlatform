@@ -54,6 +54,7 @@ export default function AdminDashboard() {
     recentActivity: [],
     systemHealth: { api_status: 'healthy', db_status: 'healthy' },
   });
+  const [recentEvents, setRecentEvents] = useState<Event[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -139,7 +140,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // fetchRecentEvents is removed as it will be replaced by a new recent activity log
+  const fetchRecentEvents = async () => {
     try {
       const { data, error } = await supabase
         .from('event')
@@ -303,7 +304,6 @@ export default function AdminDashboard() {
                 </div>
               </CardContent>
             </Card>
-          </div>
 
             <Card>
               <CardHeader>
