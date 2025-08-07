@@ -132,6 +132,52 @@ export default function AdminEvents() {
     }
   }, [searchParams, events]);
 
+  const checkAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      // Secure role-based check
+      if (!user || user.app_metadata?.role !== 'admin') {
+        navigate('/admin/login');
+        return;
+      }
+      setUser(user);
+      await fetchEvents();
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      navigate('/admin/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      console.log('Admin fetching events...');
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current admin user:', user?.email);
+
+      const { data, error } = await supabase
+        .from('event')
+        .select(`
+          *,
+          society:society_id(name, contact_email)
+        `)
+        .order('created_at', { ascending: false });
+
+      console.log('Events query result:', { data, error });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load events",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filterEvents = () => {
     let filtered = events;
 
