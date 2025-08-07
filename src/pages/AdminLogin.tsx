@@ -2,11 +2,6 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-// List of admin emails (should match the one in Approvals.tsx)
-const ADMIN_EMAILS = [
-  'admin@dupulse.co.uk',
-];
-
 const AdminLogin = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
@@ -20,13 +15,6 @@ const AdminLogin = () => {
         setError("");
 
         try {
-            // Check if email is an admin email
-            if (!ADMIN_EMAILS.includes(email)) {
-                setError("This email is not authorized for admin access.");
-                setLoading(false);
-                return;
-            }
-
             // Attempt to sign in with Supabase
             const { data, error: signInError } = await supabase.auth.signInWithPassword({
                 email: email,
@@ -39,15 +27,15 @@ const AdminLogin = () => {
                 return;
             }
 
+            // After successful login, check for admin role in app_metadata
             if (data.user) {
-                // Check if user already has admin role
                 if (data.user.app_metadata?.role === 'admin') {
-                    // Successfully logged in with admin role, redirect to admin dashboard
+                    // Successfully logged in as admin, redirect to admin dashboard
                     navigate("/admin/dashboard");
                 } else {
-                    // User exists but doesn't have admin role - this shouldn't happen for admin emails
-                    setError("This account is not properly configured for admin access. Please contact support.");
-                    setLoading(false);
+                    // User is not an admin, sign them out and show an error
+                    await supabase.auth.signOut();
+                    setError("You are not authorized to access the admin dashboard.");
                 }
             }
         } catch (err: unknown) {

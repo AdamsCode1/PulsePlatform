@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, Users, CheckCircle, XCircle, Clock, Building2, BarChart3, Plus, Settings as SettingsIcon } from 'lucide-react';
+import { Calendar, Users, CheckCircle, XCircle, Clock, Server, Database, BarChart3, Plus, Settings as SettingsIcon } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
@@ -26,14 +26,19 @@ interface Event {
   created_at: string;
 }
 
-interface AdminStats {
-  totalEvents: number;
-  pendingEvents: number;
-  approvedEvents: number;
-  rejectedEvents: number;
-  totalSocieties: number;
-  totalStudents: number;
-  totalPartners: number;
+interface DashboardStats {
+  totalEvents: { total: number, pending: number, approved: number, rejected: number };
+  totalUsers: { students: number, societies: number, partners: number, admins: number };
+  recentActivity: ActivityLog[];
+  systemHealth: { api_status: 'healthy' | 'degraded', db_status: 'healthy' | 'degraded' };
+}
+
+interface ActivityLog {
+    id: string;
+    timestamp: string;
+    user: string;
+    action: string;
+    details: string;
 }
 
 interface UserSummary {
@@ -43,16 +48,12 @@ interface UserSummary {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<AdminStats>({
-    totalEvents: 0,
-    pendingEvents: 0,
-    approvedEvents: 0,
-    rejectedEvents: 0,
-    totalSocieties: 0,
-    totalStudents: 0,
-    totalPartners: 0,
+  const [stats, setStats] = useState<DashboardStats>({
+    totalEvents: { total: 0, pending: 0, approved: 0, rejected: 0 },
+    totalUsers: { students: 0, societies: 0, partners: 0, admins: 0 },
+    recentActivity: [],
+    systemHealth: { api_status: 'healthy', db_status: 'healthy' },
   });
-  const [recentEvents, setRecentEvents] = useState<Event[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -87,7 +88,7 @@ export default function AdminDashboard() {
         return;
       }
       setUser(user);
-      await Promise.all([fetchStats(), fetchRecentEvents(), fetchChartData()]);
+      await Promise.all([fetchStats(), fetchChartData()]); // Removed fetchRecentEvents
     } catch (error) {
       console.error('Auth check failed:', error);
       navigate('/admin/login');
@@ -103,35 +104,42 @@ export default function AdminDashboard() {
   const fetchStats = async () => {
     try {
       // Fetch event stats
-      const { count: totalEvents, error: eventsError } = await supabase.from('event').select('*', { count: 'exact', head: true });
+      const { count: total, error: eventsError } = await supabase.from('event').select('*', { count: 'exact', head: true });
       if (eventsError) throw eventsError;
-      const { count: pendingEvents } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-      const { count: approvedEvents } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'approved');
-      const { count: rejectedEvents } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
+      const { count: pending } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+      const { count: approved } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'approved');
+      const { count: rejected } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
 
       // Fetch user stats using the RPC function
       const { data: users, error: usersError } = await supabase.rpc('get_all_users') as { data: UserSummary[], error: any };
       if (usersError) throw usersError;
 
-      const totalStudents = users.filter(u => u.role === 'student').length;
-      const totalSocieties = users.filter(u => u.role === 'society').length;
-      const totalPartners = users.filter(u => u.role === 'partner').length;
+      const students = users.filter(u => u.role === 'student').length;
+      const societies = users.filter(u => u.role === 'society').length;
+      const partners = users.filter(u => u.role === 'partner').length;
+      const admins = users.filter(u => u.role === 'admin').length;
 
-      setStats({
-        totalEvents: totalEvents || 0,
-        pendingEvents: pendingEvents || 0,
-        approvedEvents: approvedEvents || 0,
-        rejectedEvents: rejectedEvents || 0,
-        totalSocieties,
-        totalStudents,
-        totalPartners,
-      });
+      setStats(prevStats => ({
+        ...prevStats,
+        totalEvents: {
+            total: total || 0,
+            pending: pending || 0,
+            approved: approved || 0,
+            rejected: rejected || 0,
+        },
+        totalUsers: {
+            students,
+            societies,
+            partners,
+            admins,
+        }
+      }));
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
   };
 
-  const fetchRecentEvents = async () => {
+  // fetchRecentEvents is removed as it will be replaced by a new recent activity log
     try {
       const { data, error } = await supabase
         .from('event')
@@ -181,66 +189,41 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total Events</CardTitle>
+              <CardDescription>{stats.totalEvents.pending} pending</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.totalEvents}</div>
+              <div className="text-3xl font-bold text-blue-600">{stats.totalEvents.total}</div>
             </CardContent>
           </Card>
-          
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Pending</CardTitle>
+              <CardTitle className="text-lg">Total Users</CardTitle>
+              <CardDescription>All user roles</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pendingEvents}</div>
+              <div className="text-3xl font-bold text-purple-600">{stats.totalUsers.students + stats.totalUsers.societies + stats.totalUsers.partners + stats.totalUsers.admins}</div>
             </CardContent>
           </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Approved</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.approvedEvents}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Rejected</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.rejectedEvents}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Societies</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-600">{stats.totalSocieties}</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
+           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Students</CardTitle>
+               <CardDescription>Student accounts</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-indigo-600">{stats.totalStudents}</div>
+              <div className="text-3xl font-bold text-indigo-600">{stats.totalUsers.students}</div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Partners</CardTitle>
+              <CardTitle className="text-lg">Societies & Partners</CardTitle>
+              <CardDescription>{stats.totalUsers.societies} Societies, {stats.totalUsers.partners} Partners</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-pink-600">{stats.totalPartners}</div>
+              <div className="text-3xl font-bold text-pink-600">{stats.totalUsers.societies + stats.totalUsers.partners}</div>
             </CardContent>
           </Card>
         </div>
@@ -301,93 +284,67 @@ export default function AdminDashboard() {
                       <Clock className="w-4 h-4 mr-2 text-yellow-500" />
                       <span className="text-sm">Pending Review</span>
                     </div>
-                    <Badge variant="outline">{stats.pendingEvents}</Badge>
+                    <Badge variant="outline">{stats.totalEvents.pending}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center">
                       <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
                       <span className="text-sm">Approved</span>
                     </div>
-                    <Badge variant="outline">{stats.approvedEvents}</Badge>
+                    <Badge variant="outline">{stats.totalEvents.approved}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex items-center">
                       <XCircle className="w-4 h-4 mr-2 text-red-500" />
                       <span className="text-sm">Rejected</span>
                     </div>
-                    <Badge variant="outline">{stats.rejectedEvents}</Badge>
+                    <Badge variant="outline">{stats.totalEvents.rejected}</Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Recent Events */}
+            <Card>
+              <CardHeader>
+                <CardTitle>System Health</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <Server className="w-4 h-4 mr-2 text-gray-500" />
+                      <span className="text-sm">API Status</span>
+                    </div>
+                    <Badge className={stats.systemHealth.api_status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      {stats.systemHealth.api_status}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center">
+                      <Database className="w-4 h-4 mr-2 text-gray-500" />
+                      <span className="text-sm">Database</span>
+                    </div>
+                     <Badge className={stats.systemHealth.db_status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                      {stats.systemHealth.db_status}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Recent Activity Timeline */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>Recent Event Submissions</CardTitle>
-                    <CardDescription>Latest events submitted by societies</CardDescription>
-                  </div>
-                  <Button 
-                    size="sm"
-                    onClick={() => navigate('/admin/events')}
-                    variant="outline"
-                  >
-                    View All
-                  </Button>
-                </div>
+                <CardTitle>Recent Activity</CardTitle>
+                <CardDescription>A log of recent administrative actions.</CardDescription>
               </CardHeader>
               <CardContent>
-                {recentEvents.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No events submitted yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {recentEvents.map((event) => (
-                      <div key={event.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold">{event.title}</h3>
-                          {getStatusBadge(event.status)}
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                          {event.description}
-                        </p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {new Date(event.start_time).toLocaleDateString()} at {new Date(event.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </div>
-                          <div className="flex items-center">
-                            <Users className="w-4 h-4 mr-2" />
-                            {event.society.name}
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-center mt-4">
-                          <span className="text-xs text-gray-500">
-                            Submitted {new Date(event.created_at).toLocaleDateString()}
-                          </span>
-                          
-                          {event.status === 'pending' && (
-                            <Button 
-                              size="sm"
-                              onClick={() => navigate(`/admin/events?review=${event.id}`)}
-                            >
-                              Review
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <div className="text-center py-8">
+                    <p className="text-gray-500">Recent activity log coming soon.</p>
+                </div>
               </CardContent>
             </Card>
           </div>

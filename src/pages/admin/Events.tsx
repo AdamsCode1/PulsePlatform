@@ -46,6 +46,7 @@ export default function AdminEvents() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [reviewDialog, setReviewDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -132,7 +133,73 @@ export default function AdminEvents() {
     }
   }, [searchParams, events]);
 
+  const checkAuth = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      // Secure role-based check
+      if (!user || user.app_metadata?.role !== 'admin') {
+        navigate('/admin/login');
+        return;
+      }
+      setUser(user);
+      await fetchEvents();
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      navigate('/admin/login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      console.log('Admin fetching events...');
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('Current admin user:', user?.email);
+
+      const { data, error } = await supabase
+        .from('event')
+        .select(`
+          *,
+          society:society_id(name, contact_email)
+        `)
+        .order('created_at', { ascending: false });
+
+      console.log('Events query result:', { data, error });
+
+      if (error) throw error;
+      setEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load events",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filterEvents = () => {
+    let filtered = events;
+
+    if (searchTerm) {
+      filtered = filtered.filter(event =>
+        event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.society.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.location.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(event => event.status === statusFilter);
+    }
+
+    setFilteredEvents(filtered);
+  };
+
   const updateEventStatus = async (eventId: string, status: 'approved' | 'rejected', reason?: string) => {
+    setIsUpdating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -145,7 +212,7 @@ export default function AdminEvents() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ eventId, status, rejection_reason: reason }),
+        body: JSON.stringify({ eventId, payload: { status, rejection_reason: reason } }),
       });
 
       const result = await response.json();
@@ -154,9 +221,9 @@ export default function AdminEvents() {
         throw new Error(result.message || 'Failed to update event status.');
       }
 
-      setEvents(prev => prev.map(event => 
-        event.id === eventId ? { ...event, status } : event
-      ));
+      // Instead of just updating the local state, we refetch the current page
+      // to ensure data consistency.
+      fetchEvents(currentPage);
 
       toast({
         title: `Event ${status.charAt(0).toUpperCase() + status.slice(1)}`,
@@ -174,6 +241,8 @@ export default function AdminEvents() {
         description: error.message || `Failed to ${status} event.`,
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -440,7 +509,7 @@ export default function AdminEvents() {
           <Dialog open={reviewDialog} onOpenChange={setReviewDialog}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Review Event: {selectedEvent.name}</DialogTitle>
+                <DialogTitle>Review Event: {selectedEvent.title}</DialogTitle>
                 <DialogDescription>
                   Review the event details and approve or reject the submission.
                 </DialogDescription>
@@ -492,7 +561,7 @@ export default function AdminEvents() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setReviewDialog(false)}>
+                <Button variant="outline" onClick={() => setReviewDialog(false)} disabled={isUpdating}>
                   Close
                 </Button>
                 {selectedEvent.status === 'pending' && (
@@ -500,13 +569,12 @@ export default function AdminEvents() {
                     <Button
                       variant="destructive"
                       onClick={() => rejectEvent(selectedEvent.id, rejectionReason)}
+                      disabled={isUpdating}
                     >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Reject
+                      {isUpdating ? 'Rejecting...' : <><XCircle className="w-4 h-4 mr-2" />Reject</>}
                     </Button>
-                    <Button onClick={() => approveEvent(selectedEvent.id)}>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Approve
+                    <Button onClick={() => approveEvent(selectedEvent.id)} disabled={isUpdating}>
+                      {isUpdating ? 'Approving...' : <><CheckCircle className="w-4 h-4 mr-2" />Approve</>}
                     </Button>
                   </>
                 )}
