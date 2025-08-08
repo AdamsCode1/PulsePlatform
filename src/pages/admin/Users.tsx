@@ -3,20 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationLink, PaginationNext } from '@/components/ui/pagination';
-import { Users, Search, PlusCircle } from 'lucide-react';
+import { Users, Search, PlusCircle, Mail, UserCheck, CalendarIcon, Shield } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
 import { API_BASE_URL } from '@/lib/apiConfig';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { useDebounce } from '@/hooks/useDebounce';
 
-// This will need to be expanded to include all user types
 interface User {
   id: string;
+  name: string;
   email: string;
   role: string;
+  status: 'active' | 'suspended' | 'pending_verification';
   created_at: string;
 }
 
@@ -27,23 +31,32 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [usersPerPage] = useState(10);
+  const totalPages = Math.ceil(totalUsers / usersPerPage);
 
-  // Placeholder for stats
-  const [stats, setStats] = useState({ total: 0, students: 0, societies: 0, partners: 0 });
-
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const fetchUsers = useCallback(async () => {
+    if (!currentUser) return;
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
+      const params = new URLSearchParams({
+        role: roleFilter,
+        status: statusFilter,
+        search: debouncedSearchTerm,
+        page: String(currentPage),
+        limit: String(usersPerPage),
+      });
+
+      const response = await fetch(`${API_BASE_URL}/admin/users?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
@@ -51,13 +64,14 @@ export default function AdminUsers() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Failed to fetch users.');
 
-      setUsers(result);
+      setUsers(result.data);
+      setTotalUsers(result.count);
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, currentUser, roleFilter, statusFilter, debouncedSearchTerm, currentPage, usersPerPage]);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -67,48 +81,42 @@ export default function AdminUsers() {
         return;
       }
       setCurrentUser(user);
-      fetchUsers();
     } catch (error) {
       console.error('Auth check failed:', error);
       navigate('/admin/login');
     }
-  }, [navigate, fetchUsers]);
+  }, [navigate]);
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    let filtered = users;
-    if (searchTerm) {
-      filtered = filtered.filter(u =>
-        u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        u.name?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+        setCurrentPage(totalPages);
     }
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter(u => u.role === roleFilter);
+  }, [currentPage, totalPages]);
+
+  const getStatusBadge = (status: User['status']) => {
+    switch (status) {
+      case 'active':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Active</Badge>;
+      case 'suspended':
+        return <Badge variant="destructive">Suspended</Badge>;
+      case 'pending_verification':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
     }
-    setFilteredUsers(filtered);
+  };
 
-    const total = filtered.length;
-    setTotalPages(Math.ceil(total / usersPerPage));
-    if (currentPage > Math.ceil(total / usersPerPage)) {
-        setCurrentPage(1);
-    }
-
-    // Update stats
-    const studentCount = users.filter(u => u.role === 'student').length;
-    const societyCount = users.filter(u => u.role === 'society').length;
-    const partnerCount = users.filter(u => u.role === 'partner').length;
-    setStats({ total: users.length, students: studentCount, societies: societyCount, partners: partnerCount });
-
-  }, [users, searchTerm, roleFilter, currentPage, usersPerPage]);
-
-  const paginatedUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage
-  );
+  const handleOpenDetails = (user: User) => {
+    setSelectedUser(user);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,26 +135,6 @@ export default function AdminUsers() {
           <p className="text-gray-600 mt-2">
             View, search, and manage all users on the platform.
           </p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-lg">Total Users</CardTitle></CardHeader>
-            <CardContent><div className="text-2xl font-bold text-blue-600">{stats.total}</div></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-lg">Students</CardTitle></CardHeader>
-            <CardContent><div className="text-2xl font-bold text-green-600">{stats.students}</div></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-lg">Societies</CardTitle></CardHeader>
-            <CardContent><div className="text-2xl font-bold text-purple-600">{stats.societies}</div></CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-lg">Partners</CardTitle></CardHeader>
-            <CardContent><div className="text-2xl font-bold text-indigo-600">{stats.partners}</div></CardContent>
-          </Card>
         </div>
 
         {/* Filters and Actions */}
@@ -175,6 +163,16 @@ export default function AdminUsers() {
                 <option value="partner">Partner</option>
                 <option value="admin">Admin</option>
               </select>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+                <option value="pending_verification">Pending Verification</option>
+              </select>
               <Button disabled>
                 <PlusCircle className="w-4 h-4 mr-2" />
                 Add User
@@ -184,45 +182,62 @@ export default function AdminUsers() {
         </Card>
 
         {/* User List */}
-        <Card>
-          <CardContent className="pt-0">
+        <div className="bg-white rounded-lg shadow overflow-hidden">
             {loading ? (
-              <LoadingSpinner />
-            ) : paginatedUsers.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="p-12">
+                <LoadingSpinner />
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12 px-4">
                 <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold">No Users Found</h3>
                 <p className="text-gray-600">No users match your current filters.</p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-4 font-medium">Name</th>
-                    <th className="text-left p-4 font-medium">Email</th>
-                    <th className="text-left p-4 font-medium">Role</th>
-                    <th className="text-left p-4 font-medium">Joined</th>
-                    <th className="text-left p-4 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedUsers.map(user => (
-                    <tr key={user.id} className="border-b">
-                      <td className="p-4">{user.name}</td>
-                      <td className="p-4">{user.email}</td>
-                      <td className="p-4 capitalize">{user.role}</td>
-                      <td className="p-4">{new Date(user.created_at).toLocaleDateString()}</td>
-                      <td className="p-4 flex gap-2">
-                        <Button variant="outline" size="sm">Details</Button>
-                        <Button variant="destructive" size="sm" disabled>Delete</Button>
-                      </td>
-                    </tr>
+              <div>
+                {/* Header for larger screens */}
+                <div className="hidden md:grid md:grid-cols-6 gap-4 px-6 py-3 border-b bg-gray-50 font-medium text-sm text-gray-600">
+                  <div className="col-span-2">User</div>
+                  <div className="hidden md:block">Role</div>
+                  <div className="hidden md:block">Status</div>
+                  <div className="hidden md:block">Joined</div>
+                  <div>Actions</div>
+                </div>
+                {/* User items */}
+                <ul className="divide-y divide-gray-200">
+                  {users.map(user => (
+                    <li key={user.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 items-center">
+                        <div className="col-span-2 flex items-center gap-4">
+                           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
+                               {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
+                           </div>
+                           <div>
+                                <p className="font-medium text-gray-900">{user.name || 'N/A'}</p>
+                                <p className="text-sm text-gray-500">{user.email}</p>
+                           </div>
+                        </div>
+                        <div className="hidden md:block">
+                          <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                            {user.role}
+                          </Badge>
+                        </div>
+                        <div className="hidden md:block">
+                            {getStatusBadge(user.status)}
+                        </div>
+                        <div className="hidden md:block text-sm text-gray-500">
+                           {new Date(user.created_at).toLocaleDateString()}
+                        </div>
+                        <div className="flex justify-end md:justify-start gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleOpenDetails(user)}>Details</Button>
+                        </div>
+                      </div>
+                    </li>
                   ))}
-                </tbody>
-              </table>
+                </ul>
+              </div>
             )}
-          </CardContent>
-        </Card>
+        </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
@@ -239,6 +254,43 @@ export default function AdminUsers() {
                     </PaginationContent>
                 </Pagination>
             </div>
+        )}
+
+        {/* User Details Modal */}
+        {selectedUser && (
+          <Dialog open={!!selectedUser} onOpenChange={(isOpen) => !isOpen && setSelectedUser(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-2xl">{selectedUser.name || 'User Details'}</DialogTitle>
+                <DialogDescription>
+                  Detailed information for {selectedUser.email}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4 space-y-4">
+                <div className="flex items-center">
+                  <Mail className="w-4 h-4 mr-3 text-gray-500" />
+                  <span className="text-sm">{selectedUser.email}</span>
+                </div>
+                <div className="flex items-center">
+                  <Shield className="w-4 h-4 mr-3 text-gray-500" />
+                  <span className="text-sm capitalize">{selectedUser.role}</span>
+                </div>
+                <div className="flex items-center">
+                  <UserCheck className="w-4 h-4 mr-3 text-gray-500" />
+                  {getStatusBadge(selectedUser.status)}
+                </div>
+                <div className="flex items-center">
+                  <CalendarIcon className="w-4 h-4 mr-3 text-gray-500" />
+                  <span className="text-sm">
+                    Joined on {new Date(selectedUser.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setSelectedUser(null)}>Close</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
       </main>
 

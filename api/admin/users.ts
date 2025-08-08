@@ -28,15 +28,36 @@ const handleGetUsers = async (req: VercelRequest, res: VercelResponse) => {
   try {
     await requireAdmin(req);
 
-    // Call the database function to get the unified user list
-    const { data, error } = await supabaseAdmin.rpc('get_all_users');
+    const { role = 'all', status = 'all', search = '', page = '1', limit = '10' } = req.query;
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const from = (pageNum - 1) * limitNum;
+    const to = from + limitNum - 1;
+
+    const rpcParams = {
+      role_filter: role as string,
+      status_filter: status as string,
+      search_term: search as string,
+    };
+
+    // Fetch the data with pagination
+    const { data, error } = await supabaseAdmin.rpc('get_all_users', rpcParams).range(from, to);
 
     if (error) {
       console.error('Error fetching users:', error);
       throw new Error(error.message);
     }
 
-    return res.status(200).json(data);
+    // Fetch the total count without pagination
+    const { count, error: countError } = await supabaseAdmin.rpc('get_all_users', rpcParams, { count: 'exact', head: true });
+
+    if (countError) {
+        console.error('Error fetching user count:', countError);
+        throw new Error(countError.message);
+    }
+
+    return res.status(200).json({ data, count });
 
   } catch (error: any) {
     return res.status(403).json({ message: error.message });
