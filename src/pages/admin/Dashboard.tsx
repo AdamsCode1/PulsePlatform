@@ -159,7 +159,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           <Card onClick={() => handleCardClick('/admin/events')} className="cursor-pointer hover:bg-gray-100 transition-colors">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total Events</CardTitle>
@@ -216,16 +216,18 @@ export default function AdminDashboard() {
                 <CardDescription>Event submissions over the last 7 days.</CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis allowDecimals={false} />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="count" fill="#8884d8" name="Submissions" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <div style={{ minHeight: '300px' }}>
+                    <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="date" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="count" fill="#8884d8" name="Submissions" />
+                    </BarChart>
+                    </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>
