@@ -45,6 +45,8 @@ import Schedule from './pages/Schedule';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminEvents from './pages/admin/Events';
 import AdminDeals from './pages/admin/Deals';
+import AdminUsers from './pages/admin/Users';
+import AdminSettings from './pages/admin/Settings';
 
 const queryClient = new QueryClient();
 
@@ -104,6 +106,8 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/events" element={<AdminEvents />} />
           <Route path="/admin/deals" element={<AdminDeals />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           
           {/* Legacy redirects for backward compatibility */}
           <Route path="/admin" element={<AdminLogin />} />

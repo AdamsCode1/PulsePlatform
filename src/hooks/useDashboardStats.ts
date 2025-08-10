@@ -21,8 +21,14 @@ const fetchDashboardStats = async (): Promise<DashboardStats> => {
   const { count: rejected } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
 
   // Fetch user stats using the RPC function
-  const { data: users, error: usersError } = await supabase.rpc('get_all_users') as { data: UserSummary[], error: any };
-  if (usersError) throw usersError;
+  let users: UserSummary[] = [];
+  const usersResp = await supabase.rpc('get_all_users') as { data: UserSummary[] | null, error: any };
+  if (usersResp.error) {
+    // Gracefully handle missing RPC function (404)
+    console.warn('get_all_users RPC unavailable; defaulting user counts to 0');
+  } else if (usersResp.data) {
+    users = usersResp.data;
+  }
 
   const students = users.filter(u => u.role === 'student').length;
   const societies = users.filter(u => u.role === 'society').length;

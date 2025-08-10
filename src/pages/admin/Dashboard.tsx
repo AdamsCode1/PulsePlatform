@@ -108,9 +108,15 @@ export default function AdminDashboard() {
       <main className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">
-            {user ? `Welcome back, ${user.email}. Manage events, societies, and platform oversight.` : <Skeleton className="h-4 w-1/2" />}
-          </p>
+          {user ? (
+            <p className="text-gray-600 mt-2">
+              {`Welcome back, ${user.email}. Manage events, societies, and platform oversight.`}
+            </p>
+          ) : (
+            <div className="mt-2">
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}

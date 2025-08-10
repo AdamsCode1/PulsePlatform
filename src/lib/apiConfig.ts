@@ -1,12 +1,11 @@
 // API configuration for frontend requests
-const isProduction = window.location.hostname !== 'localhost';
+// Use a single relative base in all environments:
+// - In development, Vite proxies /api -> http://localhost:4000
+// - In production, serverless functions or backend also live under /api
+export const API_BASE_URL = '/api';
 
-// In production, API routes are serverless functions at /api
-// In development, API server runs on different port
-export const API_BASE_URL = isProduction 
-  ? '/api'  // Serverless functions on same domain
-  : import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
-
-console.log('Frontend API config:');
-console.log('Environment:', isProduction ? 'production' : 'development');
-console.log('API Base URL:', API_BASE_URL);
+if (import.meta.env.DEV) {
+  console.log('Frontend API config:');
+  console.log('Environment:', 'development');
+  console.log('API Base URL:', API_BASE_URL);
+}
