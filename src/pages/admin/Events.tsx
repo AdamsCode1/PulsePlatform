@@ -152,7 +152,16 @@ export default function AdminEvents() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ eventId, status, rejection_reason: reason }),
+        body: JSON.stringify({
+          eventId,
+          status,
+          rejection_reason: reason,
+          // Legacy shape for backward compatibility with older server handlers
+          payload: {
+            status,
+            rejection_reason: status === 'rejected' ? (reason || 'No reason provided.') : null,
+          },
+        }),
       });
 
       const result = await response.json();
