@@ -18,17 +18,20 @@ function Root() {
 root.render(<Root />)
 
 if (import.meta.env.DEV) {
-  // Lazy load devtools in development if available
-  import('@tanstack/react-query-devtools')
-    .then(({ ReactQueryDevtools }) => {
-      root.render(
-        <QueryClientProvider client={queryClient}>
-          <App />
-          <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
-      )
-    })
-    .catch(() => {
-      // Devtools not installed; ignore
-    })
+  // Only show React Query Devtools on admin routes during development
+  const onAdminRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+  if (onAdminRoute) {
+    import('@tanstack/react-query-devtools')
+      .then(({ ReactQueryDevtools }) => {
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <App />
+            <ReactQueryDevtools initialIsOpen={false} />
+          </QueryClientProvider>
+        )
+      })
+      .catch(() => {
+        // Devtools not installed; ignore
+      })
+  }
 }
