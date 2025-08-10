@@ -15,8 +15,8 @@ interface Event {
   id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
+  start_time: string;
+  end_time: string;
   location: string;
   max_attendees: number;
   status: 'pending' | 'approved' | 'rejected';
@@ -166,7 +166,7 @@ export default function SocietyEvents() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="mb-8">
           <Button 
             variant="outline" 
@@ -250,7 +250,7 @@ export default function SocietyEvents() {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-semibold">{event.title}</h3>
                         {getStatusBadge(event.status)}
-                        {isEventPast(event.date) && (
+                        {isEventPast(event.start_time) && (
                           <Badge variant="outline">Past Event</Badge>
                         )}
                       </div>
@@ -261,7 +261,11 @@ export default function SocietyEvents() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <div className="flex items-center text-sm text-gray-600">
                       <Calendar className="w-4 h-4 mr-2" />
-                      {new Date(event.date).toLocaleDateString()} at {event.time}
+                      {new Date(event.start_time).toLocaleDateString()}
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <Clock className="w-4 h-4 mr-2" />
+                      {new Date(event.start_time).toLocaleTimeString()} – {new Date(event.end_time).toLocaleTimeString()}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="w-4 h-4 mr-2" />
@@ -270,10 +274,6 @@ export default function SocietyEvents() {
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-2" />
                       {event.rsvps?.[0]?.count || 0} RSVPs
-                    </div>
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="w-4 h-4 mr-2" />
-                      Max {event.max_attendees}
                     </div>
                   </div>
 
