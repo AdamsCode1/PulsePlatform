@@ -36,26 +36,39 @@ const router = Router();
 // Route to update an event's status (approve/reject/pending)
 router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { eventId, status, rejection_reason } = req.body as {
+    const { eventId, status, rejection_reason, payload } = req.body as {
       eventId?: string;
       status?: 'approved' | 'rejected' | 'pending';
       rejection_reason?: string;
+      payload?: Record<string, unknown>;
     };
 
-    if (!eventId || !status) {
-      return res.status(400).json({ message: 'Event ID and status are required.' });
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('[admin.events] PATCH body keys:', Object.keys(req.body || {}));
     }
 
-    const validStatus = ['approved', 'rejected', 'pending'] as const;
-    if (!validStatus.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status provided.' });
+    if (!eventId) {
+      return res.status(400).json({ message: 'Event ID is required.' });
     }
 
-    const updateData: { status: string; rejection_reason?: string } = { status };
-    if (status === 'rejected') {
-      updateData.rejection_reason = rejection_reason || 'No reason provided.';
+    // Build updateData from either modern shape (status/reason) or legacy payload
+    let updateData: Record<string, unknown>;
+    if (typeof status === 'string') {
+      const validStatus = ['approved', 'rejected', 'pending'] as const;
+      if (!(validStatus as readonly string[]).includes(status)) {
+        return res.status(400).json({ message: 'Invalid status provided.' });
+      }
+      updateData = { status };
+      if (status === 'rejected') {
+        updateData.rejection_reason = rejection_reason || 'No reason provided.';
+      } else {
+        updateData.rejection_reason = null; // clear rejection reason on non-rejected
+      }
+    } else if (payload && typeof payload === 'object') {
+      updateData = payload;
     } else {
-      updateData.rejection_reason = null as any; // clear rejection reason on non-rejected
+      return res.status(400).json({ message: 'Event update payload is required.' });
     }
 
     const { data, error } = await supabaseAdmin
@@ -68,7 +81,7 @@ router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
     if (error) throw error;
 
     // Best-effort log of admin activity (do not fail request if logging fails)
-    if (status === 'approved' || status === 'rejected') {
+  if (status === 'approved' || status === 'rejected') {
       const { error: logError } = await supabaseAdmin.rpc('log_admin_activity', {
         action: `event.${status}`,
         target_entity: 'event',
