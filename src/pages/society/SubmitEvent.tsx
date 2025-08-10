@@ -92,33 +92,33 @@ export default function EventSubmissionPage() {
   const [isAnimating, setIsAnimating] = useState(false);
 
   const steps = [
-    { 
-      id: 1, 
-      title: "Event Details", 
+    {
+      id: 1,
+      title: "Event Details",
       subtitle: "Tell us about your event",
       icon: Tag,
     },
-    { 
-      id: 2, 
-      title: "Date & Time", 
+    {
+      id: 2,
+      title: "Date & Time",
       subtitle: "When will your event take place?",
       icon: CalendarIconAlias,
     },
-    { 
-      id: 3, 
-      title: "Location & Category", 
+    {
+      id: 3,
+      title: "Location & Category",
       subtitle: "Where and what type of event?",
       icon: MapPin,
     },
-    { 
-      id: 4, 
-      title: "External Signup", 
+    {
+      id: 4,
+      title: "External Signup",
       subtitle: "Does your event require external registration?",
       icon: Clock,
     },
-    { 
-      id: 5, 
-      title: "Review & Submit", 
+    {
+      id: 5,
+      title: "Review & Submit",
       subtitle: "Confirm your event details",
       icon: ChevronRight,
     },
@@ -165,11 +165,14 @@ export default function EventSubmissionPage() {
       setLoadingSocietyId(false);
     }
     fetchSocietyId();
+
+    // Ensure the external signup field is set to false by default
+    form.setValue('requiresExternalSignup', false);
   }, []);
 
   const nextStep = async () => {
     let fieldsToValidate: string[] = [];
-    
+
     switch (currentStep) {
       case 0:
         fieldsToValidate = ["eventName", "description"];
@@ -218,9 +221,9 @@ export default function EventSubmissionPage() {
       toast({ title: "Error", description: "Could not determine society ID. Please ensure you're logged in as a society member.", variant: "destructive" });
       return;
     }
-    
+
     console.log("Current societyId:", societyId);
-    
+
     const start = new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`);
     const end = new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`);
     const payload = {
@@ -234,7 +237,7 @@ export default function EventSubmissionPage() {
       status: 'pending', // Explicitly set status
       signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
     };
-    
+
     try {
       console.log("Submitting event with payload:", payload);
 
@@ -247,20 +250,20 @@ export default function EventSubmissionPage() {
       console.log("Supabase response:", { insertedEvent, error });
 
       if (!error && insertedEvent) {
-        toast({ 
-          title: "Event Submitted Successfully!", 
+        toast({
+          title: "Event Submitted Successfully!",
           description: `${data.eventName} has been submitted for review. Event ID: ${insertedEvent[0]?.id}`,
           action: (
             <div className="flex gap-2 mt-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => navigate('/society/events')}
               >
                 Manage Events
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => navigate('/society/dashboard')}
               >
@@ -275,10 +278,10 @@ export default function EventSubmissionPage() {
         // Handle Supabase error
         const errorMessage = error?.message || 'Could not submit event.';
         console.error('Supabase error details:', error);
-        toast({ 
-          title: "Error", 
-          description: `${errorMessage}. Check console for details.`, 
-          variant: "destructive" 
+        toast({
+          title: "Error",
+          description: `${errorMessage}. Check console for details.`,
+          variant: "destructive"
         });
       }
     } catch (err) {
@@ -288,9 +291,8 @@ export default function EventSubmissionPage() {
   }
 
   const renderStepContent = () => {
-    const baseClasses = `transition-all duration-500 ${
-      isAnimating ? 'opacity-0 transform translate-x-8' : 'opacity-100 transform translate-x-0'
-    }`;
+    const baseClasses = `transition-all duration-500 ${isAnimating ? 'opacity-0 transform translate-x-8' : 'opacity-100 transform translate-x-0'
+      }`;
 
     switch (currentStep) {
       case 0:
@@ -306,9 +308,9 @@ export default function EventSubmissionPage() {
                     Event Name
                   </FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter event name" 
-                      {...field} 
+                    <Input
+                      placeholder="Enter event name"
+                      {...field}
                       className="form-input text-lg h-14 rounded-xl"
                     />
                   </FormControl>
@@ -326,9 +328,9 @@ export default function EventSubmissionPage() {
                     Description
                   </FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Describe your event in detail..." 
-                      {...field} 
+                    <Textarea
+                      placeholder="Describe your event in detail..."
+                      {...field}
                       className="form-input min-h-32 text-lg rounded-xl resize-none"
                     />
                   </FormControl>
@@ -341,7 +343,7 @@ export default function EventSubmissionPage() {
             />
           </div>
         );
-      
+
       case 1:
         return (
           <div className={`${baseClasses} space-y-8`}>
@@ -477,7 +479,7 @@ export default function EventSubmissionPage() {
             </div>
           </div>
         );
-      
+
       case 2:
         return (
           <div className={`${baseClasses} space-y-8`}>
@@ -491,9 +493,9 @@ export default function EventSubmissionPage() {
                     Location
                   </FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="Enter event location" 
-                      {...field} 
+                    <Input
+                      placeholder="Enter event location"
+                      {...field}
                       className="form-input text-lg h-14 rounded-xl"
                     />
                   </FormControl>
@@ -530,7 +532,7 @@ export default function EventSubmissionPage() {
             />
           </div>
         );
-      
+
       case 3: {
         const requiresExternalSignup = form.watch("requiresExternalSignup");
         return (
@@ -544,13 +546,14 @@ export default function EventSubmissionPage() {
                     <Clock className="w-5 h-5 text-primary" />
                     External Registration Required
                   </FormLabel>
-                  <Select 
-                    onValueChange={(value) => field.onChange(value === "yes")} 
-                    value={field.value ? "yes" : "no"}
+                  <Select
+                    onValueChange={(value) => field.onChange(value === "yes")}
+                    value={field.value === true ? "yes" : "no"}
+                    defaultValue="no"
                   >
                     <FormControl>
                       <SelectTrigger className="form-input text-lg h-14 rounded-xl">
-                        <SelectValue placeholder="Select registration requirement" />
+                        <SelectValue placeholder="No - Sign-up through DUPulse only" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -565,7 +568,7 @@ export default function EventSubmissionPage() {
                 </FormItem>
               )}
             />
-            
+
             {requiresExternalSignup && (
               <div className="transition-all duration-300 ease-in-out">
                 <FormField
@@ -578,9 +581,9 @@ export default function EventSubmissionPage() {
                         External Signup URL
                       </FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="https://example.com/signup" 
-                          {...field} 
+                        <Input
+                          placeholder="https://example.com/signup"
+                          {...field}
                           className="form-input text-lg h-14 rounded-xl"
                           type="url"
                         />
@@ -597,66 +600,66 @@ export default function EventSubmissionPage() {
           </div>
         );
       }
-      
+
       case 4: {
         const formValues = form.getValues();
         return (
           <div className={`${baseClasses} space-y-8`}>
             <div className="typeform-card rounded-2xl p-8 space-y-6">
               <h3 className="text-2xl font-bold text-foreground mb-6">Review Your Event</h3>
-              
+
               <div className="space-y-4">
                 <div className="flex justify-between border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Event Name:</span>
                   <span className="font-semibold text-foreground">{formValues.eventName || 'Not specified'}</span>
                 </div>
-                
+
                 <div className="flex justify-between border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Description:</span>
                   <span className="font-semibold text-foreground max-w-xs text-right">
                     {formValues.description || 'Not specified'}
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Start:</span>
                   <span className="font-semibold text-foreground">
-                    {formValues.startDate && formValues.startTime 
+                    {formValues.startDate && formValues.startTime
                       ? `${format(formValues.startDate, "PPP")} at ${formValues.startTime}`
                       : 'Not specified'
                     }
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">End:</span>
                   <span className="font-semibold text-foreground">
-                    {formValues.endDate && formValues.endTime 
+                    {formValues.endDate && formValues.endTime
                       ? `${format(formValues.endDate, "PPP")} at ${formValues.endTime}`
                       : 'Not specified'
                     }
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Location:</span>
                   <span className="font-semibold text-foreground">{formValues.location || 'Not specified'}</span>
                 </div>
-                
+
                 <div className="flex justify-between border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Category:</span>
                   <span className="font-semibold text-foreground capitalize">
                     {formValues.category?.replace(/-/g, ' ') || 'Not specified'}
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">External Registration:</span>
                   <span className="font-semibold text-foreground">
                     {formValues.requiresExternalSignup ? 'Required' : 'Not required'}
                   </span>
                 </div>
-                
+
                 {formValues.requiresExternalSignup && formValues.externalSignupLink && (
                   <div className="flex justify-between">
                     <span className="font-medium text-muted-foreground">Signup URL:</span>
@@ -670,7 +673,7 @@ export default function EventSubmissionPage() {
           </div>
         );
       }
-      
+
       default: {
         return null;
       }
@@ -690,33 +693,36 @@ export default function EventSubmissionPage() {
               {steps[currentStep].title}
             </p>
           </div>
-          
+
           <div className="flex justify-center items-center space-x-4 md:space-x-8">
             {steps.map((step, index) => {
               const isActive = step.id === currentStep + 1;
               const isCompleted = step.id < currentStep + 1;
-              
+
               return (
                 <div key={step.id} className="flex items-center">
                   <div
                     className={`
-                      step-indicator relative flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-lg
-                      ${isActive ? 'step-indicator-active' : ''}
-                      ${isCompleted ? 'bg-gradient-primary' : isActive ? 'bg-gradient-primary' : 'bg-gray-300'}
+                      step-indicator relative flex items-center justify-center w-12 h-12 rounded-full text-white text-lg transition-all duration-300
+                      ${isActive ? 'step-indicator-active font-bold scale-110' : 'font-medium'}
                     `}
+                    style={{
+                      background: isCompleted || isActive
+                        ? 'linear-gradient(to right, #ec4899, #db2777)'
+                        : '#d1d5db'
+                    }}
                   >
-                    {isCompleted ? (
-                      <ChevronRight className="w-6 h-6" />
-                    ) : (
-                      step.id
-                    )}
+                    {step.id}
                   </div>
-                  
+
                   {index < steps.length - 1 && (
-                    <div 
-                      className={`w-16 md:w-32 h-1 ml-4 transition-all duration-500 ${
-                        isCompleted ? 'bg-gradient-primary' : 'bg-gray-300'
-                      }`} 
+                    <div
+                      className="w-16 md:w-32 h-1 ml-4 transition-all duration-500"
+                      style={{
+                        background: isCompleted
+                          ? 'linear-gradient(to right, #ec4899, #db2777)'
+                          : '#d1d5db'
+                      }}
                     />
                   )}
                 </div>
@@ -731,7 +737,7 @@ export default function EventSubmissionPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {/* Step Content with Animation */}
               {renderStepContent()}
-              
+
               {/* Navigation Buttons */}
               <div className="flex justify-between items-center pt-12">
                 <Button
@@ -745,7 +751,7 @@ export default function EventSubmissionPage() {
                   <ChevronLeft className="w-5 h-5" />
                   Previous
                 </Button>
-                
+
                 {currentStep < steps.length - 1 ? (
                   <Button
                     type="button"
@@ -758,9 +764,9 @@ export default function EventSubmissionPage() {
                     <ChevronRight className="w-5 h-5" />
                   </Button>
                 ) : (
-                  <Button 
-                    type="submit" 
-                    variant="gradient"
+                  <Button
+                    type="submit"
+                    variant="purple"
                     size="lg"
                     className="flex items-center gap-2 px-8"
                     disabled={loadingSocietyId}
