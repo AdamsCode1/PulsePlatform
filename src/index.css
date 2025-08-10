@@ -162,7 +162,7 @@
   }
 
   .bg-gradient-primary {
-    @apply bg-gradient-to-r from-purple-600 to-blue-600;
+    @apply bg-gradient-to-r from-pink-500 to-pink-600;
   }
 
   /* Animations */
@@ -355,21 +355,17 @@
 
   /* PULSE Pattern Background */
   .pulse-pattern {
-    background-image: 
-      repeating-linear-gradient(
-        45deg,
+    background-image:
+      repeating-linear-gradient(45deg,
         transparent,
         transparent 100px,
         rgba(236, 72, 153, 0.03) 100px,
-        rgba(236, 72, 153, 0.03) 200px
-      ),
-      repeating-linear-gradient(
-        -45deg,
+        rgba(236, 72, 153, 0.03) 200px),
+      repeating-linear-gradient(-45deg,
         transparent,
         transparent 100px,
         rgba(147, 51, 234, 0.03) 100px,
-        rgba(147, 51, 234, 0.03) 200px
-      );
+        rgba(147, 51, 234, 0.03) 200px);
     position: relative;
   }
 
@@ -380,16 +376,14 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: 
-      repeating-linear-gradient(
-        0deg,
+    background-image:
+      repeating-linear-gradient(0deg,
         transparent 0px,
         transparent 80px,
         rgba(236, 72, 153, 0.05) 80px,
         rgba(236, 72, 153, 0.05) 120px,
         transparent 120px,
-        transparent 200px
-      );
+        transparent 200px);
     background-size: 200px 200px;
     animation: pulseMove 20s linear infinite;
     pointer-events: none;
@@ -399,6 +393,7 @@
     0% {
       transform: translateY(0);
     }
+
     100% {
       transform: translateY(200px);
     }
