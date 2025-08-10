@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationLink, PaginationNext } from '@/components/ui/pagination';
 import { Calendar, Users, Search, MapPin, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { API_BASE_URL } from '@/lib/apiConfig';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,22 +40,91 @@ export default function AdminEvents() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [reviewDialog, setReviewDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [eventsPerPage] = useState(10);
+
+  const fetchEvents = useCallback(async (page: number) => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('event')
+        .select(`
+          *,
+          society:society_id(name, contact_email)
+        `, { count: 'exact' });
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      if (searchTerm) {
+        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      }
+
+      const from = (page - 1) * eventsPerPage;
+      const to = from + eventsPerPage - 1;
+
+      query = query.range(from, to).order('created_at', { ascending: false });
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      setEvents(data || []);
+      setTotalPages(Math.ceil((count || 0) / eventsPerPage));
+
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load events",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [eventsPerPage, searchTerm, statusFilter, toast]);
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || user.app_metadata?.role !== 'admin') {
+        navigate('/admin/login');
+        return;
+      }
+      setUser(user);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      navigate('/admin/login');
+    }
+  }, [navigate]);
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   useEffect(() => {
-    filterEvents();
-  }, [events, searchTerm, statusFilter]);
+    const status = searchParams.get('status');
+    if (status && ['pending', 'approved', 'rejected'].includes(status)) {
+      setStatusFilter(status);
+    }
+  }, [searchParams]);
+
+  // This useEffect is to refetch data when filters change
+  useEffect(() => {
+    if (user) { // only fetch if user is authenticated
+      fetchEvents(currentPage);
+    }
+  }, [searchTerm, statusFilter, user, currentPage, fetchEvents]);
 
   useEffect(() => {
     // Check if we need to open review dialog from URL params
@@ -68,132 +138,60 @@ export default function AdminEvents() {
     }
   }, [searchParams, events]);
 
-  const checkAuth = async () => {
+  const updateEventStatus = async (eventId: string, status: 'approved' | 'rejected', reason?: string) => {
+    setIsUpdating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.email !== 'admin@dupulse.co.uk') {
-        navigate('/admin/login');
-        return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
       }
-      setUser(user);
-      await fetchEvents();
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      navigate('/admin/login');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const fetchEvents = async () => {
-    try {
-      console.log('Admin fetching events...');
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current admin user:', user?.email);
-      
-      const { data, error } = await supabase
-        .from('event')
-        .select(`
-          *,
-          society:society_id(name, contact_email)
-        `)
-        .order('created_at', { ascending: false });
-
-      console.log('Events query result:', { data, error });
-
-      if (error) throw error;
-      setEvents(data || []);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load events",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const filterEvents = () => {
-    let filtered = events;
-
-    if (searchTerm) {
-      filtered = filtered.filter(event =>
-        event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.society.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        event.location.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(event => event.status === statusFilter);
-    }
-
-    setFilteredEvents(filtered);
-  };
-
-  const approveEvent = async (eventId: string) => {
-    try {
-      const { error } = await supabase
-        .from('event')
-        .update({ status: 'approved' })
-        .eq('id', eventId);
-
-      if (error) throw error;
-
-      setEvents(prev => prev.map(event => 
-        event.id === eventId ? { ...event, status: 'approved' } : event
-      ));
-
-      toast({
-        title: "Event Approved",
-        description: "The event has been approved and is now public",
+      const response = await fetch(`${API_BASE_URL}/admin/events`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ eventId, status, rejection_reason: reason }),
       });
 
-      setReviewDialog(false);
-      setSelectedEvent(null);
-    } catch (error) {
-      console.error('Error approving event:', error);
-      toast({
-        title: "Error",
-        description: "Failed to approve event",
-        variant: "destructive",
-      });
-    }
-  };
+      const result = await response.json();
 
-  const rejectEvent = async (eventId: string, reason: string) => {
-    try {
-      const { error } = await supabase
-        .from('event')
-        .update({ 
-          status: 'rejected',
-          rejection_reason: reason 
-        })
-        .eq('id', eventId);
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to update event status.');
+      }
 
-      if (error) throw error;
-
-      setEvents(prev => prev.map(event => 
-        event.id === eventId ? { ...event, status: 'rejected' } : event
-      ));
+      // Instead of just updating the local state, we refetch the current page
+      // to ensure data consistency.
+      fetchEvents(currentPage);
 
       toast({
-        title: "Event Rejected",
-        description: "The event has been rejected",
+        title: `Event ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        description: `The event has been successfully ${status}.`,
       });
 
       setReviewDialog(false);
       setSelectedEvent(null);
       setRejectionReason('');
-    } catch (error) {
-      console.error('Error rejecting event:', error);
+
+    } catch (error: any) {
+      console.error(`Error ${status} event:`, error);
       toast({
         title: "Error",
-        description: "Failed to reject event",
+        description: error.message || `Failed to ${status} event.`,
         variant: "destructive",
       });
+    } finally {
+      setIsUpdating(false);
     }
+  };
+
+  const approveEvent = (eventId: string) => {
+    updateEventStatus(eventId, 'approved');
+  };
+
+  const rejectEvent = (eventId: string, reason: string) => {
+    updateEventStatus(eventId, 'rejected', reason);
   };
 
   const getStatusBadge = (status: string) => {
@@ -307,24 +305,21 @@ export default function AdminEvents() {
         </Card>
 
         {/* Events List */}
-        {filteredEvents.length === 0 ? (
+        {loading ? (
+          <LoadingSpinner />
+        ) : events.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
               <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {events.length === 0 ? 'No Events Yet' : 'No Events Found'}
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Events Found</h3>
               <p className="text-gray-600">
-                {events.length === 0 
-                  ? "No events have been submitted yet."
-                  : "No events match your current search and filter criteria."
-                }
+                No events match your current search and filter criteria.
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-4">
-            {filteredEvents.map((event) => (
+            {events.map((event) => (
               <Card key={event.id} className="overflow-hidden">
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start mb-4">
@@ -414,12 +409,47 @@ export default function AdminEvents() {
           </div>
         )}
 
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(p => Math.max(1, p - 1));
+                    }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+                <PaginationItem>
+                  <span className="px-4 py-2 text-sm">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(p => Math.min(totalPages, p + 1));
+                    }}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+
         {/* Review Dialog */}
         {selectedEvent && (
           <Dialog open={reviewDialog} onOpenChange={setReviewDialog}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Review Event: {selectedEvent.title}</DialogTitle>
+                <DialogTitle>Review Event: {selectedEvent.name}</DialogTitle>
                 <DialogDescription>
                   Review the event details and approve or reject the submission.
                 </DialogDescription>
@@ -471,7 +501,7 @@ export default function AdminEvents() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setReviewDialog(false)}>
+                <Button variant="outline" onClick={() => setReviewDialog(false)} disabled={isUpdating}>
                   Close
                 </Button>
                 {selectedEvent.status === 'pending' && (
@@ -479,13 +509,12 @@ export default function AdminEvents() {
                     <Button
                       variant="destructive"
                       onClick={() => rejectEvent(selectedEvent.id, rejectionReason)}
+                      disabled={isUpdating}
                     >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Reject
+                      {isUpdating ? 'Rejecting...' : <><XCircle className="w-4 h-4 mr-2" />Reject</>}
                     </Button>
-                    <Button onClick={() => approveEvent(selectedEvent.id)}>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Approve
+                    <Button onClick={() => approveEvent(selectedEvent.id)} disabled={isUpdating}>
+                      {isUpdating ? 'Approving...' : <><CheckCircle className="w-4 h-4 mr-2" />Approve</>}
                     </Button>
                   </>
                 )}

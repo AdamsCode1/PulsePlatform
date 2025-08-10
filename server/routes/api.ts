@@ -6,6 +6,7 @@ import eventsRouter from './events';
 import societiesRouter from './societies';
 import rsvpsRouter from './rsvps';
 import authRouter from './auth';
+import adminRouter from './admin';
 
 
 console.log('usersRouter:', usersRouter);
@@ -20,7 +21,7 @@ router.use('/events', eventsRouter);
 router.use('/societies', societiesRouter);
 router.use('/rsvps', rsvpsRouter);
 router.use('/login', authRouter);
-
+router.use('/admin', adminRouter);
 
 
 export default router;

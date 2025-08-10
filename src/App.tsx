@@ -11,6 +11,7 @@ import DealsPage from './pages/DealsPage';
 import MeetTheTeam from './pages/MeetTheTeam';
 import EventSubmissionPage from './pages/EventSubmissionPage';
 import SocietyEventsPage from './pages/SocietyEventsPage';
+import ManageRedirect from './pages/ManageRedirect';
 
 // Authentication
 import UserTypeSelection from "./pages/UserTypeSelection";
@@ -74,7 +75,7 @@ const App = () => (
           <Route path="/register/society" element={<SocietyRegister />} />
           <Route path="/register/organization" element={<PartnerRegister />} />
           <Route path="/submit-event" element={<EventSubmissionPage />} />
-          <Route path="/events/manage" element={<SocietyEventsPage />} />
+          <Route path="/events/manage" element={<ManageRedirect />} />
           <Route path="/user-type" element={<UserTypeSelection />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/about" element={<AboutPage />} />
