@@ -160,24 +160,40 @@ router.get('/dashboard', requireAdmin, async (req: Request, res: Response) => {
 // Recent admin activity
 router.get('/activity', requireAdmin, async (_req: Request, res: Response) => {
   try {
-    const { data, error } = await supabaseAdmin
+    // Fetch recent logs without joining to users to avoid schema relationship issues
+    const { data: logs, error: logsError } = await supabaseAdmin
       .from('admin_activity_log')
-      .select(`
-        id,
-        created_at,
-        action,
-        target_entity,
-        target_id,
-        details,
-        user:users ( email )
-      `)
+      .select('id,created_at,action,target_entity,target_id,details,user_id')
       .order('created_at', { ascending: false })
       .limit(10);
-    if (error) throw error;
-    const formatted = (data || []).map((log: any) => ({
-      ...log,
-      user_email: (log as any).user ? (log as any).user.email : 'Unknown User',
+    if (logsError) throw logsError;
+
+    const userIds = Array.from(new Set((logs || []).map(l => l.user_id).filter(Boolean)));
+    let emailsById = new Map<string, string>();
+    if (userIds.length > 0) {
+      // Query auth.users directly using the service role key
+      const { data: users, error: usersError } = await supabaseAdmin
+        .from('auth.users' as any)
+        .select('id,email')
+        .in('id', userIds as string[]);
+      if (usersError) {
+        // If auth.users query fails, fallback to unknown emails
+        emailsById = new Map();
+      } else {
+        emailsById = new Map((users || []).map((u: any) => [u.id, u.email]));
+      }
+    }
+
+    const formatted = (logs || []).map((log: any) => ({
+      id: log.id,
+      created_at: log.created_at,
+      action: log.action,
+      target_entity: log.target_entity,
+      target_id: log.target_id,
+      details: log.details,
+      user_email: (log.user_id && emailsById.get(log.user_id)) || 'Unknown User',
     }));
+
     res.status(200).json(formatted);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
