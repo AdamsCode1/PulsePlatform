@@ -3,7 +3,7 @@ module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/tests/**/*.test.[jt]s?(x)'],
   moduleFileExtensions: ['js', 'ts', 'json'],
-  setupFiles: ['dotenv/config'],
+  setupFiles: ['<rootDir>/tests/setup-env.cjs', 'dotenv/config'],
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {

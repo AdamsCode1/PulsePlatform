@@ -1,8 +1,18 @@
 // index.ts
-import 'dotenv/config';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
 import express from 'express';
 import apiRouter from './routes/api';
 import cors from 'cors';
+
+// Load .env.local in development if present, else default .env
+const envLocal = path.resolve(process.cwd(), '.env.local');
+if (fs.existsSync(envLocal)) {
+  dotenv.config({ path: envLocal });
+} else {
+  dotenv.config();
+}
 
 const app = express();
 

@@ -1,23 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Calendar, Users, CheckCircle, XCircle, Clock, Server, Database, BarChart3, Settings as SettingsIcon, FileClock } from 'lucide-react';
+import { Calendar, Users, CheckCircle, XCircle, Clock, Server, Database, BarChart3, Settings as SettingsIcon, FileClock, AlertTriangle } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
-import { API_BASE_URL } from '@/lib/apiConfig';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import { formatDistanceToNow } from 'date-fns';
-
-
-interface DashboardStats {
-  totalEvents: { total: number, pending: number, approved: number, rejected: number };
-  totalUsers: { students: number, societies: number, partners: number, admins: number };
-  systemHealth: { api_status: 'healthy' | 'degraded', db_status: 'healthy' | 'degraded' };
-}
+import useApi from '@/hooks/useApi';
+import useDashboardStats, { DashboardStats } from '@/hooks/useDashboardStats';
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface ActivityLog {
     id: string;
@@ -32,9 +26,9 @@ interface ActivityLog {
     user_email: string;
 }
 
-interface UserSummary {
-    id: string;
-    role: string;
+interface ChartDataItem {
+    submission_date: string;
+    count: number;
 }
 
 const formatTimeAgo = (dateString: string) => {
@@ -42,169 +36,142 @@ const formatTimeAgo = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true });
 }
 
+const ErrorDisplay = ({ message, onRetry }: { message: string, onRetry: () => void }) => (
+    <div className="flex flex-col items-center justify-center h-full bg-red-50 p-4 rounded-lg">
+        <AlertTriangle className="w-10 h-10 text-red-500 mb-4" />
+        <p className="text-red-700 font-semibold mb-2">An error occurred</p>
+        <p className="text-red-600 text-sm mb-4">{message}</p>
+        <Button onClick={onRetry} variant="destructive" size="sm">Retry</Button>
+    </div>
+);
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalEvents: { total: 0, pending: 0, approved: 0, rejected: 0 },
-    totalUsers: { students: 0, societies: 0, partners: 0, admins: 0 },
-    systemHealth: { api_status: 'healthy', db_status: 'healthy' },
-  });
-  const [activityLog, setActivityLog] = useState<ActivityLog[]>([]);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  const fetchActivityLog = async () => {
-    try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) return;
-        const response = await fetch(`${API_BASE_URL}/admin/activity`, {
-            headers: { 'Authorization': `Bearer ${session.access_token}` },
-        });
-        const data = await response.json();
-        if (response.ok) {
-            setActivityLog(data);
-        }
-    } catch (error) {
-        console.error('Error fetching activity log:', error);
-    }
-  };
+  // --- Data Fetching with React Query ---
+  const {
+    data: stats,
+    isLoading: isLoadingStats,
+    isError: isErrorStats,
+    error: errorStats,
+    refetch: refetchStats
+  } = useDashboardStats();
 
-  const fetchChartData = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const response = await fetch(`${API_BASE_URL}/admin/dashboard`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
-      });
-      const data = await response.json();
-      if (response.ok) {
-        // Format data for the chart
-        const formattedData = data.map((item: any) => ({
-          date: new Date(item.submission_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          count: item.count,
-        }));
-        setChartData(formattedData);
-      }
-    } catch (error) {
-      console.error('Error fetching chart data:', error);
-    }
-  };
+  const {
+    data: activityLog,
+    isLoading: isLoadingActivity,
+    isError: isErrorActivity,
+    error: errorActivity,
+    refetch: refetchActivity
+  } = useApi<ActivityLog[]>(['activityLog'], 'admin/activity');
 
-  const checkAuth = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      // Secure role-based check
-      if (!user || user.app_metadata?.role !== 'admin') {
-        navigate('/admin/login');
-        return;
-      }
-      setUser(user);
-      await Promise.all([fetchStats(), fetchChartData(), fetchActivityLog()]);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      navigate('/admin/login');
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate]);
+  const {
+    data: rawChartData,
+    isLoading: isLoadingChart,
+    isError: isErrorChart,
+    error: errorChart,
+    refetch: refetchChart
+  } = useApi<ChartDataItem[]>(['chartData'], 'admin/dashboard');
+
+  const chartData = useMemo(() => {
+    if (!rawChartData) return [];
+    return rawChartData.map(item => ({
+      date: new Date(item.submission_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      count: item.count,
+    }));
+  }, [rawChartData]);
+
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || user.app_metadata?.role !== 'admin') {
+        navigate('/admin/login');
+      } else {
+        setUser(user);
+      }
+    };
     checkAuth();
-  }, [checkAuth]);
-
-  const fetchStats = async () => {
-    try {
-      // Fetch event stats
-      const { count: total, error: eventsError } = await supabase.from('event').select('*', { count: 'exact', head: true });
-      if (eventsError) throw eventsError;
-      const { count: pending } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-      const { count: approved } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'approved');
-      const { count: rejected } = await supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'rejected');
-
-      // Fetch user stats using the RPC function
-      const { data: users, error: usersError } = await supabase.rpc('get_all_users') as { data: UserSummary[], error: any };
-      if (usersError) throw usersError;
-
-      const students = users.filter(u => u.role === 'student').length;
-      const societies = users.filter(u => u.role === 'society').length;
-      const partners = users.filter(u => u.role === 'partner').length;
-      const admins = users.filter(u => u.role === 'admin').length;
-
-      setStats(prevStats => ({
-        ...prevStats,
-        totalEvents: {
-            total: total || 0,
-            pending: pending || 0,
-            approved: approved || 0,
-            rejected: rejected || 0,
-        },
-        totalUsers: {
-            students,
-            societies,
-            partners,
-            admins,
-        }
-      }));
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
+  }, [navigate]);
+  // Centralized navigation helper for clickable cards/buttons
+  const handleCardClick = (path: string) => {
+    navigate(path);
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  const totalUsers = stats ? stats.totalUsers.students + stats.totalUsers.societies + stats.totalUsers.partners + stats.totalUsers.admins : 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <main className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">
-            Welcome back, {user?.email}. Manage events, societies, and platform oversight.
-          </p>
+          {user ? (
+            <p className="text-gray-600 mt-2">
+              {`Welcome back, ${user.email}. Manage events, societies, and platform oversight.`}
+            </p>
+          ) : (
+            <div className="mt-2">
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          <Card onClick={() => handleCardClick('/admin/events')} className="cursor-pointer hover:bg-gray-100 transition-colors">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Total Events</CardTitle>
-              <CardDescription>{stats.totalEvents.pending} pending</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">{stats.totalEvents.total}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Total Users</CardTitle>
-              <CardDescription>All user roles</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-purple-600">{stats.totalUsers.students + stats.totalUsers.societies + stats.totalUsers.partners + stats.totalUsers.admins}</div>
-            </CardContent>
-          </Card>
-           <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Students</CardTitle>
-               <CardDescription>Student accounts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-indigo-600">{stats.totalUsers.students}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Societies & Partners</CardTitle>
-              <CardDescription>{stats.totalUsers.societies} Societies, {stats.totalUsers.partners} Partners</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-pink-600">{stats.totalUsers.societies + stats.totalUsers.partners}</div>
-            </CardContent>
-          </Card>
+          {isLoadingStats ? (
+            <>
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+            </>
+          ) : isErrorStats ? (
+            <div className="col-span-full">
+              <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
+            </div>
+          ) : stats && (
+            <>
+              <Card onClick={() => handleCardClick('/admin/events')} className="cursor-pointer hover:bg-gray-100 transition-colors">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Total Events</CardTitle>
+                  <CardDescription>{stats.totalEvents.pending} pending</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-blue-600">{stats.totalEvents.total}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Total Users</CardTitle>
+                  <CardDescription>All user roles</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-600">{totalUsers}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Students</CardTitle>
+                  <CardDescription>Student accounts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-indigo-600">{stats.totalUsers.students}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Societies & Partners</CardTitle>
+                  <CardDescription>{stats.totalUsers.societies} Societies, {stats.totalUsers.partners} Partners</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-pink-600">{stats.totalUsers.societies + stats.totalUsers.partners}</div>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -216,18 +183,26 @@ export default function AdminDashboard() {
                 <CardDescription>Event submissions over the last 7 days.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div style={{ minHeight: '300px' }}>
-                    <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="date" />
-                        <YAxis allowDecimals={false} />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="count" fill="#8884d8" name="Submissions" />
-                    </BarChart>
-                    </ResponsiveContainer>
-                </div>
+                {isLoadingChart ? (
+                  <div className="flex items-center justify-center h-[300px]">
+                    <Skeleton className="h-full w-full" />
+                  </div>
+                ) : isErrorChart ? (
+                  <ErrorDisplay message={errorChart.message} onRetry={refetchChart} />
+                ) : (
+                  <div style={{ minHeight: '300px' }}>
+                      <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="count" fill="#8884d8" name="Submissions" />
+                      </BarChart>
+                      </ResponsiveContainer>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -259,29 +234,39 @@ export default function AdminDashboard() {
                 <CardTitle>Event Status Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div onClick={() => handleCardClick('/admin/events?status=pending')} className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors">
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-2 text-yellow-500" />
-                      <span className="text-sm">Pending Review</span>
-                    </div>
-                    <Badge variant="outline">{stats.totalEvents.pending}</Badge>
+                {isLoadingStats ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full" />
                   </div>
-                  <div onClick={() => handleCardClick('/admin/events?status=approved')} className="flex justify-between items-center cursor-pointer hover:bg-ray-100 p-2 rounded-md transition-colors">
-                    <div className="flex items-center">
-                      <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-                      <span className="text-sm">Approved</span>
+                ) : isErrorStats ? (
+                  <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
+                ) : stats && (
+                  <div className="space-y-3">
+                    <div onClick={() => handleCardClick('/admin/events?status=pending')} className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors">
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-2 text-yellow-500" />
+                        <span className="text-sm">Pending Review</span>
+                      </div>
+                      <Badge variant="outline">{stats.totalEvents.pending}</Badge>
                     </div>
-                    <Badge variant="outline">{stats.totalEvents.approved}</Badge>
-                  </div>
-                  <div onClick={() => handleCardClick('/admin/events?status=rejected')} className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors">
-                    <div className="flex items-center">
-                      <XCircle className="w-4 h-4 mr-2 text-red-500" />
-                      <span className="text-sm">Rejected</span>
+                    <div onClick={() => handleCardClick('/admin/events?status=approved')} className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors">
+                      <div className="flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
+                        <span className="text-sm">Approved</span>
+                      </div>
+                      <Badge variant="outline">{stats.totalEvents.approved}</Badge>
                     </div>
-                    <Badge variant="outline">{stats.totalEvents.rejected}</Badge>
+                    <div onClick={() => handleCardClick('/admin/events?status=rejected')} className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors">
+                      <div className="flex items-center">
+                        <XCircle className="w-4 h-4 mr-2 text-red-500" />
+                        <span className="text-sm">Rejected</span>
+                      </div>
+                      <Badge variant="outline">{stats.totalEvents.rejected}</Badge>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -290,26 +275,35 @@ export default function AdminDashboard() {
                 <CardTitle>System Health</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <Server className="w-4 h-4 mr-2 text-gray-500" />
-                      <span className="text-sm">API Status</span>
-                    </div>
-                    <Badge className={stats.systemHealth.api_status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {stats.systemHealth.api_status}
-                    </Badge>
+                {isLoadingStats ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-6 w-full" />
                   </div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <Database className="w-4 h-4 mr-2 text-gray-500" />
-                      <span className="text-sm">Database</span>
+                ) : isErrorStats ? (
+                  <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
+                ) : stats && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <Server className="w-4 h-4 mr-2 text-gray-500" />
+                        <span className="text-sm">API Status</span>
+                      </div>
+                      <Badge className={stats.systemHealth.api_status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                        {stats.systemHealth.api_status}
+                      </Badge>
                     </div>
-                     <Badge className={stats.systemHealth.db_status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
-                      {stats.systemHealth.db_status}
-                    </Badge>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <Database className="w-4 h-4 mr-2 text-gray-500" />
+                        <span className="text-sm">Database</span>
+                      </div>
+                       <Badge className={stats.systemHealth.db_status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                        {stats.systemHealth.db_status}
+                      </Badge>
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -321,8 +315,16 @@ export default function AdminDashboard() {
                 <CardTitle>Recent Activity</CardTitle>
                 <CardDescription>A log of recent administrative actions.</CardDescription>
               </CardHeader>
-              <CardContent>
-                 {activityLog.length > 0 ? (
+              <CardContent className="max-h-96 overflow-auto">
+                 {isLoadingActivity ? (
+                   <div className="space-y-4">
+                     <Skeleton className="h-12 w-full" />
+                     <Skeleton className="h-12 w-full" />
+                     <Skeleton className="h-12 w-full" />
+                   </div>
+                 ) : isErrorActivity ? (
+                  <ErrorDisplay message={errorActivity.message} onRetry={refetchActivity} />
+                 ) : activityLog && activityLog.length > 0 ? (
                     <ul className="space-y-4">
                         {activityLog.map((log) => (
                             <li key={log.id} className="flex items-start space-x-4">

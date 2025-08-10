@@ -1,7 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Public Pages
@@ -45,18 +44,17 @@ import Schedule from './pages/Schedule';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminEvents from './pages/admin/Events';
 import AdminDeals from './pages/admin/Deals';
-
-const queryClient = new QueryClient();
+import AdminUsers from './pages/admin/Users';
+import AdminSettings from './pages/admin/Settings';
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter
-        future={{
-          v7_startTransition: true,
-          v7_relativeSplatPath: true,
+  <TooltipProvider>
+    <Toaster />
+    <Sonner />
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
         }}
       >
         <Routes>
@@ -104,6 +102,8 @@ const App = () => (
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/events" element={<AdminEvents />} />
           <Route path="/admin/deals" element={<AdminDeals />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           
           {/* Legacy redirects for backward compatibility */}
           <Route path="/admin" element={<AdminLogin />} />
@@ -112,7 +112,6 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
 );
 
 export default App;

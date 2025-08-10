@@ -49,17 +49,17 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
       return res.status(400).json({ message: 'Invalid status provided.' });
     }
 
-    const updateData: { status: string, rejection_reason?: string } = { status };
-    if (status === 'rejected') {
-        updateData.rejection_reason = rejection_reason || 'No reason provided.';
-    }
+  const updateData: { status: string; rejection_reason?: string } = { status };
+  
+  // Include rejection_reason if provided and status is rejected
+  if (status === 'rejected' && rejection_reason) {
+    updateData.rejection_reason = rejection_reason;
+  }
 
-    const { data, error } = await supabaseAdmin
+    let { error } = await supabaseAdmin
       .from('event')
       .update(updateData)
-      .eq('id', eventId)
-      .select()
-      .single();
+      .eq('id', eventId);
 
     if (error) {
       console.error('Error updating event:', error);
@@ -72,10 +72,9 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
             action: `event.${status}`,
             target_entity: 'event',
             target_id: eventId,
-            details: {
-                rejection_reason: status === 'rejected' ? rejection_reason : undefined,
-                eventName: data.name // Also log the event name for context
-            }
+      details: {
+        rejection_reason: status === 'rejected' ? rejection_reason : undefined,
+      }
         });
 
         if (logError) {
@@ -84,9 +83,79 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
         }
     }
 
-    return res.status(200).json(data);
+  return res.status(200).json({ id: eventId, status, ...(status === 'rejected' ? { rejection_reason } : {}) });
 
   } catch (error: any) {
+    return res.status(403).json({ message: error.message });
+  }
+};
+
+const handleDeleteEvent = async (req: any, res: any) => {
+  try {
+    const adminUser = await requireAdmin(req);
+
+    const { eventId } = req.query;
+
+    if (!eventId) {
+      console.error('DELETE /admin/events: Missing eventId in query parameters');
+      return res.status(400).json({ message: 'Event ID is required' });
+    }
+
+    console.log(`DELETE /admin/events: Attempting to delete event ${eventId}`);
+
+    // First check if the event exists
+    const { data: eventCheck, error: checkError } = await supabaseAdmin
+      .from('event')
+      .select('id, title, society_id')
+      .eq('id', eventId)
+      .single();
+
+    if (checkError) {
+      console.error('DELETE /admin/events: Error checking event existence:', checkError);
+      if (checkError.code === 'PGRST116') {
+        return res.status(404).json({ message: 'Event not found' });
+      }
+      return res.status(500).json({ message: 'Database error checking event' });
+    }
+
+    if (!eventCheck) {
+      console.log(`DELETE /admin/events: Event ${eventId} not found`);
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    console.log(`DELETE /admin/events: Found event "${eventCheck.title}" (ID: ${eventId}), proceeding with deletion`);
+
+    // Delete the event
+    const { error: deleteError } = await supabaseAdmin
+      .from('event')
+      .delete()
+      .eq('id', eventId);
+
+    if (deleteError) {
+      console.error('DELETE /admin/events: Error deleting event:', deleteError);
+      return res.status(500).json({ message: 'Failed to delete event' });
+    }
+
+    console.log(`DELETE /admin/events: Successfully deleted event ${eventId}`);
+
+    // Log admin activity (optional - if this fails, we don't fail the whole request)
+    try {
+      if (adminUser) {
+        await supabaseAdmin.rpc('log_admin_activity', {
+          admin_id: adminUser.id,
+          action: 'delete_event',
+          details: `Deleted event: ${eventCheck.title} (ID: ${eventId})`
+        });
+      }
+    } catch (logError) {
+      // If logging fails, we should probably note it but not fail the whole request
+      console.error('Failed to log admin activity:', logError);
+    }
+
+    return res.status(200).json({ message: 'Event deleted successfully', eventId });
+
+  } catch (error: any) {
+    console.error('DELETE /admin/events: Unexpected error:', error);
     return res.status(403).json({ message: error.message });
   }
 };
@@ -94,4 +163,5 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
 // Export the handler, mapping methods to functions
 export default createHandler({
   PATCH: handleUpdateEvent,
+  DELETE: handleDeleteEvent,
 });
