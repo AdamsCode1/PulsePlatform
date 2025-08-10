@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { X, MapPin, Clock, Users, Calendar, Mail } from 'lucide-react';
+import { X, MapPin, Users, Calendar, Mail } from 'lucide-react';
 import { Event } from '../types/Event';
 import RSVPForm from './RSVPForm';
 import { useNavigate } from 'react-router-dom';
@@ -168,20 +168,10 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
     }
   };
 
-  // Generate a short description (3-4 lines) that matches what's shown on the card
-  const getShortDescription = (originalDescription: string) => {
-    const baseDescription = originalDescription || "Join us for an exciting event that brings together our community for an unforgettable experience.";
-    
-    // Keep it short - just 3-4 lines
-    const shortDescription = "This event promises to be an engaging experience for all attendees, featuring interactive sessions and networking opportunities. Whether you're new to our community or a long-time member, this event offers something valuable for everyone. Come prepared to learn, connect, and be inspired by fellow participants.";
-    
-    return shortDescription;
-  };
-
   // Ensure email ends with @durham.ac.uk
   const formatEmail = (email: string) => {
     if (!email || email === 'No email provided') {
-      return 'contact@durham.ac.uk';
+      return 'No email provided';
     }
     if (email.endsWith('@durham.ac.uk')) {
       return email;
@@ -293,7 +283,7 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
           <div className="mb-6 sm:mb-8">
             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">About This Event</h3>
             <div className="text-gray-600 leading-relaxed text-sm sm:text-base">
-              {getShortDescription(event.description || '')}
+               {event.description || ''}
             </div>
           </div>
 
