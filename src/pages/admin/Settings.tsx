@@ -11,7 +11,6 @@ import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/lib/apiConfig';
 
 type SettingsConfig = {
@@ -40,8 +39,11 @@ export default function AdminSettings() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [settings, setSettings] = useState<SettingsConfig | null>(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+
   const checkAuth = useCallback(async () => {
     setLoading(true);
     try {
@@ -71,9 +73,9 @@ export default function AdminSettings() {
     maintenance: { enabled: false, message: 'The platform is under maintenance. Please check back later.' },
   };
 
-  const settingsQuery = useQuery({
-    queryKey: ['admin-settings'],
-    queryFn: async () => {
+  const fetchSettings = async () => {
+    setSettingsLoading(true);
+    try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
       const res = await fetch(`${API_BASE_URL}/admin/settings`, {
@@ -81,14 +83,19 @@ export default function AdminSettings() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to fetch settings');
-      return json as { id: string; config: SettingsConfig };
-    },
-    enabled: !!user,
-    staleTime: 30_000,
-  });
+      setSettings(json.config);
+    } catch (error: any) {
+      console.error('Failed to fetch settings:', error);
+      // Use default settings if fetch fails
+      setSettings(defaultSettings);
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
 
-  const updateSettings = useMutation({
-    mutationFn: async (config: SettingsConfig) => {
+  const updateSettings = async (config: SettingsConfig) => {
+    setSaving(true);
+    try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
       const res = await fetch(`${API_BASE_URL}/admin/settings`, {
@@ -101,22 +108,26 @@ export default function AdminSettings() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.message || 'Failed to update settings');
-      return json as { id: string; config: SettingsConfig };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-settings'] });
+      setSettings(config);
       toast({ title: 'Settings updated', description: 'Platform settings saved successfully.' });
-    },
-    onError: (err: any) => {
-      toast({ title: 'Error', description: err.message || 'Failed to update settings', variant: 'destructive' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to update settings', variant: 'destructive' });
+    } finally {
+      setSaving(false);
     }
-  });
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchSettings();
+    }
+  }, [user]);
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  const cfg = settingsQuery.data?.config ?? defaultConfig;
+  const cfg = settings ?? defaultConfig;
 
   const onToggle = <K extends keyof SettingsConfig>(
     section: K,
@@ -124,12 +135,10 @@ export default function AdminSettings() {
     value: any
   ) => {
     const next: SettingsConfig = { ...cfg, [section]: { ...(cfg as any)[section], [key]: value } } as SettingsConfig;
-    updateSettings.mutate(next);
+    updateSettings(next);
   };
 
-  const onUpdate = (nextCfg: SettingsConfig) => updateSettings.mutate(nextCfg);
-
-  const isSaving = (updateSettings as any).isPending ?? (updateSettings as any).isLoading ?? false;
+  const onUpdate = (nextCfg: SettingsConfig) => updateSettings(nextCfg);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -147,18 +156,18 @@ export default function AdminSettings() {
           <div className="flex items-center gap-3">
             <SettingsIcon className="w-6 h-6 text-gray-700" />
             <h1 className="text-3xl font-bold text-gray-900">Platform Settings</h1>
-            {settingsQuery.isLoading && <Badge variant="secondary" className="ml-2">Loading…</Badge>}
+            {settingsLoading && <Badge variant="secondary" className="ml-2">Loading…</Badge>}
           </div>
           <p className="text-gray-600 mt-2">
             Manage platform configuration, admin accounts, and maintenance tools.
           </p>
         </div>
 
-        {settingsQuery.isError && (
+        {!settings && !settingsLoading && (
           <Card className="mb-6">
             <CardContent className="py-4 flex items-center justify-between">
               <p className="text-sm text-red-600">Failed to load settings.</p>
-              <Button size="sm" onClick={() => settingsQuery.refetch()}>Retry</Button>
+              <Button size="sm" onClick={fetchSettings}>Retry</Button>
             </CardContent>
           </Card>
         )}
@@ -177,7 +186,7 @@ export default function AdminSettings() {
                 <Switch
                   checked={!!cfg.eventApproval.autoApproveSocietyEvents}
                   onCheckedChange={(checked) => onToggle('eventApproval', 'autoApproveSocietyEvents', checked)}
-                  disabled={isSaving}
+                  disabled={saving}
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -188,7 +197,7 @@ export default function AdminSettings() {
                 <Switch
                   checked={!!cfg.eventApproval.requireRejectionReason}
                   onCheckedChange={(checked) => onToggle('eventApproval', 'requireRejectionReason', checked)}
-                  disabled={isSaving}
+                  disabled={saving}
                 />
               </div>
             </CardContent>
@@ -206,7 +215,7 @@ export default function AdminSettings() {
               <Switch
                 checked={!!cfg.dealModeration.requireApproval}
                 onCheckedChange={(checked) => onToggle('dealModeration', 'requireApproval', checked)}
-                disabled={isSaving}
+                disabled={saving}
               />
             </CardContent>
           </Card>
@@ -224,7 +233,7 @@ export default function AdminSettings() {
                 <Switch
                   checked={!!cfg.userRegistration.allowPublicRegistration}
                   onCheckedChange={(checked) => onToggle('userRegistration', 'allowPublicRegistration', checked)}
-                  disabled={isSaving}
+                  disabled={saving}
                 />
               </div>
               <div className="flex items-center justify-between">
@@ -235,7 +244,7 @@ export default function AdminSettings() {
                 <Switch
                   checked={!!cfg.userRegistration.requireEmailVerification}
                   onCheckedChange={(checked) => onToggle('userRegistration', 'requireEmailVerification', checked)}
-                  disabled={isSaving}
+                  disabled={saving}
                 />
               </div>
             </CardContent>
@@ -254,7 +263,7 @@ export default function AdminSettings() {
                 <Switch
                   checked={!!cfg.emailNotifications.notifyAdminsOnSubmission}
                   onCheckedChange={(checked) => onToggle('emailNotifications', 'notifyAdminsOnSubmission', checked)}
-                  disabled={isSaving}
+                  disabled={saving}
                 />
               </div>
               <div>
@@ -263,7 +272,7 @@ export default function AdminSettings() {
                   className="w-full border rounded-md px-3 py-2 bg-white"
                   value={cfg.emailNotifications.digestFrequency || 'weekly'}
                   onChange={(e) => onToggle('emailNotifications', 'digestFrequency', e.target.value)}
-                  disabled={isSaving}
+                  disabled={saving}
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -286,7 +295,7 @@ export default function AdminSettings() {
                 <Switch
                   checked={!!cfg.maintenance.enabled}
                   onCheckedChange={(checked) => onToggle('maintenance', 'enabled', checked)}
-                  disabled={isSaving}
+                  disabled={saving}
                 />
               </div>
               <div>
@@ -294,7 +303,7 @@ export default function AdminSettings() {
                 <Input
                   value={cfg.maintenance.message || ''}
                   onChange={(e) => onToggle('maintenance', 'message', e.target.value)}
-                  disabled={isSaving}
+                  disabled={saving}
                 />
               </div>
             </CardContent>

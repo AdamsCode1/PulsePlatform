@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationLink, PaginationNext } from '@/components/ui/pagination';
-import { Calendar, Users, Search, MapPin, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { Calendar, Users, Search, MapPin, Clock, CheckCircle, XCircle, Eye, Trash2 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
@@ -201,6 +201,51 @@ export default function AdminEvents() {
 
   const rejectEvent = (eventId: string, reason: string) => {
     updateEventStatus(eventId, 'rejected', reason);
+  };
+
+  const deleteEvent = async (eventId: string) => {
+    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await fetch(`${API_BASE_URL}/admin/events?eventId=${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to delete event.');
+      }
+
+      // Refetch current page to ensure data consistency
+      fetchEvents(currentPage);
+
+      toast({
+        title: "Event Deleted",
+        description: "The event has been successfully deleted.",
+      });
+
+    } catch (error: any) {
+      console.error('Error deleting event:', error);
+      toast({
+        title: "Error",
+        description: error.message || 'Failed to delete event.',
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -402,13 +447,25 @@ export default function AdminEvents() {
                       )}
 
                       {event.status === 'approved' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => window.open(`/?event=${event.id}`, '_blank')}
-                        >
-                          View Public
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => window.open(`/?event=${event.id}`, '_blank')}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />
+                            View Public
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => deleteEvent(event.id)}
+                            disabled={isUpdating}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Delete
+                          </Button>
+                        </>
                       )}
                     </div>
                   </div>

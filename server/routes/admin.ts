@@ -53,7 +53,7 @@ router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Event ID is required.' });
     }
 
-    // Build updateData - NEVER include rejection_reason since column doesn't exist
+    // Build updateData - now with rejection_reason column support
     let updateData: Record<string, unknown>;
     if (typeof status === 'string') {
       const validStatus = ['approved', 'rejected', 'pending'] as const;
@@ -61,14 +61,17 @@ router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
         return res.status(400).json({ message: 'Invalid status provided.' });
       }
       updateData = { status };
+      
+      // Include rejection_reason if provided and status is rejected
+      if (status === 'rejected' && rejection_reason) {
+        updateData.rejection_reason = rejection_reason;
+      }
       // eslint-disable-next-line no-console
-      console.log('[admin.events] Built updateData from status (no rejection_reason column):', updateData);
+      console.log('[admin.events] Built updateData from status:', updateData);
     } else if (payload && typeof payload === 'object') {
-      // Remove rejection_reason from payload if it exists since column doesn't exist
-      const { rejection_reason: _omit, ...safePayload } = payload as any;
-      updateData = safePayload;
+      updateData = payload;
       // eslint-disable-next-line no-console
-      console.log('[admin.events] Built updateData from payload (removed rejection_reason):', updateData);
+      console.log('[admin.events] Built updateData from payload:', updateData);
     } else {
       return res.status(400).json({ message: 'Event update payload is required.' });
     }
@@ -113,9 +116,82 @@ router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
   }
 });
 
+// Route to delete an event
+router.delete('/events', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    // eslint-disable-next-line no-console
+    console.log('[admin.events] DELETE request body:', JSON.stringify(req.body, null, 2));
+
+    const { eventId } = req.body as { eventId?: string };
+
+    // eslint-disable-next-line no-console
+    console.log('[admin.events] Extracted eventId:', eventId);
+
+    if (!eventId) {
+      return res.status(400).json({ message: 'Event ID is required.' });
+    }
+
+    // First, check if the event exists
+    const { data: existingEvent, error: fetchError } = await supabaseAdmin
+      .from('event')
+      .select('id, name, status')
+      .eq('id', eventId)
+      .single();
+
+    if (fetchError || !existingEvent) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('[admin.events] Found event to delete:', existingEvent);
+
+    // Delete the event
+    const { error: deleteError } = await supabaseAdmin
+      .from('event')
+      .delete()
+      .eq('id', eventId);
+
+    if (deleteError) {
+      // eslint-disable-next-line no-console
+      console.error('[admin.events] Database delete error:', deleteError);
+      throw deleteError;
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('[admin.events] Event deleted successfully');
+
+    // Best-effort log of admin activity (do not fail request if logging fails)
+    const { error: logError } = await supabaseAdmin.rpc('log_admin_activity', {
+      action: 'event.delete',
+      target_entity: 'event',
+      target_id: eventId,
+      details: {
+        event_name: existingEvent.name,
+        previous_status: existingEvent.status,
+      },
+    });
+    if (logError) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to log admin activity:', logError);
+    }
+
+    // Return success response
+    res.status(200).json({ 
+      message: 'Event deleted successfully', 
+      deletedEvent: { 
+        id: eventId, 
+        name: existingEvent.name 
+      } 
+    });
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Route to get users (with simple paging/filtering). Falls back if RPC is missing.
 router.get('/users', requireAdmin, async (req: Request, res: Response) => {
   try {
+    console.log('[admin.users] Getting users...');
     const { role = 'all', status = 'all', search = '', page = '1', limit = '10' } = req.query;
     const pageNum = Math.max(parseInt(page as string, 10) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(limit as string, 10) || 10, 1), 100);
@@ -123,11 +199,14 @@ router.get('/users', requireAdmin, async (req: Request, res: Response) => {
     const to = from + pageSize - 1;
 
     // Try RPC first
+    console.log('[admin.users] Trying get_all_users RPC...');
     const rpc = await supabaseAdmin.rpc('get_all_users');
     let rows: any[] | null = null;
     if (!rpc.error && rpc.data) {
+      console.log('[admin.users] RPC succeeded, got', rpc.data.length, 'users');
       rows = rpc.data as any[];
     } else {
+      console.log('[admin.users] RPC failed:', rpc.error?.message, 'Trying fallback...');
       // Fallback: union from role-specific tables if they exist
       // Note: adjust table/column names to match your schema
       const candidates: any[] = [];
@@ -143,22 +222,33 @@ router.get('/users', requireAdmin, async (req: Request, res: Response) => {
         }));
       };
       adds.push((async () => {
-        const { data } = await supabaseAdmin.from('students').select('id,name,email,status,created_at');
-        pushRows(data, 'student');
+        console.log('[admin.users] Querying student table...');
+        const { data } = await supabaseAdmin.from('student').select('id,first_name,last_name,email,created_at').order('created_at', { ascending: false });
+        console.log('[admin.users] Student query result:', data?.length || 0, 'students');
+        (data || []).forEach((r: any) => candidates.push({
+          id: r.id,
+          name: `${r.first_name || ''} ${r.last_name || ''}`.trim() || null,
+          email: r.email,
+          role: 'student',
+          status: 'active',
+          created_at: r.created_at,
+        }));
       })());
       adds.push((async () => {
-        const { data } = await supabaseAdmin.from('societies').select('id,name,email,status,created_at');
-        pushRows(data, 'society');
-      })());
-      adds.push((async () => {
-        const { data } = await supabaseAdmin.from('partners').select('id,name,email,status,created_at');
-        pushRows(data, 'partner');
-      })());
-      adds.push((async () => {
-        const { data } = await supabaseAdmin.from('admins').select('id,name,email,status,created_at');
-        pushRows(data, 'admin');
+        console.log('[admin.users] Querying society table...');
+        const { data } = await supabaseAdmin.from('society').select('id,name,contact_email,created_at').order('created_at', { ascending: false });
+        console.log('[admin.users] Society query result:', data?.length || 0, 'societies');
+        (data || []).forEach((r: any) => candidates.push({
+          id: r.id,
+          name: r.name,
+          email: r.contact_email,
+          role: 'society',
+          status: 'active',
+          created_at: r.created_at,
+        }));
       })());
       await Promise.all(adds);
+      console.log('[admin.users] Total candidates from fallback:', candidates.length);
       rows = candidates;
     }
 
