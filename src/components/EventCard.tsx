@@ -4,7 +4,6 @@ import { MapPin, Clock, Users, Check, ArrowRight, Calendar } from 'lucide-react'
 import { Event } from '../types/Event';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-
 import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
 import { toast } from '../hooks/use-toast';
