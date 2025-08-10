@@ -28,7 +28,7 @@ interface Society {
   id: string;
   name: string;
   description: string;
-  email: string;
+  contact_email: string;
 }
 
 interface User {
@@ -96,7 +96,7 @@ export default function SocietyDashboard() {
           id: 'temp',
           name: user?.user_metadata?.full_name || 'Your Society',
           description: 'Welcome to your society dashboard. Please update your information.',
-          email: email
+          contact_email: email
         });
         } else {
           setSociety(newSociety);
@@ -111,7 +111,7 @@ export default function SocietyDashboard() {
         id: 'temp',
         name: user?.user_metadata?.full_name || 'Your Society',
         description: 'Welcome to your society dashboard. Please update your information.',
-        email: email
+        contact_email: email
       });
     }
   };
@@ -177,7 +177,7 @@ export default function SocietyDashboard() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             {society?.name || 'Society'} Dashboard
@@ -270,7 +270,7 @@ export default function SocietyDashboard() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-700">Email</p>
-                    <p className="text-sm text-gray-600">{society?.email}</p>
+                    <p className="text-sm text-gray-600">{society?.contact_email}</p>
                   </div>
                   {society?.description && (
                     <div>

@@ -4,9 +4,10 @@ import { MapPin, Clock, Users, Check, ArrowRight, Calendar } from 'lucide-react'
 import { Event } from '../types/Event';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { Button } from './ui/button';
+
 import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
+import { toast } from '../hooks/use-toast';
 
 interface EventCardProps {
   event: Event;
@@ -35,26 +36,70 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
       return;
     }
 
-    const existingRSVPs = JSON.parse(localStorage.getItem('rsvps') || '[]');
+    try {
+      // First, get the student_id from the student table
+      const { data: studentData, error: studentError } = await supabase
+        .from('student')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-    if (!hasRSVPed) {
-      // Add RSVP
-      setHasRSVPed(true);
-      setAttendeeCount(prev => prev + 1);
+      if (studentError) {
+        console.error('Error fetching student ID:', studentError);
+        return;
+      }
 
-      const newRSVP = {
-        eventId: event.id,
-        timestamp: new Date().toISOString(),
-        quickRSVP: true
-      };
-      localStorage.setItem('rsvps', JSON.stringify([...existingRSVPs, newRSVP]));
-    } else {
-      // Remove RSVP
-      setHasRSVPed(false);
-      setAttendeeCount(prev => Math.max(0, prev - 1));
+      // If no student record exists, user is not a student
+      if (!studentData) {
+        console.log('User is not a student - cannot RSVP');
+        toast({
+          title: "Access Restricted",
+          description: "Only student accounts can RSVP to events.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      const updatedRSVPs = existingRSVPs.filter((rsvp: any) => rsvp.eventId !== event.id);
-      localStorage.setItem('rsvps', JSON.stringify(updatedRSVPs));
+      const studentId = studentData.id;
+
+      if (!hasRSVPed) {
+        // Add RSVP to database
+        const { data, error } = await supabase
+          .from('rsvp')
+          .insert([
+            {
+              student_id: studentId,
+              event_id: event.id,
+            }
+          ]);
+
+        if (error) {
+          console.error('Error creating RSVP:', error);
+          return;
+        }
+
+        // Update local state
+        setHasRSVPed(true);
+        setAttendeeCount(prev => prev + 1);
+      } else {
+        // Remove RSVP from database
+        const { error } = await supabase
+          .from('rsvp')
+          .delete()
+          .eq('student_id', studentId)
+          .eq('event_id', event.id);
+
+        if (error) {
+          console.error('Error removing RSVP:', error);
+          return;
+        }
+
+        // Update local state
+        setHasRSVPed(false);
+        setAttendeeCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error handling RSVP:', error);
     }
   };
 
@@ -78,9 +123,51 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
 
   // Check if user has already RSVP'd on component mount
   React.useEffect(() => {
-    const existingRSVPs = JSON.parse(localStorage.getItem('rsvps') || '[]');
-    const hasUserRSVPed = existingRSVPs.some((rsvp: any) => rsvp.eventId === event.id);
-    setHasRSVPed(hasUserRSVPed);
+    const checkExistingRSVP = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      try {
+        // First, get the student_id from the student table
+        const { data: studentData, error: studentError } = await supabase
+          .from('student')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (studentError) {
+          console.error('Error fetching student ID:', studentError);
+          return;
+        }
+
+        // If no student record exists, user is not a student
+        if (!studentData) {
+          console.log('User is not a student or student record not found');
+          return;
+        }
+
+        const studentId = studentData.id;
+
+        // Now check if this student has RSVP'd for this event
+        const { data, error } = await supabase
+          .from('rsvp')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('event_id', event.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking RSVP status:', error);
+          return;
+        }
+
+        setHasRSVPed(!!data);
+      } catch (error) {
+        console.error('Error checking RSVP status:', error);
+      }
+    };
+
+    checkExistingRSVP();
   }, [event.id]);
 
   return (
