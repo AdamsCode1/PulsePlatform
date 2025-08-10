@@ -168,20 +168,22 @@ router.get('/activity', requireAdmin, async (_req: Request, res: Response) => {
       .limit(10);
     if (logsError) throw logsError;
 
-    const userIds = Array.from(new Set((logs || []).map(l => l.user_id).filter(Boolean)));
-    let emailsById = new Map<string, string>();
+    const userIds = Array.from(new Set((logs || []).map(l => l.user_id).filter(Boolean))) as string[];
+    const emailsById = new Map<string, string>();
     if (userIds.length > 0) {
-      // Query auth.users directly using the service role key
-      const { data: users, error: usersError } = await supabaseAdmin
-        .from('auth.users' as any)
-        .select('id,email')
-        .in('id', userIds as string[]);
-      if (usersError) {
-        // If auth.users query fails, fallback to unknown emails
-        emailsById = new Map();
-      } else {
-        emailsById = new Map((users || []).map((u: any) => [u.id, u.email]));
-      }
+      // Use Supabase Admin API to fetch users by ID (avoids schema relationship issues)
+      await Promise.all(
+        userIds.map(async (id) => {
+          try {
+            const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
+            if (!error && data?.user) {
+              emailsById.set(id, (data.user.email as string) || 'Unknown User');
+            }
+          } catch (_e) {
+            // ignore individual lookup failures
+          }
+        })
+      );
     }
 
     const formatted = (logs || []).map((log: any) => ({
