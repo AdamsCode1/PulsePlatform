@@ -32,44 +32,57 @@ const requireAdmin = async (req: VercelRequest) => {
   return user;
 };
 
-// Handler for fetching recent admin activity
+// Handler for fetching recent admin activity (no join; resolve emails via Admin API)
 const handleGetActivity = async (req: VercelRequest, res: VercelResponse) => {
   try {
     await requireAdmin(req);
 
-    const { data, error } = await supabaseAdmin
+    const { data: logs, error: logsError } = await supabaseAdmin
       .from('admin_activity_log')
-      .select(`
-        id,
-        created_at,
-        action,
-        target_entity,
-        target_id,
-        details,
-        user:users (
-          email
-        )
-      `)
+      .select('id,created_at,action,target_entity,target_id,details,user_id')
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (error) {
-      console.error('Error fetching admin activity:', error);
-      throw new Error(error.message);
+    if (logsError) {
+      console.error('Error fetching admin activity:', logsError);
+      throw new Error(logsError.message);
     }
 
-    // The user column might be null if the user was deleted, so we need to handle that
-    // Also, the join returns an object, so we want to flatten it
-    const formattedData = data.map(log => ({
-        ...log,
-        user_email: log.user ? log.user.email : 'Unknown User'
+    const userIds = Array.from(
+      new Set((logs || []).map((l: any) => l.user_id).filter(Boolean))
+    ) as string[];
+
+    const emailsById = new Map<string, string>();
+    if (userIds.length > 0) {
+      await Promise.all(
+        userIds.map(async (id) => {
+          try {
+            const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
+            if (!error && data?.user) {
+              emailsById.set(id, (data.user.email as string) || 'Unknown User');
+            }
+          } catch (e) {
+            // Best-effort; ignore individual failures
+            console.warn('Lookup user email failed for id', id, e);
+          }
+        })
+      );
+    }
+
+    const formatted = (logs || []).map((log: any) => ({
+      id: log.id,
+      created_at: log.created_at,
+      action: log.action,
+      target_entity: log.target_entity,
+      target_id: log.target_id,
+      details: log.details,
+      user_email: (log.user_id && emailsById.get(log.user_id)) || 'Unknown User',
     }));
 
-
-    return res.status(200).json(formattedData);
-
+    return res.status(200).json(formatted);
   } catch (error: any) {
-    return res.status(403).json({ message: error.message });
+    const status = error?.message?.includes('Authentication') ? 403 : 500;
+    return res.status(status).json({ message: error.message || 'Failed to fetch admin activity' });
   }
 };
 

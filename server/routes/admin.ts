@@ -36,6 +36,9 @@ const router = Router();
 // Route to update an event's status (approve/reject/pending)
 router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
   try {
+    // eslint-disable-next-line no-console
+    console.log('[admin.events] PATCH request body:', JSON.stringify(req.body, null, 2));
+
     const { eventId, status, rejection_reason, payload } = req.body as {
       eventId?: string;
       status?: 'approved' | 'rejected' | 'pending';
@@ -43,16 +46,14 @@ router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
       payload?: Record<string, unknown>;
     };
 
-    if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
-      console.log('[admin.events] PATCH body keys:', Object.keys(req.body || {}));
-    }
+    // eslint-disable-next-line no-console
+    console.log('[admin.events] Extracted values:', { eventId, status, rejection_reason, payload });
 
     if (!eventId) {
       return res.status(400).json({ message: 'Event ID is required.' });
     }
 
-    // Build updateData from either modern shape (status/reason) or legacy payload
+    // Build updateData - NEVER include rejection_reason since column doesn't exist
     let updateData: Record<string, unknown>;
     if (typeof status === 'string') {
       const validStatus = ['approved', 'rejected', 'pending'] as const;
@@ -60,35 +61,43 @@ router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
         return res.status(400).json({ message: 'Invalid status provided.' });
       }
       updateData = { status };
-      if (status === 'rejected') {
-        updateData.rejection_reason = rejection_reason || 'No reason provided.';
-      } else {
-        updateData.rejection_reason = null; // clear rejection reason on non-rejected
-      }
+      // eslint-disable-next-line no-console
+      console.log('[admin.events] Built updateData from status (no rejection_reason column):', updateData);
     } else if (payload && typeof payload === 'object') {
-      updateData = payload;
+      // Remove rejection_reason from payload if it exists since column doesn't exist
+      const { rejection_reason: _omit, ...safePayload } = payload as any;
+      updateData = safePayload;
+      // eslint-disable-next-line no-console
+      console.log('[admin.events] Built updateData from payload (removed rejection_reason):', updateData);
     } else {
       return res.status(400).json({ message: 'Event update payload is required.' });
     }
 
-    const { data, error } = await supabaseAdmin
+    // eslint-disable-next-line no-console
+    console.log('[admin.events] Final updateData before DB call:', updateData);
+
+    const { error } = await supabaseAdmin
       .from('event')
       .update(updateData)
-      .eq('id', eventId)
-      .select()
-      .single();
+      .eq('id', eventId);
 
-    if (error) throw error;
+    if (error) {
+      // eslint-disable-next-line no-console
+      console.error('[admin.events] Database update error:', error);
+      throw error;
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('[admin.events] Event status updated successfully');
 
     // Best-effort log of admin activity (do not fail request if logging fails)
-  if (status === 'approved' || status === 'rejected') {
+    if (status === 'approved' || status === 'rejected') {
       const { error: logError } = await supabaseAdmin.rpc('log_admin_activity', {
         action: `event.${status}`,
         target_entity: 'event',
         target_id: eventId,
         details: {
           rejection_reason: status === 'rejected' ? rejection_reason : undefined,
-          eventName: (data as any)?.name,
         },
       });
       if (logError) {
@@ -97,7 +106,8 @@ router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
       }
     }
 
-    res.status(200).json(data);
+    // Return minimal, safe payload
+    res.status(200).json({ id: eventId, status, ...(status === 'rejected' ? { rejection_reason } : {}) });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }

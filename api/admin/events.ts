@@ -49,17 +49,13 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
       return res.status(400).json({ message: 'Invalid status provided.' });
     }
 
-    const updateData: { status: string, rejection_reason?: string } = { status };
-    if (status === 'rejected') {
-        updateData.rejection_reason = rejection_reason || 'No reason provided.';
-    }
+  const updateData: { status: string } = { status };
+  // NEVER include rejection_reason since the column doesn't exist in the database
 
-    const { data, error } = await supabaseAdmin
+    let { error } = await supabaseAdmin
       .from('event')
       .update(updateData)
-      .eq('id', eventId)
-      .select()
-      .single();
+      .eq('id', eventId);
 
     if (error) {
       console.error('Error updating event:', error);
@@ -72,10 +68,9 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
             action: `event.${status}`,
             target_entity: 'event',
             target_id: eventId,
-            details: {
-                rejection_reason: status === 'rejected' ? rejection_reason : undefined,
-                eventName: data.name // Also log the event name for context
-            }
+      details: {
+        rejection_reason: status === 'rejected' ? rejection_reason : undefined,
+      }
         });
 
         if (logError) {
@@ -84,7 +79,7 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
         }
     }
 
-    return res.status(200).json(data);
+  return res.status(200).json({ id: eventId, status, ...(status === 'rejected' ? { rejection_reason } : {}) });
 
   } catch (error: any) {
     return res.status(403).json({ message: error.message });
