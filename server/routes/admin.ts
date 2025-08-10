@@ -33,22 +33,57 @@ const requireAdmin = async (req: Request, res: Response, next: Function) => {
 
 const router = Router();
 
-// Route to update an event's status
+// Route to update an event's status (approve/reject/pending)
 router.patch('/events', requireAdmin, async (req: Request, res: Response) => {
   try {
-    const { eventId, payload } = req.body;
-    if (!eventId || !payload) {
-      return res.status(400).json({ message: 'Event ID and payload are required.' });
+    const { eventId, status, rejection_reason } = req.body as {
+      eventId?: string;
+      status?: 'approved' | 'rejected' | 'pending';
+      rejection_reason?: string;
+    };
+
+    if (!eventId || !status) {
+      return res.status(400).json({ message: 'Event ID and status are required.' });
+    }
+
+    const validStatus = ['approved', 'rejected', 'pending'] as const;
+    if (!validStatus.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status provided.' });
+    }
+
+    const updateData: { status: string; rejection_reason?: string } = { status };
+    if (status === 'rejected') {
+      updateData.rejection_reason = rejection_reason || 'No reason provided.';
+    } else {
+      updateData.rejection_reason = null as any; // clear rejection reason on non-rejected
     }
 
     const { data, error } = await supabaseAdmin
       .from('event')
-      .update(payload)
+      .update(updateData)
       .eq('id', eventId)
       .select()
       .single();
 
     if (error) throw error;
+
+    // Best-effort log of admin activity (do not fail request if logging fails)
+    if (status === 'approved' || status === 'rejected') {
+      const { error: logError } = await supabaseAdmin.rpc('log_admin_activity', {
+        action: `event.${status}`,
+        target_entity: 'event',
+        target_id: eventId,
+        details: {
+          rejection_reason: status === 'rejected' ? rejection_reason : undefined,
+          eventName: (data as any)?.name,
+        },
+      });
+      if (logError) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to log admin activity:', logError);
+      }
+    }
+
     res.status(200).json(data);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
