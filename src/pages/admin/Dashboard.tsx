@@ -94,10 +94,10 @@ export default function AdminDashboard() {
     };
     checkAuth();
   }, [navigate]);
-
+  // Centralized navigation helper for clickable cards/buttons
   const handleCardClick = (path: string) => {
     navigate(path);
-  }
+  };
 
   const totalUsers = stats ? stats.totalUsers.students + stats.totalUsers.societies + stats.totalUsers.partners + stats.totalUsers.admins : 0;
 
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <main className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto p-4 sm:px-6 lg:px-8 pt-16 md:pt-20 pb-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-2">
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
                       </div>
                       <Badge variant="outline">{stats.totalEvents.pending}</Badge>
                     </div>
-                    <div onClick={() => handleCardClick('/admin/events?status=approved')} className="flex justify-between items-center cursor-pointer hover:bg-ray-100 p-2 rounded-md transition-colors">
+                    <div onClick={() => handleCardClick('/admin/events?status=approved')} className="flex justify-between items-center cursor-pointer hover:bg-gray-100 p-2 rounded-md transition-colors">
                       <div className="flex items-center">
                         <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
                         <span className="text-sm">Approved</span>
@@ -309,7 +309,7 @@ export default function AdminDashboard() {
                 <CardTitle>Recent Activity</CardTitle>
                 <CardDescription>A log of recent administrative actions.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="max-h-96 overflow-auto">
                  {isLoadingActivity ? (
                    <div className="space-y-4">
                      <Skeleton className="h-12 w-full" />
