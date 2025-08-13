@@ -22,7 +22,7 @@ const StudentRegister = () => {
         email,
         password,
         options: {
-          data: { first_name: firstName }
+          data: { first_name: firstName, account_type: 'student', user_type: 'student' }
         }
       });
       if (error) {
