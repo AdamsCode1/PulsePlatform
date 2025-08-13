@@ -52,7 +52,11 @@ const PartnerLogin = () => {
           // Create partner row in database
           const { error: dbError } = await supabase
             .from('partners')
-            .insert([{ contact_email: email, name: businessName }]);
+            .insert([{ 
+              contact_email: email, 
+              name: businessName, 
+              user_id: data.user.id 
+            }]);
 
           if (dbError) {
             console.error('Database error:', dbError);
