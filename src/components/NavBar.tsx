@@ -6,6 +6,8 @@ export default function NavBar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [firstName, setFirstName] = useState('');
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,6 +30,32 @@ export default function NavBar() {
       listener?.subscription.unsubscribe();
     };
   }, []);
+
+  // Scroll event handler
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Show navbar at the top of the page
+      if (currentScrollY < 10) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY) {
+        // Scrolling down
+        setIsVisible(false);
+      } else {
+        // Scrolling up
+        setIsVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [lastScrollY]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -61,7 +89,8 @@ export default function NavBar() {
   };
 
   return (
-    <nav className="fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[95vw] max-w-3xl rounded-xl bg-white/80 backdrop-blur-md shadow-xl flex items-center justify-between px-3 py-1.5 border border-gray-200">
+    <nav className={`fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[95vw] max-w-3xl rounded-xl bg-white/80 backdrop-blur-md shadow-xl flex items-center justify-between px-3 py-1.5 border border-gray-200 transition-all duration-300 ease-in-out ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+      }`}>
       {/* Logo and Brand */}
       <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleNavigation('/', 'hero')}>
         <img src="/favicon.ico" alt="DUPulse Logo" width={32} height={32} className="rounded-full" />

@@ -219,11 +219,13 @@ const Index = () => {
           </p>
         </div>
 
-        {/* Date Navigator */}
-        <DateNavigator
-          currentDate={currentDate}
-          onDateChange={handleDateChange}
-        />
+        {/* Date Navigator - Sticky on mobile */}
+        <div className="sticky top-16 z-40 bg-gradient-to-br from-blue-50 to-indigo-100 pb-4 md:static md:top-auto md:z-auto md:bg-transparent md:pb-0">
+          <DateNavigator
+            currentDate={currentDate}
+            onDateChange={handleDateChange}
+          />
+        </div>
 
         {/* Events Section */}
         <div className="mt-6 sm:mt-8">
