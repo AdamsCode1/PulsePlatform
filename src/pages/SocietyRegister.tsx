@@ -49,7 +49,8 @@ const SocietyRegister = () => {
             .from('society')
             .insert([{
               name,
-              contact_email: email
+              contact_email: email,
+              user_id: data.user.id
             }]);
 
           if (societyError) {

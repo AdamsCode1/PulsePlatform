@@ -51,8 +51,12 @@ const SocietyLogin = () => {
         } else {
           // Create society row in database
           const { error: dbError } = await supabase
-            .from('societies')
-            .insert([{ name: societyName, email }]);
+            .from('society')
+            .insert([{ 
+              name: societyName, 
+              contact_email: email, 
+              user_id: data.user.id 
+            }]);
 
           if (dbError) {
             console.error('Database error:', dbError);
