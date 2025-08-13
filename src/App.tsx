@@ -35,7 +35,7 @@ import PartnerDashboard from "./pages/partner/Dashboard";
 import PartnerEvents from "./pages/partner/Events";
 import PartnerDeals from "./pages/partner/Deals";
 import PartnerSubmitEvent from "./pages/partner/SubmitEvent";
-import PartnerSubmitDeal from "./pages/partner/SubmitDeal";
+import SubmitDealPage from "./pages/SubmitDealPage";
 
 // Admin Components
 import AdminLogin from './pages/AdminLogin';
@@ -95,7 +95,7 @@ const App = () => (
           <Route path="/partner/events" element={<PartnerEvents />} />
           <Route path="/partner/deals" element={<PartnerDeals />} />
           <Route path="/partner/submit-event" element={<PartnerSubmitEvent />} />
-          <Route path="/partner/submit-deal" element={<PartnerSubmitDeal />} />
+          <Route path="/partner/submit-deal" element={<SubmitDealPage />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

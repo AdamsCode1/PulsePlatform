@@ -49,10 +49,14 @@ const StudentLogin = () => {
             description: error.message || "Failed to create account. Please try again.",
           });
         } else {
-          // Create user row in database
+          // Create student row in database
           const { error: dbError } = await supabase
-            .from('users')
-            .insert([{ name: firstName, email }]);
+            .from('student')
+            .insert([{ 
+              email, 
+              first_name: firstName, 
+              user_id: data.user.id 
+            }]);
 
           if (dbError) {
             console.error('Database error:', dbError);
