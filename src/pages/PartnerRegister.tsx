@@ -59,6 +59,7 @@ const PartnerRegister = () => {
             contact_person: formData.contactPerson,
             phone: formData.phone,
             website: formData.website,
+            account_type: 'partner',
             user_type: 'partner'
           }
         }
@@ -80,6 +81,7 @@ const PartnerRegister = () => {
             .insert([{
               contact_email: formData.email,
               user_id: data.user.id,
+              name: formData.businessName,
               description: formData.businessName,
               website_url: formData.website
             }]);

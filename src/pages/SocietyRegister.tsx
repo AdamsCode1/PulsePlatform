@@ -29,11 +29,7 @@ const SocietyRegister = () => {
         email,
         password,
         options: {
-          data: { 
-            first_name: firstName,
-            full_name: name,
-            user_type: 'society'
-          }
+          data: { first_name: firstName, full_name: name, account_type: 'society', user_type: 'society' }
         }
       });
       
@@ -52,7 +48,6 @@ const SocietyRegister = () => {
               contact_email: email,
               user_id: data.user.id
             }]);
-
           if (societyError) {
             console.error('Society creation error:', societyError);
             toast({ title: "Warning", description: "Account created but society profile incomplete. Please contact support.", variant: "destructive" });
