@@ -49,6 +49,7 @@ const PartnerRegister = () => {
 
     setIsLoading(true);
     try {
+      // Step 1: Create auth user
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -62,25 +63,43 @@ const PartnerRegister = () => {
           }
         }
       });
-
       if (error) {
         toast({
           variant: "destructive",
           title: "Registration Failed",
           description: error.message,
         });
-      } else {
-        toast({
-          title: "Registration Successful",
-          description: "Please check your email to confirm your account.",
-        });
-        navigate("/login/partner");
+        setIsLoading(false);
+        return;
       }
+      // Step 2: Create partner record using direct Supabase call
+      if (data.user) {
+        try {
+          const { error: partnerError } = await supabase
+            .from('partners')
+            .insert([{
+              contact_email: formData.email,
+              user_id: data.user.id,
+              description: formData.businessName,
+              website_url: formData.website
+            }]);
+          if (partnerError) {
+            console.error('Partner creation error:', partnerError);
+            toast({ title: "Warning", description: "Account created but partner profile incomplete. Please contact support.", variant: "destructive" });
+          } else {
+            toast({ title: "Success", description: "Partner account created successfully!" });
+          }
+        } catch (partnerError) {
+          console.error('Partner creation error:', partnerError);
+          toast({ title: "Warning", description: "Account created but partner profile incomplete. Please contact support.", variant: "destructive" });
+        }
+      }
+      navigate("/login/partner");
     } catch (err) {
       toast({
         variant: "destructive",
         title: "Registration Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: err.message || "Registration failed",
       });
     }
     setIsLoading(false);
