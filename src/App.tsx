@@ -3,6 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+// Coming Soon & Dev Access
+import ComingSoonPage from "./pages/ComingSoonPage";
+import DevAccessDetector from "./components/DevAccessDetector";
+
 // Public Pages
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -57,57 +61,61 @@ const App = () => (
         v7_relativeSplatPath: true,
       }}
     >
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/deals" element={<DealsPage />} />
-        <Route path="/about" element={<AboutPage />} />
+      <DevAccessDetector comingSoonPage={<ComingSoonPage />}>
+        <Routes>
+          {/* Public Routes - Available in Dev Mode */}
+          <Route path="/" element={<Index />} />
+          <Route path="/platform" element={<Index />} />
+          <Route path="/dev" element={<Index />} />
+          <Route path="/deals" element={<DealsPage />} />
+          <Route path="/about" element={<AboutPage />} />
 
-        {/* Authentication Routes */}
-        <Route path="/login" element={<UserTypeSelection />} />
-        <Route path="/register" element={<UserTypeSelection />} />
-        <Route path="/login/student" element={<StudentLogin />} />
-        <Route path="/login/society" element={<SocietyLogin />} />
-        <Route path="/login/partner" element={<PartnerLogin />} />
-        <Route path="/register/student" element={<StudentRegister />} />
-        <Route path="/register/society" element={<SocietyRegister />} />
-        <Route path="/register/organization" element={<PartnerRegister />} />
-        <Route path="/submit-event" element={<EventSubmissionPage />} />
-        <Route path="/events/manage" element={<ManageRedirect />} />
-        <Route path="/user-type" element={<UserTypeSelection />} />
-        <Route path="/schedule" element={<Schedule />} />
-        <Route path="/team" element={<MeetTheTeam />} />
-        <Route path="/register/partner" element={<PartnerRegister />} />
+          {/* Authentication Routes */}
+          <Route path="/login" element={<UserTypeSelection />} />
+          <Route path="/register" element={<UserTypeSelection />} />
+          <Route path="/login/student" element={<StudentLogin />} />
+          <Route path="/login/society" element={<SocietyLogin />} />
+          <Route path="/login/partner" element={<PartnerLogin />} />
+          <Route path="/register/student" element={<StudentRegister />} />
+          <Route path="/register/society" element={<SocietyRegister />} />
+          <Route path="/register/organization" element={<PartnerRegister />} />
+          <Route path="/submit-event" element={<EventSubmissionPage />} />
+          <Route path="/events/manage" element={<ManageRedirect />} />
+          <Route path="/user-type" element={<UserTypeSelection />} />
+          <Route path="/schedule" element={<Schedule />} />
+          <Route path="/team" element={<MeetTheTeam />} />
+          <Route path="/register/partner" element={<PartnerRegister />} />
 
-        {/* Student Dashboard Routes */}
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/student/rsvps" element={<StudentRSVPs />} />
+          {/* Student Dashboard Routes */}
+          <Route path="/student/dashboard" element={<StudentDashboard />} />
+          <Route path="/student/rsvps" element={<StudentRSVPs />} />
 
-        {/* Society Dashboard Routes */}
-        <Route path="/society/dashboard" element={<SocietyDashboard />} />
-        <Route path="/society/events" element={<SocietyEvents />} />
-        <Route path="/society/submit-event" element={<SocietySubmitEvent />} />
+          {/* Society Dashboard Routes */}
+          <Route path="/society/dashboard" element={<SocietyDashboard />} />
+          <Route path="/society/events" element={<SocietyEvents />} />
+          <Route path="/society/submit-event" element={<SocietySubmitEvent />} />
 
-        {/* Partner Dashboard Routes */}
-        <Route path="/partner/dashboard" element={<PartnerDashboard />} />
-        <Route path="/partner/events" element={<PartnerEvents />} />
-        <Route path="/partner/deals" element={<PartnerDeals />} />
-        <Route path="/partner/submit-event" element={<PartnerSubmitEvent />} />
-        <Route path="/partner/submit-deal" element={<SubmitDealPage />} />
+          {/* Partner Dashboard Routes */}
+          <Route path="/partner/dashboard" element={<PartnerDashboard />} />
+          <Route path="/partner/events" element={<PartnerEvents />} />
+          <Route path="/partner/deals" element={<PartnerDeals />} />
+          <Route path="/partner/submit-event" element={<PartnerSubmitEvent />} />
+          <Route path="/partner/submit-deal" element={<SubmitDealPage />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/events" element={<AdminEvents />} />
-        <Route path="/admin/deals" element={<AdminDeals />} />
-        <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/events" element={<AdminEvents />} />
+          <Route path="/admin/deals" element={<AdminDeals />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
 
-        {/* Legacy redirects for backward compatibility */}
-        <Route path="/admin" element={<AdminLogin />} />
+          {/* Legacy redirects for backward compatibility */}
+          <Route path="/admin" element={<AdminLogin />} />
 
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </DevAccessDetector>
     </BrowserRouter>
   </TooltipProvider>
 );
