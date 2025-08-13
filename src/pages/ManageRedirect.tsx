@@ -17,7 +17,30 @@ const ManageRedirect = () => {
           return;
         }
 
-        const role = user.app_metadata?.role;
+        // Look for the record in the 'role' table with the user's id as its 'user_id' field
+        const { data: roleData, error: roleError } = await supabase
+          .from('role')
+          .select('account_type')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (roleError) {
+          console.error('Error fetching user role:', roleError);
+          navigate('/login');
+          return;
+        }
+
+        const role = roleData?.account_type;
+
+        // Log role
+        console.log('User role:', role);
+
+        // Handle case where no role is found
+        if (!role) {
+          console.warn('No role found for user:', user.id, 'Redirecting to login...');
+          navigate('/login');
+          return;
+        }
 
         switch (role) {
           case 'admin':
@@ -34,6 +57,7 @@ const ManageRedirect = () => {
             break;
           default:
             // Fallback for users with no role or an unknown role
+            console.log('Unknown role for user:', user.id);
             navigate('/login');
             break;
         }

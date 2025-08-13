@@ -12,8 +12,8 @@ interface Event {
   id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
+  start_time: string;
+  end_time: string;
   location: string;
   max_attendees: number;
   image_url?: string;
@@ -57,7 +57,25 @@ export default function StudentDashboard() {
         return;
       }
       setUser(user as User);
-      await Promise.all([fetchUpcomingEvents(), fetchUserRSVPs(user.id)]);
+
+      // Using user.id find matching record from student table and extract id
+      const { data: studentData, error: studentError } = await supabase
+        .from('student')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (studentError) {
+        console.error('Error fetching student data:', studentError);
+        navigate('/login/student');
+        return;
+      }
+
+      const studentId = studentData?.id;
+      // TODO: Remove studentID and change systems to use user ID value instead
+      // Roles can be checked by referring to the role table
+
+      await Promise.all([fetchUpcomingEvents(), fetchUserRSVPs(studentId)]);
     } catch (error) {
       console.error('Auth check failed:', error);
       navigate('/login/student');
@@ -91,23 +109,25 @@ export default function StudentDashboard() {
     }
   };
 
+  // FIX: This is not working
   const fetchUserRSVPs = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('rsvps')
+        .from('rsvp')
         .select(`
           *,
-          event:events(
+          event:event(
             *,
-            society:societies(name)
+            society:society(name)
           )
         `)
-        .eq('user_id', userId)
-        .eq('status', 'confirmed')
+        .eq('student_id', userId)
+        .eq('status', 'attending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setUserRSVPs(data || []);
+
     } catch (error) {
       console.error('Error fetching RSVPs:', error);
     }
@@ -121,7 +141,7 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Welcome back, {user?.user_metadata?.full_name || 'Student'}!
@@ -180,7 +200,7 @@ export default function StudentDashboard() {
                       <p className="text-xs text-gray-600">{rsvp.event.society.name}</p>
                       <div className="flex items-center text-xs text-gray-500 mt-1">
                         <Clock className="w-3 h-3 mr-1" />
-                        {new Date(rsvp.event.date).toLocaleDateString()}
+                        {new Date(rsvp.event.start_time).toLocaleDateString()}
                       </div>
                     </div>
                   ))}
@@ -225,7 +245,7 @@ export default function StudentDashboard() {
                         <div className="space-y-2 text-sm text-gray-500">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2" />
-                            {new Date(event.date).toLocaleDateString()} at {event.time}
+                            {new Date(event.start_time).toLocaleDateString()} at {new Date(event.start_time).toLocaleTimeString()}
                           </div>
                           <div className="flex items-center">
                             <MapPin className="w-4 h-4 mr-2" />

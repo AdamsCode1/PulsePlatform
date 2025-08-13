@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { X, MapPin, Clock, Users, Calendar, Mail } from 'lucide-react';
+import { X, MapPin, Users, Calendar, Mail } from 'lucide-react';
 import { Event } from '../types/Event';
 import RSVPForm from './RSVPForm';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { toast } from '../hooks/use-toast';
 
 interface EventModalProps {
   event: Event;
@@ -15,6 +16,7 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
   const [showRSVPForm, setShowRSVPForm] = useState(false);
   const [hasRSVPed, setHasRSVPed] = useState(false);
   const [user, setUser] = useState(null);
+  const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,30 +33,145 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
     };
   }, []);
 
+  // Check if user has already RSVP'd on component mount
+  useEffect(() => {
+    const checkExistingRSVP = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      try {
+        // First, get the student_id from the student table
+        const { data: studentData, error: studentError } = await supabase
+          .from('student')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (studentError) {
+          console.error('Error fetching student ID:', studentError);
+          return;
+        }
+
+        // If no student record exists, user is not a student
+        if (!studentData) {
+          console.log('User is not a student or student record not found');
+          return;
+        }
+
+        const studentId = studentData.id;
+
+        // Now check if this student has RSVP'd for this event
+        const { data, error } = await supabase
+          .from('rsvp')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('event_id', event.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Error checking RSVP status:', error);
+          return;
+        }
+
+        setHasRSVPed(!!data);
+      } catch (error) {
+        console.error('Error checking RSVP status:', error);
+      }
+    };
+
+    checkExistingRSVP();
+  }, [event.id]);
+
   const handleRSVPSuccess = () => {
     setHasRSVPed(true);
     setShowRSVPForm(false);
   };
 
-  const handleQuickRSVP = () => {
-    // Simulate RSVP logic for logged-in users (can be replaced with real API call)
-    setHasRSVPed(true);
-  };
+  const handleQuickRSVP = async () => {
+    // If event requires external signup, redirect
+    if (event.requiresOrganizerSignup && event.organizerEmail) {
+      window.location.href = `mailto:${event.organizerEmail}`;
+      return;
+    }
 
-  // Generate a short description (3-4 lines) that matches what's shown on the card
-  const getShortDescription = (originalDescription: string) => {
-    const baseDescription = originalDescription || "Join us for an exciting event that brings together our community for an unforgettable experience.";
-    
-    // Keep it short - just 3-4 lines
-    const shortDescription = "This event promises to be an engaging experience for all attendees, featuring interactive sessions and networking opportunities. Whether you're new to our community or a long-time member, this event offers something valuable for everyone. Come prepared to learn, connect, and be inspired by fellow participants.";
-    
-    return shortDescription;
+    // Check if user is logged in
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      // First, get the student_id from the student table
+      const { data: studentData, error: studentError } = await supabase
+        .from('student')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (studentError) {
+        console.error('Error fetching student ID:', studentError);
+        return;
+      }
+
+      // If no student record exists, user is not a student
+      if (!studentData) {
+        console.log('User is not a student - cannot RSVP');
+        toast({
+          title: "Access Restricted",
+          description: "Only student accounts can RSVP to events.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const studentId = studentData.id;
+
+      if (!hasRSVPed) {
+        // Add RSVP to database
+        const { data, error } = await supabase
+          .from('rsvp')
+          .insert([
+            {
+              student_id: studentId,
+              event_id: event.id,
+            }
+          ]);
+
+        if (error) {
+          console.error('Error creating RSVP:', error);
+          return;
+        }
+
+        // Update local state
+        setHasRSVPed(true);
+        setAttendeeCount(prev => prev + 1);
+      } else {
+        // Remove RSVP from database
+        const { error } = await supabase
+          .from('rsvp')
+          .delete()
+          .eq('student_id', studentId)
+          .eq('event_id', event.id);
+
+        if (error) {
+          console.error('Error removing RSVP:', error);
+          return;
+        }
+
+        // Update local state
+        setHasRSVPed(false);
+        setAttendeeCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error) {
+      console.error('Error handling RSVP:', error);
+    }
   };
 
   // Ensure email ends with @durham.ac.uk
   const formatEmail = (email: string) => {
     if (!email || email === 'No email provided') {
-      return 'contact@durham.ac.uk';
+      return 'No email provided';
     }
     if (email.endsWith('@durham.ac.uk')) {
       return email;
@@ -117,12 +234,12 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
             </div>
 
             {/* Attendees */}
-            {event.attendeeCount !== undefined && (
+            {attendeeCount !== undefined && (
               <div className="flex items-start space-x-3">
                 <Users className="text-pink-500 mt-1 flex-shrink-0" size={20} />
                 <div>
                   <div className="font-semibold text-gray-900 text-sm sm:text-base">Attendees</div>
-                  <div className="text-gray-600 text-sm sm:text-base">{event.attendeeCount} people interested</div>
+                  <div className="text-gray-600 text-sm sm:text-base">{attendeeCount} people interested</div>
                 </div>
               </div>
             )}
@@ -166,7 +283,7 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
           <div className="mb-6 sm:mb-8">
             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">About This Event</h3>
             <div className="text-gray-600 leading-relaxed text-sm sm:text-base">
-              {getShortDescription(event.description || '')}
+               {event.description || ''}
             </div>
           </div>
 
@@ -205,14 +322,22 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                     : "Thanks for RSVPing. We'll see you at the event!"
                   }
                 </p>
-                {event.requiresOrganizerSignup && event.organizerEmail && (
-                  <a
-                    href={`mailto:${formatEmail(event.organizerEmail)}`}
-                    className="mt-4 bg-pink-600 text-white px-4 sm:px-6 py-2 rounded-lg font-medium hover:bg-pink-700 transition-colors inline-block text-sm sm:text-base"
+                <div className="mt-4 space-y-3">
+                  {event.requiresOrganizerSignup && event.organizerEmail && (
+                    <a
+                      href={`mailto:${formatEmail(event.organizerEmail)}`}
+                      className="bg-pink-600 text-white px-4 sm:px-6 py-2 rounded-lg font-medium hover:bg-pink-700 transition-colors inline-block text-sm sm:text-base"
+                    >
+                      Contact Organizer
+                    </a>
+                  )}
+                  <button
+                    onClick={handleQuickRSVP}
+                    className="bg-gray-200 text-gray-700 px-4 sm:px-6 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors text-sm sm:text-base"
                   >
-                    Contact Organizer
-                  </a>
-                )}
+                    Remove RSVP
+                  </button>
+                </div>
               </div>
             ) : user ? (
               <div className="text-center">
