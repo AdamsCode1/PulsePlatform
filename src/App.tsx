@@ -35,7 +35,7 @@ import PartnerDashboard from "./pages/partner/Dashboard";
 import PartnerEvents from "./pages/partner/Events";
 import PartnerDeals from "./pages/partner/Deals";
 import PartnerSubmitEvent from "./pages/partner/SubmitEvent";
-import PartnerSubmitDeal from "./pages/partner/SubmitDeal";
+import SubmitDealPage from "./pages/SubmitDealPage";
 
 // Admin Components
 import AdminLogin from './pages/AdminLogin';
@@ -61,6 +61,7 @@ const App = () => (
         {/* Public Routes */}
         <Route path="/" element={<Index />} />
         <Route path="/deals" element={<DealsPage />} />
+        <Route path="/about" element={<AboutPage />} />
 
         {/* Authentication Routes */}
         <Route path="/login" element={<UserTypeSelection />} />
@@ -74,8 +75,6 @@ const App = () => (
         <Route path="/submit-event" element={<EventSubmissionPage />} />
         <Route path="/events/manage" element={<ManageRedirect />} />
         <Route path="/user-type" element={<UserTypeSelection />} />
-        <Route path="/deals" element={<DealsPage />} />
-        <Route path="/about" element={<AboutPage />} />
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/team" element={<MeetTheTeam />} />
         <Route path="/register/partner" element={<PartnerRegister />} />
@@ -94,7 +93,7 @@ const App = () => (
         <Route path="/partner/events" element={<PartnerEvents />} />
         <Route path="/partner/deals" element={<PartnerDeals />} />
         <Route path="/partner/submit-event" element={<PartnerSubmitEvent />} />
-        <Route path="/partner/submit-deal" element={<PartnerSubmitDeal />} />
+        <Route path="/partner/submit-deal" element={<SubmitDealPage />} />
 
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />

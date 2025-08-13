@@ -31,15 +31,32 @@ const requireAdmin = async (req: VercelRequest) => {
   return user;
 };
 
-// Handler for updating a deal (e.g., changing its status)
-// For now, let's assume deals have a 'status' field like events.
-// I'll need to check the schema again to be sure.
-// The schema has: title, description, discount_percentage, company_name, image_url, expires_at, category
-// It does NOT have a status field. This is a problem.
-// I will add a status field to the deals table in a new migration.
-// For now, I will proceed as if it exists, and then add the migration.
-// Let's assume the client will send a `dealId` and a `payload` of fields to update.
+// Handler for fetching all deals (admin-only)
+const handleGetDeals = async (req: VercelRequest, res: VercelResponse) => {
+  try {
+    await requireAdmin(req);
 
+    const { data: deals, error } = await supabaseAdmin
+      .from('deals')
+      .select(`
+        *,
+        partner:partner_id(name, contact_email)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching deals:', error);
+      throw new Error(error.message);
+    }
+
+    return res.status(200).json({ deals });
+
+  } catch (error: any) {
+    return res.status(403).json({ message: error.message });
+  }
+};
+
+// Handler for updating a deal (e.g., changing its status)
 const handleUpdateDeal = async (req: VercelRequest, res: VercelResponse) => {
   try {
     await requireAdmin(req);
@@ -120,7 +137,8 @@ const handleDeleteDeal = async (req: VercelRequest, res: VercelResponse) => {
 
 // Export the handler, mapping methods to functions
 export default createHandler({
+  GET: handleGetDeals,
   POST: handleCreateDeal,
-  PATCH: handleUpdateDeal,
+  PUT: handleUpdateDeal,
   DELETE: handleDeleteDeal,
 });
