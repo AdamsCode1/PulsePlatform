@@ -28,14 +28,17 @@ const StudentRegister = () => {
       if (error) {
         // handle error
       } else {
-        // Create user row in database directly
+        // Create student row in database directly
         const { error: dbError } = await supabase
-          .from('users')
-          .insert([{ name: firstName, email }]);
-        
+          .from('student')
+          .insert([{ 
+            email, 
+            first_name: firstName, 
+            user_id: data.user.id 
+          }]);
         if (dbError) {
           console.error('Database error:', dbError);
-          // User account created but profile incomplete - they can still log in
+          alert('Database error: ' + JSON.stringify(dbError));
         }
         // handle success
         navigate("/login/student");
