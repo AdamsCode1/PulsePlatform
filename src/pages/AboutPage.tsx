@@ -2,30 +2,93 @@ import NavBar from '../components/NavBar';
 
 const About = () => {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-900 via-black to-pink-900">
+        <div className="min-h-screen bg-gray-50">
             <NavBar />
-            <div className="flex items-center justify-center min-h-screen px-4">
-                <div className="text-center max-w-2xl mx-auto pt-20">
-                    <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 sm:p-12 border border-white/20 shadow-2xl">
-                        <h1 className="text-4xl sm:text-6xl font-bold text-white mb-6">
-                            About <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">DUPulse</span>
-                        </h1>
-                        <div className="space-y-6 text-lg text-gray-200">
-                            <p>
-                                DUPulse is Durham University's premier platform for discovering events,
-                                connecting with societies, and never missing out on what's happening around campus.
+
+            {/* Hero section with gradient background */}
+            <div className="bg-gradient-to-br from-blue-100 via-purple-50 to-pink-100 pt-24 pb-16">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid lg:grid-cols-2 gap-12 items-center">
+                        {/* Left side - Text content */}
+                        <div className="space-y-8">
+                            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                                About PulsePlatform
+                            </h1>
+
+                            <div className="w-16 h-1 bg-blue-600"></div>
+
+                            <p className="text-xl text-gray-700 leading-relaxed">
+                                We're building the future of student engagement and campus life through innovative technology solutions.
                             </p>
-                            <p>
-                                From academic seminars to social gatherings, from sports events to cultural celebrations -
-                                we bring everything together in one place so you can make the most of your Durham experience.
+                        </div>
+
+                        {/* Right side - Team image */}
+                        <div className="flex justify-center lg:justify-end">
+                            <img
+                                src="/image-uploads/about_us1.jpeg"
+                                alt="Our team collaborating"
+                                className="rounded-2xl shadow-2xl max-w-lg w-full h-auto object-cover"
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Main content section */}
+            <div className="bg-white py-20">
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="space-y-8">
+                        <div className="prose prose-lg max-w-none">
+                            <p className="text-xl text-gray-800 leading-relaxed mb-8">
+                                <span className="text-6xl font-bold text-gray-900 float-left mr-4 mt-2 leading-none">P</span>
+                                ulsePlatform is a comprehensive platform designed to enhance student life and campus engagement.
+                                We empower students, faculty, and staff to connect, collaborate, and thrive in an integrated
+                                digital ecosystem that brings campus communities together.
                             </p>
-                            <div className="mt-8 p-6 bg-gradient-to-r from-pink-500/20 to-purple-500/20 rounded-2xl border border-pink-500/30">
-                                <h2 className="text-2xl font-bold text-pink-300 mb-4">🚧 Coming Soon</h2>
-                                <p className="text-gray-300">
-                                    We're working hard to bring you more features including detailed platform information,
-                                    team profiles, and our story. Stay tuned!
-                                </p>
-                            </div>
+
+                            <p className="text-lg text-gray-700 leading-relaxed mb-6">
+                                Our mission is to revolutionize how educational institutions manage events, facilitate
+                                communication, and foster meaningful connections within their communities. Through cutting-edge
+                                technology and user-centric design, we're making campus life more accessible, engaging,
+                                and connected than ever before.
+                            </p>
+
+                            <p className="text-lg text-gray-700 leading-relaxed mb-6">
+                                From event management and scheduling to social networking and resource sharing,
+                                PulsePlatform provides the tools that modern educational communities need to succeed.
+                                We believe in the power of technology to break down barriers and create opportunities
+                                for every member of the campus community.
+                            </p>
+
+                            <p className="text-lg text-gray-700 leading-relaxed">
+                                Since our founding, we've been committed to innovation, accessibility, and creating
+                                solutions that truly make a difference in people's educational journey. We're not just
+                                building software—we're building the future of connected campus communities.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Stats section */}
+            <div className="bg-gradient-to-br from-cyan-300 via-purple-300 via-pink-300 to-emerald-200 py-16">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
+                        <div className="space-y-2">
+                            <div className="text-3xl font-bold text-purple-700">200+</div>
+                            <div className="text-sm text-purple-600 uppercase tracking-wide">Societies</div>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="text-3xl font-bold text-pink-700">10K+</div>
+                            <div className="text-sm text-pink-600 uppercase tracking-wide">Active Students</div>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="text-3xl font-bold text-cyan-700">500+</div>
+                            <div className="text-sm text-cyan-600 uppercase tracking-wide">Events Monthly</div>
+                        </div>
+                        <div className="space-y-2">
+                            <div className="text-3xl font-bold text-emerald-700">24/7</div>
+                            <div className="text-sm text-emerald-600 uppercase tracking-wide">Platform Support</div>
                         </div>
                     </div>
                 </div>
