@@ -59,105 +59,110 @@ const EventFilters = ({ onFilterChange, currentFilter }: EventFiltersProps) => {
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2">
           <Filter size={16} />
           {getFilterLabel()}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-48 bg-white border border-gray-200 shadow-lg">
+      <DropdownMenuContent
+        className="w-48 bg-white border border-gray-200 shadow-lg max-h-80 overflow-y-auto"
+        onCloseAutoFocus={(event) => event.preventDefault()}
+        side="bottom"
+        align="end"
+      >
         <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('sort', 'attendees-desc')}
           className="cursor-pointer"
         >
           Most Popular (Attendees)
         </DropdownMenuItem>
-        
+
         <DropdownMenuSeparator />
-        
+
         <DropdownMenuLabel>Category</DropdownMenuLabel>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'all')}
           className="cursor-pointer"
         >
           All Categories
         </DropdownMenuItem>
 
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'academic')}
           className="cursor-pointer"
         >
           Academic
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'associations')}
           className="cursor-pointer"
         >
           Associations
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'cultural and faith')}
           className="cursor-pointer"
         >
           Cultural and Faith
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'fundraising')}
           className="cursor-pointer"
         >
           Fundraising
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'general')}
           className="cursor-pointer"
         >
           General
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'interests')}
           className="cursor-pointer"
         >
           Interests
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'media')}
           className="cursor-pointer"
         >
           Media
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'music')}
           className="cursor-pointer"
         >
           Music
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'political and causes')}
           className="cursor-pointer"
         >
           Political and Causes
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'professional development')}
           className="cursor-pointer"
         >
           Professional Development
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'social')}
           className="cursor-pointer"
         >
           Social
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'sport')}
           className="cursor-pointer"
         >
           Sport
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => handleFilterSelect('category', 'theatre')}
           className="cursor-pointer"
         >
