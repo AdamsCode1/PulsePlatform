@@ -38,13 +38,13 @@ const fetchDashboardStats = async (): Promise<DashboardStats> => {
   let partners = 0;
   let admins = 0;
 
-  // For admin users, try to get user counts via the server-side admin API
+  // For admin users, try to get user counts via the admin API
   if (user.app_metadata?.role === 'admin') {
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       if (token) {
-        // Use the Express server running on port 4000
-        const response = await fetch('http://localhost:4000/api/admin/users?limit=1000', {
+        // Use the Vercel API functions
+        const response = await fetch('/api/admin/users?limit=1000', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

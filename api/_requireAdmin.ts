@@ -1,48 +1,43 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-// List of admin emails from environment variable (comma-separated)
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-
+// Create Supabase client for admin verification
 const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-export async function requireAdmin(req: VercelRequest, res: VercelResponse): Promise<boolean> {
+export async function requireAdmin(req: VercelRequest, res: VercelResponse): Promise<{ user: any } | null> {
   try {
-    const authHeader = req.headers['authorization'] as string;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Missing or invalid Authorization header:', authHeader);
-      res.status(401).json({ message: 'Missing or invalid Authorization header' });
-      return false;
+    const token = req.headers.authorization?.split('Bearer ')[1];
+    if (!token) {
+      res.status(401).json({ message: 'Authentication token not provided.' });
+      return null;
     }
-    const token = authHeader.replace('Bearer ', '');
-    // Validate JWT and get user info
-    const { data, error } = await supabase.auth.getUser(token);
-    console.log('ADMIN_EMAILS:', ADMIN_EMAILS);
-    if (error) {
-      console.log('Supabase Auth error:', error);
+
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) {
+      res.status(401).json({ message: 'Authentication failed.' });
+      return null;
     }
-    if (!data?.user) {
-      console.log('No user found in token');
-      res.status(401).json({ message: 'Invalid or expired token' });
-      return false;
+
+    if (user.app_metadata?.role !== 'admin') {
+      res.status(403).json({ message: 'You must be an admin to perform this action.' });
+      return null;
     }
-    const userEmail = data.user.email;
-    console.log('User email:', userEmail);
-    
-    if (!userEmail || !ADMIN_EMAILS.includes(userEmail)) {
-      console.log('User is not an admin:', userEmail, 'Admin emails:', ADMIN_EMAILS);
-      res.status(403).json({ message: 'Admin access required' });
-      return false;
-    }
-    
-    // Store user info in request for downstream use
-    (req as any).user = data.user;
-    return true;
+
+    return { user };
   } catch (error: any) {
-    console.error('Admin middleware error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-    return false;
+    res.status(500).json({ message: error.message });
+    return null;
   }
+}
+
+// Helper function for middleware pattern in Vercel functions
+export function withAdminAuth(handler: (req: VercelRequest, res: VercelResponse, user: any) => Promise<void>) {
+  return async (req: VercelRequest, res: VercelResponse) => {
+    const authResult = await requireAdmin(req, res);
+    if (!authResult) return; // Response already sent by requireAdmin
+    
+    return handler(req, res, authResult.user);
+  };
 }
