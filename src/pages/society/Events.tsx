@@ -22,7 +22,7 @@ interface Event {
   status: 'pending' | 'approved' | 'rejected';
   image_url?: string;
   created_at: string;
-  rsvps?: {
+  rsvp?: {
     count: number;
   }[];
 }
@@ -273,7 +273,7 @@ export default function SocietyEvents() {
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-2" />
-                      {event.rsvps?.[0]?.count || 0} RSVPs
+                      {event.rsvp?.[0]?.count || 0} RSVPs
                     </div>
                   </div>
 

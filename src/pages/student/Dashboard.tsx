@@ -7,6 +7,7 @@ import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import EventCard from '@/components/EventCard';
 
 interface Event {
   id: string;
@@ -20,7 +21,7 @@ interface Event {
   society: {
     name: string;
   };
-  rsvps?: {
+  rsvp?: {
     count: number;
   }[];
 }
@@ -133,6 +134,11 @@ export default function StudentDashboard() {
     }
   };
 
+  // Calculate stats for dashboard cards
+  const totalEvents = upcomingEvents.length;
+  const totalRSVPs = userRSVPs.length;
+  const upcomingRSVPEvents = userRSVPs.filter(rsvp => new Date(rsvp.event.start_time) > new Date()).length;
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -140,23 +146,50 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
-      
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {user?.user_metadata?.full_name || 'Student'}!
+            Welcome back, {user?.user_metadata?.full_name || user?.user_metadata?.first_name || user?.email || 'Student'}!
           </h1>
           <p className="text-gray-600 mt-2">
             Discover events, manage your RSVPs, and stay connected with university life.
           </p>
         </div>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="border-blue-200 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center"><Calendar className="w-5 h-5 mr-2 text-blue-500" />Total Events</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{totalEvents}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-green-200 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center"><Clock className="w-5 h-5 mr-2 text-green-500" />Upcoming RSVPs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{upcomingRSVPEvents}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-purple-200 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center"><Users className="w-5 h-5 mr-2 text-purple-500" />Total RSVPs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">{totalRSVPs}</div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="border-pink-200 shadow-md">
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle className="text-pink-600">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button 
@@ -164,7 +197,7 @@ export default function StudentDashboard() {
                   className="w-full justify-start"
                   variant="outline"
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
+                  <Calendar className="w-4 h-4 mr-2 text-pink-500" />
                   Browse Events
                 </Button>
                 <Button 
@@ -172,7 +205,7 @@ export default function StudentDashboard() {
                   className="w-full justify-start"
                   variant="outline"
                 >
-                  <Users className="w-4 h-4 mr-2" />
+                  <Users className="w-4 h-4 mr-2 text-purple-500" />
                   Manage RSVPs
                 </Button>
                 <Button 
@@ -180,26 +213,26 @@ export default function StudentDashboard() {
                   className="w-full justify-start"
                   variant="outline"
                 >
-                  <MapPin className="w-4 h-4 mr-2" />
+                  <MapPin className="w-4 h-4 mr-2 text-blue-500" />
                   View Deals
                 </Button>
               </CardContent>
             </Card>
 
             {/* RSVP Summary */}
-            <Card className="mt-6">
+            <Card className="mt-6 border-purple-200 shadow-md">
               <CardHeader>
-                <CardTitle>Your RSVPs</CardTitle>
+                <CardTitle className="text-purple-600">Your RSVPs</CardTitle>
                 <CardDescription>Events you've signed up for</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {userRSVPs.slice(0, 3).map((rsvp) => (
-                    <div key={rsvp.id} className="p-3 bg-gray-50 rounded-lg">
-                      <h4 className="font-medium text-sm">{rsvp.event.title}</h4>
+                    <div key={rsvp.id} className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <h4 className="font-medium text-sm text-purple-700">{rsvp.event.title}</h4>
                       <p className="text-xs text-gray-600">{rsvp.event.society.name}</p>
                       <div className="flex items-center text-xs text-gray-500 mt-1">
-                        <Clock className="w-3 h-3 mr-1" />
+                        <Clock className="w-3 h-3 mr-1 text-purple-400" />
                         {new Date(rsvp.event.start_time).toLocaleDateString()}
                       </div>
                     </div>
@@ -212,7 +245,7 @@ export default function StudentDashboard() {
                       variant="link" 
                       size="sm"
                       onClick={() => navigate('/student/rsvps')}
-                      className="p-0 h-auto"
+                      className="p-0 h-auto text-purple-600"
                     >
                       View all ({userRSVPs.length})
                     </Button>
@@ -222,49 +255,50 @@ export default function StudentDashboard() {
             </Card>
           </div>
 
-          {/* Upcoming Events */}
+          {/* Your Events */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="border-pink-200 shadow-md">
               <CardHeader>
-                <CardTitle>Upcoming Events</CardTitle>
-                <CardDescription>Events happening around campus</CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="text-pink-600">Your Events</CardTitle>
+                    <CardDescription>Events you've RSVP'd to</CardDescription>
+                  </div>
+                  <Button 
+                    size="sm"
+                    onClick={() => navigate('/student/rsvps')}
+                    variant="outline"
+                    className="text-pink-600 border-pink-300"
+                  >
+                    Manage RSVPs
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                {upcomingEvents.length === 0 ? (
+                {userRSVPs.length === 0 ? (
                   <div className="text-center py-8">
-                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No upcoming events found</p>
+                    <Calendar className="w-12 h-12 text-pink-400 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">You haven't RSVP'd to any events yet</p>
+                    <Button onClick={() => navigate('/')} className="bg-pink-500 text-white">Browse Events</Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {upcomingEvents.map((event) => (
-                      <div key={event.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{event.description}</p>
-                        
-                        <div className="space-y-2 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {new Date(event.start_time).toLocaleDateString()} at {new Date(event.start_time).toLocaleTimeString()}
-                          </div>
-                          <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {event.location}
-                          </div>
-                          <div className="flex items-center">
-                            <Users className="w-4 h-4 mr-2" />
-                            {event.society.name}
-                          </div>
-                        </div>
-
-                        <Button 
-                          size="sm" 
-                          className="w-full mt-4"
-                          onClick={() => navigate(`/?event=${event.id}`)}
-                        >
-                          View Details
-                        </Button>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {userRSVPs.map((rsvp) => (
+                      <EventCard key={rsvp.event.id} event={{
+                        ...rsvp.event,
+                        eventName: rsvp.event.title,
+                        date: rsvp.event.start_time,
+                        endTime: rsvp.event.end_time,
+                        location: rsvp.event.location,
+                        description: rsvp.event.description,
+                        societyName: rsvp.event.society.name,
+                        attendeeCount: rsvp.event.rsvp?.[0]?.count || 0,
+                        organiserID: '',
+                        requiresOrganizerSignup: false,
+                        organizerEmail: '',
+                        signup_link: (rsvp.event as any).signup_link || '',
+                      }}
+                      onClick={() => navigate(`/event/${rsvp.event.id}`)} />
                     ))}
                   </div>
                 )}
@@ -273,7 +307,6 @@ export default function StudentDashboard() {
           </div>
         </div>
       </main>
-
       <Footer />
     </div>
   );

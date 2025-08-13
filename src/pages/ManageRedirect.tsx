@@ -17,52 +17,44 @@ const ManageRedirect = () => {
           return;
         }
 
-        // Look for the record in the 'role' table with the user's id as its 'user_id' field
-        const { data: roleData, error: roleError } = await supabase
-          .from('role')
-          .select('account_type')
+        // Check student table
+        const { data: studentData } = await supabase
+          .from('student')
+          .select('id')
           .eq('user_id', user.id)
           .maybeSingle();
-
-        if (roleError) {
-          console.error('Error fetching user role:', roleError);
-          navigate('/login');
+        if (studentData) {
+          navigate('/student/dashboard');
           return;
         }
 
-        const role = roleData?.account_type;
-
-        // Log role
-        console.log('User role:', role);
-
-        // Handle case where no role is found
-        if (!role) {
-          console.warn('No role found for user:', user.id, 'Redirecting to login...');
-          navigate('/login');
+        // Check society table
+        const { data: societyData } = await supabase
+          .from('society')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (societyData) {
+          navigate('/society/dashboard');
           return;
         }
 
-        switch (role) {
-          case 'admin':
-            navigate('/admin/dashboard');
-            break;
-          case 'society':
-            navigate('/society/dashboard');
-            break;
-          case 'partner':
-            navigate('/partner/dashboard');
-            break;
-          case 'student':
-            navigate('/student/dashboard');
-            break;
-          default:
-            // Fallback for users with no role or an unknown role
-            console.log('Unknown role for user:', user.id);
-            navigate('/login');
-            break;
+        // Check partner table
+        const { data: partnerData } = await supabase
+          .from('partner')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (partnerData) {
+          navigate('/partner/dashboard');
+          return;
         }
+
+        // If no role found, redirect to login
+        console.warn('No role found for user:', user.id, 'Redirecting to login...');
+        navigate('/login');
       } catch (error) {
-        console.error('Error redirecting user:', error);
+        console.error('Error checking user role:', error);
         navigate('/login'); // Redirect to login on error
       }
     };
