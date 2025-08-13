@@ -6,6 +6,15 @@ const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Helper functions
+const isValidEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
+const isNonEmptyString = (val: unknown): val is string => {
+  return typeof val === 'string' && val.trim().length > 0;
+};
+
 // Simple CORS handler
 function setCorsHeaders(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -57,6 +66,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'login':
         console.log('Routing to handleLogin');
         return await handleLogin(req, res, supabase);
+      case 'partners':
+        console.log('Routing to handlePartners');
+        return await handlePartners(req, res, supabase, action as string, id as string);
+      case 'students':
+        console.log('Routing to handleStudents');
+        return await handleStudents(req, res, supabase, action as string, id as string);
       default:
         console.log('Resource not found:', resource);
         return res.status(404).json({ error: 'Resource not found' });
@@ -506,5 +521,224 @@ async function handleLogin(req: VercelRequest, res: VercelResponse, supabase: an
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// Partners handler - restored from removed api/partners.ts
+async function handlePartners(req: VercelRequest, res: VercelResponse, supabase: any, action?: string, id?: string) {
+  const { method, body } = req;
+
+  try {
+    switch (method) {
+      case 'POST':
+        // POST /api/partners - register new partner
+        const { email, business_name, business_type, website, contact_name, phone } = body;
+
+        console.log('[API/partners] Incoming registration body:', body);
+
+        if (!isNonEmptyString(email) || !isValidEmail(email)) {
+          return res.status(400).json({ message: 'Valid email is required.' });
+        }
+
+        if (!isNonEmptyString(business_name)) {
+          return res.status(400).json({ message: 'Business name is required.' });
+        }
+
+        if (!isNonEmptyString(contact_name)) {
+          return res.status(400).json({ message: 'Contact name is required.' });
+        }
+
+        // Check for duplicate email
+        const { data: existing, error: checkError } = await supabase
+          .from('partner')
+          .select('id, email')
+          .eq('email', email.trim().toLowerCase())
+          .single();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('[API/partners] Error checking for existing partner:', checkError);
+          return res.status(500).json({ message: 'Error checking for existing partner' });
+        }
+
+        if (existing) {
+          return res.status(409).json({ message: 'Partner with this email already exists.' });
+        }
+
+        const newPartner = {
+          email: email.trim().toLowerCase(),
+          business_name: business_name.trim(),
+          business_type: business_type?.trim() || null,
+          website: website?.trim() || null,
+          contact_name: contact_name.trim(),
+          phone: phone?.trim() || null
+        };
+
+        console.log('[API/partners] Attempting to insert:', newPartner);
+
+        const { data, error } = await supabase
+          .from('partner')
+          .insert([newPartner])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('[API/partners] Supabase insert error:', error);
+          if (error.code === '23505') { // Unique constraint violation
+            return res.status(409).json({ message: 'Partner with this email already exists.' });
+          }
+          return res.status(500).json({ message: error.message || 'Unknown error', details: error });
+        }
+        return res.status(201).json(data);
+
+      default:
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
+  } catch (error: any) {
+    console.error('Partners API Error:', error);
+    return res.status(500).json({ message: error.message || 'Internal server error' });
+  }
+}
+
+// Students handler - restored from removed api/students.ts
+async function handleStudents(req: VercelRequest, res: VercelResponse, supabase: any, action?: string, id?: string) {
+  const { method, query, body } = req;
+
+  try {
+    switch (method) {
+      case 'GET':
+        if (id) {
+          // GET /api/students?id=uuid - get specific user
+          if (!isNonEmptyString(id)) {
+            return res.status(400).json({ message: 'Valid user ID is required.' });
+          }
+
+          const { data, error } = await supabase
+            .from('student')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+          if (error) {
+            if (error.code === 'PGRST116') {
+              return res.status(404).json({ message: 'User not found.' });
+            }
+            throw new Error(error.message);
+          }
+          return res.status(200).json(data);
+        } else {
+          // GET /api/students - get all users (students for now)
+          const { data, error } = await supabase
+            .from('student')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (error) throw new Error(error.message);
+          return res.status(200).json(data);
+        }
+
+      case 'POST':
+        // POST /api/students - create new user (student)
+        const { email, first_name, last_name, user_id } = body;
+
+        console.log('[API/students] Incoming registration body:', body);
+
+        if (!isNonEmptyString(email) || !isValidEmail(email)) {
+          return res.status(400).json({ message: 'Valid email is required.' });
+        }
+
+        if (!isNonEmptyString(first_name)) {
+          return res.status(400).json({ message: 'First name is required.' });
+        }
+
+        const newUser = {
+          email: email.trim().toLowerCase(),
+          first_name: first_name.trim(),
+          last_name: last_name?.trim() || null,
+          user_id: user_id || null
+        };
+
+        console.log('[API/students] Attempting to insert:', newUser);
+
+        const { data, error } = await supabase
+          .from('student')
+          .insert([newUser])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('[API/students] Supabase insert error:', error);
+          if (error.code === '23505') { // Unique constraint violation
+            return res.status(409).json({ message: 'User with this email already exists.' });
+          }
+          return res.status(500).json({ message: error.message || 'Unknown error', details: error });
+        }
+        return res.status(201).json(data);
+
+      case 'PUT':
+        // PUT /api/students?id=uuid - update user
+        if (!isNonEmptyString(id)) {
+          return res.status(400).json({ message: 'Valid user ID is required.' });
+        }
+
+        const updates: any = {};
+        const { email: updateEmail, first_name: updateFirstName, last_name: updateLastName } = body;
+
+        if (updateEmail !== undefined) {
+          if (!isNonEmptyString(updateEmail) || !isValidEmail(updateEmail)) {
+            return res.status(400).json({ message: 'Valid email is required.' });
+          }
+          updates.email = updateEmail.trim().toLowerCase();
+        }
+
+        if (updateFirstName !== undefined) {
+          if (!isNonEmptyString(updateFirstName)) {
+            return res.status(400).json({ message: 'First name cannot be empty.' });
+          }
+          updates.first_name = updateFirstName.trim();
+        }
+
+        if (updateLastName !== undefined) {
+          updates.last_name = updateLastName?.trim() || null;
+        }
+
+        const { data: updatedData, error: updateError } = await supabase
+          .from('student')
+          .update(updates)
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (updateError) {
+          if (updateError.code === 'PGRST116') {
+            return res.status(404).json({ message: 'User not found.' });
+          }
+          if (updateError.code === '23505') {
+            return res.status(409).json({ message: 'User with this email already exists.' });
+          }
+          throw new Error(updateError.message);
+        }
+
+        return res.status(200).json(updatedData);
+
+      case 'DELETE':
+        // DELETE /api/students?id=uuid - delete user
+        if (!isNonEmptyString(id)) {
+          return res.status(400).json({ message: 'Valid user ID is required.' });
+        }
+
+        const { error: deleteError } = await supabase
+          .from('student')
+          .delete()
+          .eq('id', id);
+
+        if (deleteError) throw new Error(deleteError.message);
+        return res.status(204).end();
+
+      default:
+        return res.status(405).json({ message: 'Method not allowed' });
+    }
+  } catch (error: any) {
+    console.error('Students API Error:', error);
+    return res.status(500).json({ message: error.message || 'Internal server error' });
   }
 }

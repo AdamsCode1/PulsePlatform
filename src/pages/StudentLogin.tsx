@@ -86,6 +86,18 @@ const StudentLogin = () => {
             description: error.message || "Failed to sign in. Please check your credentials and try again.",
           });
         } else {
+          const userId = data.user.id;
+          // Check if user is in student table
+          const { data: student } = await supabase.from('student').select('id').eq('user_id', userId).single();
+          if (!student) {
+            toast({
+              variant: "destructive",
+              title: "Login Failed",
+              description: "This account is not a student account.",
+            });
+            setIsLoading(false);
+            return;
+          }
           toast({
             title: "Login Successful",
             description: "Welcome back!",
