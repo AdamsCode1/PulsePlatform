@@ -32,6 +32,70 @@ const requireAdmin = async (req: VercelRequest) => {
   return user;
 };
 
+// Handler for fetching events with admin privileges
+const handleGetEvents = async (req: VercelRequest, res: VercelResponse) => {
+  try {
+    // First, ensure the user is an admin
+    const adminUser = await requireAdmin(req);
+
+    const { page = '1', limit = '10', status, search } = req.query;
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const offset = (pageNum - 1) * limitNum;
+
+    // Build the query
+    let query = supabaseAdmin
+      .from('event')
+      .select(`
+        *,
+        society:society_id(name, contact_email),
+        rsvp_count:rsvp(count)
+      `, { count: 'exact' });
+
+    // Apply filters
+    if (status && status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    // Apply pagination and ordering
+    query = query
+      .range(offset, offset + limitNum - 1)
+      .order('created_at', { ascending: false });
+
+    const { data: events, error, count } = await query;
+
+    if (error) {
+      console.error('Error fetching events:', error);
+      return res.status(500).json({ message: 'Failed to fetch events', error: error.message });
+    }
+
+    // Log the action
+    await supabaseAdmin.from('admin_activity_log').insert({
+      admin_id: adminUser.id,
+      admin_email: adminUser.email,
+      action: 'view_events',
+      target_entity: 'event',
+      details: { page: pageNum, limit: limitNum, status, search },
+    });
+
+    return res.status(200).json({
+      events: events || [],
+      total: count || 0,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil((count || 0) / limitNum),
+    });
+
+  } catch (error) {
+    console.error('Error in handleGetEvents:', error);
+    return res.status(500).json({ message: error.message || 'Internal server error' });
+  }
+};
+
 // Handler for updating an event (e.g., changing its status)
 const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
   try {
@@ -162,6 +226,7 @@ const handleDeleteEvent = async (req: any, res: any) => {
 
 // Export the handler, mapping methods to functions
 export default createHandler({
+  GET: handleGetEvents,
   PATCH: handleUpdateEvent,
   DELETE: handleDeleteEvent,
 });

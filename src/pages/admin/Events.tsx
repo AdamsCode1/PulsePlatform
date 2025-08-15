@@ -55,32 +55,39 @@ export default function AdminEvents() {
   const fetchEvents = useCallback(async (page: number) => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('event')
-        .select(`
-          *,
-          society:society_id(name, contact_email)
-        `, { count: 'exact' });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/admin/login');
+        return;
+      }
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: eventsPerPage.toString(),
+      });
 
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        params.append('status', statusFilter);
       }
 
       if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        params.append('search', searchTerm);
       }
 
-      const from = (page - 1) * eventsPerPage;
-      const to = from + eventsPerPage - 1;
+      const response = await fetch(`${API_BASE_URL}/api/admin/events?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      query = query.range(from, to).order('created_at', { ascending: false });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      setEvents(data || []);
-      setTotalPages(Math.ceil((count || 0) / eventsPerPage));
+      const result = await response.json();
+      setEvents(result.events || []);
+      setTotalPages(Math.ceil((result.total || 0) / eventsPerPage));
 
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -92,7 +99,7 @@ export default function AdminEvents() {
     } finally {
       setLoading(false);
     }
-  }, [eventsPerPage, searchTerm, statusFilter, toast]);
+  }, [eventsPerPage, searchTerm, statusFilter, toast, navigate]);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -156,11 +163,6 @@ export default function AdminEvents() {
           eventId,
           status,
           rejection_reason: reason,
-          // Legacy shape for backward compatibility with older server handlers
-          payload: {
-            status,
-            rejection_reason: status === 'rejected' ? (reason || 'No reason provided.') : null,
-          },
         }),
       });
 
