@@ -44,6 +44,7 @@ import SubmitDealPage from "./pages/SubmitDealPage";
 // Admin Components
 import AdminLogin from './pages/AdminLogin';
 import AboutPage from './pages/AboutPage';
+import EnhancedAboutPage from './pages/EnhancedAboutPage';
 import Schedule from './pages/Schedule';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminEvents from './pages/admin/Events';
@@ -69,6 +70,7 @@ const App = () => (
           <Route path="/dev" element={<Index />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/about/enhanced" element={<EnhancedAboutPage />} />
 
           {/* Authentication Routes */}
           <Route path="/login" element={<UserTypeSelection />} />
