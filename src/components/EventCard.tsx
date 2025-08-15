@@ -190,18 +190,6 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
           <span className="bg-gray-200 hover:bg-black hover:text-white transition-all duration-500 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm text-gray-700 cursor-pointer transform hover:scale-105 inline-block">
             {event.societyName}
           </span>
-          {event.status && (
-            <Badge 
-              variant={
-                event.status === 'approved' ? 'default' : 
-                event.status === 'pending' ? 'secondary' : 
-                'destructive'
-              }
-              className="text-xs"
-            >
-              {event.status}
-            </Badge>
-          )}
         </div>
 
         {/* Event Name with hover effect - Responsive text size */}

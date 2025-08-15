@@ -51,7 +51,18 @@ export default function StudentRSVPs() {
         return;
       }
       setUser(user);
-      await fetchUserRSVPs(user.id);
+      // Fetch studentId from student table
+      const { data: studentData, error: studentError } = await supabase
+        .from('student')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      if (studentError || !studentData) {
+        console.error('Student not found:', studentError);
+        navigate('/login/student');
+        return;
+      }
+      await fetchUserRSVPs(studentData.id);
     } catch (error) {
       console.error('Auth check failed:', error);
       navigate('/login/student');
@@ -60,18 +71,18 @@ export default function StudentRSVPs() {
     }
   };
 
-  const fetchUserRSVPs = async (userId: string) => {
+  const fetchUserRSVPs = async (studentId: string) => {
     try {
       const { data, error } = await supabase
-        .from('rsvps')
+        .from('rsvp')
         .select(`
           *,
-          event:events(
+          event:event(
             *,
-            society:societies(name)
+            society:society(name)
           )
         `)
-        .eq('user_id', userId)
+        .eq('student_id', studentId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -89,7 +100,7 @@ export default function StudentRSVPs() {
   const cancelRSVP = async (rsvpId: string) => {
     try {
       const { error } = await supabase
-        .from('rsvps')
+        .from('rsvp')
         .update({ status: 'cancelled' })
         .eq('id', rsvpId);
 

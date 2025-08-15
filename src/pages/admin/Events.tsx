@@ -30,7 +30,7 @@ interface Event {
     name: string;
     email: string;
   };
-  rsvps?: {
+  rsvp?: {
     count: number;
   }[];
 }

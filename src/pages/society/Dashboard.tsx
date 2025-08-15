@@ -335,7 +335,7 @@ export default function SocietyDashboard() {
                           </div>
                           <div className="flex items-center">
                             <Users className="w-4 h-4 mr-2" />
-                            {event.rsvp?.[0]?.count || 0} RSVPs
+                            {event.rsvp?.[0]?.count || 0} RSVP
                           </div>
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 mr-2" />
