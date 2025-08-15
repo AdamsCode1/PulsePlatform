@@ -1,11 +1,11 @@
 import React from 'react';
 import { Users, Calendar, Zap, Heart, Globe, Shield, Sparkles, Target, MessageSquare, Building, Rocket, Award } from 'lucide-react';
-import NavBar from '../components/NavBar';
-import Footer from '../components/Footer';
-import HeroWithStats from '../components/react-bits/HeroWithStats';
-import FeatureSection from '../components/react-bits/FeatureSection';
-import StatsShowcase from '../components/react-bits/StatsShowcase';
-import TeamSection from '../components/react-bits/TeamSection';
+import NavBar from '@/components/NavBar';
+import Footer from '@/components/Footer';
+import HeroWithStats from '@/components/react-bits/HeroWithStats';
+import FeatureSection from '@/components/react-bits/FeatureSection';
+import StatsShowcase from '@/components/react-bits/StatsShowcase';
+import TeamSection from '@/components/react-bits/TeamSection';
 
 const EnhancedAboutPage = () => {
   // Hero stats data

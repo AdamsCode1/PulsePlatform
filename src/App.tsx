@@ -45,6 +45,8 @@ import SubmitDealPage from "./pages/SubmitDealPage";
 import AdminLogin from './pages/AdminLogin';
 import AboutPage from './pages/AboutPage';
 import EnhancedAboutPage from './pages/EnhancedAboutPage';
+import EnhancedAboutPageSimple from './pages/EnhancedAboutPageSimple';
+import TestPage from './pages/TestPage';
 import Schedule from './pages/Schedule';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminEvents from './pages/admin/Events';
@@ -71,6 +73,8 @@ const App = () => (
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/about/enhanced" element={<EnhancedAboutPage />} />
+          <Route path="/about/simple" element={<EnhancedAboutPageSimple />} />
+          <Route path="/test" element={<TestPage />} />
 
           {/* Authentication Routes */}
           <Route path="/login" element={<UserTypeSelection />} />

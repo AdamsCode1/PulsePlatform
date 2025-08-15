@@ -1,10 +1,9 @@
 import React from 'react';
-import { LucideIcon } from 'lucide-react';
 
 interface Stat {
   value: string;
   label: string;
-  icon: LucideIcon;
+  icon: React.ComponentType<{ className?: string }>;
   description?: string;
   trend?: {
     value: string;
