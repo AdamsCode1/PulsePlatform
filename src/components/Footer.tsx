@@ -218,7 +218,7 @@ export default function Footer() {
                                     </motion.a>
 
                                     <motion.a
-                                        href="#whatsapp"
+                                        href="https://wa.me/447562524965"
                                         className="flex items-center justify-between p-4 bg-gray-700/40 border border-gray-600/40 rounded-xl hover:bg-gray-700/60 hover:border-green-500/40 transition-all duration-200 group shadow-sm"
                                         whileHover={{ scale: 1.02 }}
                                     >
