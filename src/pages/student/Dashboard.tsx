@@ -383,7 +383,7 @@ export default function StudentDashboard() {
           <>
             <div className="flex flex-col">
               {/* Stats Cards: after main content on small, before on md+ */}
-              <div className="order-2 md:order-1">
+              <div className="order-2 md:order-1 mt-8 md:mt-0">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   {/* Events Attended (4th on small) */}
                   <Card className="border-green-200 shadow-md order-1 md:order-2">
@@ -418,7 +418,7 @@ export default function StudentDashboard() {
               {/* Main grid: reorder items on small */}
               <div className="order-1 md:order-2">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Quick Actions (3rd on small, 1st on lg) */}
+                  {/* Left Column: Quick Actions + (lg) Your Societies stacked to avoid large blank gap */}
                   <div className="lg:col-span-1 order-3 lg:order-1">
                     <Card className="border-pink-200 shadow-md">
                       <CardHeader>
@@ -459,10 +459,30 @@ export default function StudentDashboard() {
                         </Button>
                       </CardContent>
                     </Card>
+
+                    {/* Your Societies shown under Quick Actions on large screens to fill the column */}
+                    <div className="hidden lg:block mt-8">
+                      <Card className="border-green-200 shadow-md">
+                        <CardHeader>
+                          <CardTitle className="text-green-600">Your Societies</CardTitle>
+                          <CardDescription>Societies whose events you've attended or RSVP'd to</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ul className="list-disc pl-5 space-y-1">
+                            {[...new Set(userRSVPs.map(rsvp => rsvp.event.society.name))].map((socName) => (
+                              <li key={socName} className="text-green-700 font-medium">{socName}</li>
+                            ))}
+                            {userRSVPs.length === 0 && (
+                              <li className="text-gray-500">No societies yet</li>
+                            )}
+                          </ul>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
 
-                  {/* Your Societies (now 2nd on small) */}
-                  <div className="lg:col-span-1 order-2 lg:order-3">
+                  {/* Your Societies (standalone on small screens only) */}
+                  <div className="order-2 lg:hidden">
                     <Card className="border-green-200 shadow-md">
                       <CardHeader>
                         <CardTitle className="text-green-600">Your Societies</CardTitle>
