@@ -12,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import useApi from '@/hooks/useApi';
 import useDashboardStats, { DashboardStats } from '@/hooks/useDashboardStats';
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface ActivityLog {
     id: string;
@@ -47,7 +48,7 @@ const ErrorDisplay = ({ message, onRetry }: { message: string, onRetry: () => vo
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const { isAdmin, user } = useAdminAuth();
 
   // --- Data Fetching with React Query ---
   const {
@@ -83,23 +84,27 @@ export default function AdminDashboard() {
   }, [rawChartData]);
 
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.app_metadata?.role !== 'admin') {
-        navigate('/admin/login');
-      } else {
-        setUser(user);
-      }
-    };
-    checkAuth();
-  }, [navigate]);
   // Centralized navigation helper for clickable cards/buttons
   const handleCardClick = (path: string) => {
     navigate(path);
   };
 
   const totalUsers = stats ? stats.totalUsers.students + stats.totalUsers.societies + stats.totalUsers.partners + stats.totalUsers.admins : 0;
+
+  // Access control UI
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-100 border border-red-300 rounded-lg p-8 text-red-700 text-center">
+          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+          <p>You are not authorized to access the admin dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+  if (isAdmin === null) {
+    return <Skeleton className="h-32 w-full" />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
