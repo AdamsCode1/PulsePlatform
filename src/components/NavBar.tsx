@@ -37,10 +37,66 @@ export default function NavBar() {
   const [lastScrollY, setLastScrollY] = useState(0);
   const navigate = useNavigate();
 
+  // Function to determine user type from database tables
+  const determineUserTypeFromDatabase = async (userId: string) => {
+    console.log('Debug - Checking database for user type:', userId);
+    
+    try {
+      // Check if user is a student
+      const { data: studentData } = await supabase
+        .from('student')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (studentData) {
+        console.log('Debug - User found in student table');
+        setUserType('student');
+        return;
+      }
+
+      // Check if user is a society
+      const { data: societyData } = await supabase
+        .from('society')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (societyData) {
+        console.log('Debug - User found in society table');
+        setUserType('society');
+        return;
+      }
+
+      // Check if user is a partner
+      const { data: partnerData } = await supabase
+        .from('partners')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+      
+      if (partnerData) {
+        console.log('Debug - User found in partners table');
+        setUserType('partner');
+        return;
+      }
+
+      console.log('Debug - User type not found in any table');
+      setUserType('');
+      
+    } catch (error) {
+      console.error('Error determining user type:', error);
+      setUserType('');
+    }
+  };
+
   useEffect(() => {
     async function fetchUser() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      console.log('Debug - User logged in:', user?.email);
+      console.log('Debug - User metadata:', user?.user_metadata);
+      
       if (user && user.user_metadata && user.user_metadata.full_name) {
         setFirstName(user.user_metadata.full_name.split(' ')[0]);
       } else if (user && user.email) {
@@ -49,9 +105,13 @@ export default function NavBar() {
         setFirstName('');
       }
       
-      // Set user type from metadata
+      // Set user type from metadata or determine from database
       if (user && user.user_metadata && user.user_metadata.user_type) {
+        console.log('Debug - Setting user type from metadata:', user.user_metadata.user_type);
         setUserType(user.user_metadata.user_type);
+      } else if (user) {
+        console.log('Debug - No user type in metadata, checking database tables...');
+        await determineUserTypeFromDatabase(user.id);
       } else {
         setUserType('');
       }
