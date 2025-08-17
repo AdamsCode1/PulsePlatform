@@ -260,7 +260,7 @@ export default function StudentRSVPs() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="mb-8">
           <Button 
             variant="outline" 
@@ -341,7 +341,7 @@ export default function StudentRSVPs() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {rsvps.map((rsvp) => (
                   <EventCard
-                    key={rsvp.event.id}
+                    key={`${rsvp.event.id}-${eventRSVPCounts[rsvp.event.id] || 0}`}
                     event={{
                       ...rsvp.event,
                       eventName: rsvp.event.title,
