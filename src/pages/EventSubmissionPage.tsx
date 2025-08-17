@@ -249,7 +249,7 @@ export default function EventSubmissionPage() {
       if (!error && insertedEvent) {
         toast({
           title: "Event Submitted Successfully!",
-          description: `${data.eventName} has been submitted for review. Event ID: ${insertedEvent[0]?.id}`,
+          description: "Your event has been submitted for review.",
           action: (
             <div className="flex gap-2 mt-2">
               <Button
@@ -264,7 +264,7 @@ export default function EventSubmissionPage() {
                 size="sm"
                 onClick={() => navigate('/')}
               >
-                Home
+                Dashboard
               </Button>
             </div>
           )

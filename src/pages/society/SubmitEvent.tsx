@@ -342,9 +342,7 @@ export default function EventSubmissionPage() {
       if (!error && insertedEvent) {
         toast({
           title: "Event Submitted Successfully!",
-          description: payloads.length > 1
-            ? `${payloads.length} events submitted for review (recurring). First ID: ${insertedEvent[0]?.id}`
-            : `${data.eventName} has been submitted for review. Event ID: ${insertedEvent[0]?.id}`,
+          description: "Your event has been submitted for review.",
           action: (
             <div className="flex gap-2 mt-2">
               <Button

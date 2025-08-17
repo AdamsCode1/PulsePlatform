@@ -208,7 +208,7 @@ export default function PartnerEventSubmissionPage() {
       if (!error && insertedEvent) {
         toast({
           title: "Event Submitted Successfully!",
-          description: `${data.eventName} has been submitted for review. Event ID: ${insertedEvent[0]?.id}`,
+          description: "Your event has been submitted for review.",
         });
         form.reset();
         setCurrentStep(0);
