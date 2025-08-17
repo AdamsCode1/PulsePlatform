@@ -103,6 +103,8 @@ function generateEvents() {
       const location = locations[Math.floor(Math.random() * locations.length)];
       const category = categories[Math.floor(Math.random() * categories.length)];
       
+      // 50% of events do not require external signup
+      const requiresSignup = Math.random() < 0.5;
       events.push({
         id: uuidv4(),
         name: `${society.name}: ${eventName}`,
@@ -112,9 +114,9 @@ function generateEvents() {
         location: location,
         category: category,
         society_id: society.id,
-        status: 'approved', // Make them approved so they show up on the front page
+        status: 'approved',
         attendee_count: Math.floor(Math.random() * 50) + 10,
-        signup_link: `https://events.university.edu/${eventName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`
+        ...(requiresSignup ? { signup_link: `https://events.university.edu/${eventName.toLowerCase().replace(/[^a-z0-9]/g, '-')}` } : {})
       });
     }
   }
@@ -125,35 +127,41 @@ function generateEvents() {
 async function seedDatabase() {
   try {
     console.log('🌱 Starting database seeding...');
-    
+
+    // Remove duplicate societies by contact_email
+    for (const soc of societies) {
+      await supabase.from('society').delete().eq('contact_email', soc.contact_email);
+    }
+    // Remove duplicate events by name and start_time
+    const events = generateEvents();
+    for (const ev of events) {
+      await supabase.from('event').delete().eq('name', ev.name).eq('start_time', ev.start_time);
+    }
+
     // Insert societies
     console.log('📚 Inserting societies...');
     const { error: societiesError } = await supabase
       .from('society')
       .insert(societies);
-    
     if (societiesError) {
       console.error('Error inserting societies:', societiesError);
       return;
     }
     console.log(`✅ Inserted ${societies.length} societies`);
-    
-    // Generate and insert events
-    const events = generateEvents();
+
+    // Insert events
     console.log('📅 Inserting events...');
     const { error: eventsError } = await supabase
       .from('event')
       .insert(events);
-    
     if (eventsError) {
       console.error('Error inserting events:', eventsError);
       return;
     }
     console.log(`✅ Inserted ${events.length} events`);
-    
+
     console.log('🎉 Database seeding completed successfully!');
     console.log(`Created ${societies.length} societies and ${events.length} events`);
-    
   } catch (error) {
     console.error('❌ Error during seeding:', error);
   }

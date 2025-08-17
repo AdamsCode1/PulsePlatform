@@ -131,8 +131,7 @@ export default function SocietyDashboard() {
       const { data, error } = await supabase
         .from('event')
         .select(`
-          *,
-          rsvp(count)
+          id, name, description, start_time, end_time, location, category, status, created_at, society_id, signup_link, updated_at, attendee_count, image_url
         `)
         .eq('society_id', societyData.id)
         .order('created_at', { ascending: false });
@@ -335,7 +334,7 @@ export default function SocietyDashboard() {
                           </div>
                           <div className="flex items-center">
                             <Users className="w-4 h-4 mr-2" />
-                            {event.rsvp?.[0]?.count || 0} RSVPs
+                            {event.rsvp?.[0]?.count || 0} RSVP
                           </div>
                           <div className="flex items-center">
                             <Clock className="w-4 h-4 mr-2" />

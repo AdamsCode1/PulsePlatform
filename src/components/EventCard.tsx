@@ -10,9 +10,10 @@ import { toast } from '../hooks/use-toast';
 interface EventCardProps {
   event: Event;
   onClick: () => void;
+  onRSVPChange?: () => void;
 }
 
-const EventCard = ({ event, onClick }: EventCardProps) => {
+const EventCard = ({ event, onClick, onRSVPChange }: EventCardProps) => {
   const [hasRSVPed, setHasRSVPed] = useState(false);
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
   const [isClicked, setIsClicked] = useState(false);
@@ -79,6 +80,7 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         // Update local state
         setHasRSVPed(true);
         setAttendeeCount(prev => prev + 1);
+        if (onRSVPChange) onRSVPChange();
       } else {
         // Remove RSVP from database
         const { error } = await supabase
@@ -95,6 +97,7 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         // Update local state
         setHasRSVPed(false);
         setAttendeeCount(prev => Math.max(0, prev - 1));
+        if (onRSVPChange) onRSVPChange();
       }
     } catch (error) {
       console.error('Error handling RSVP:', error);
@@ -190,18 +193,6 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
           <span className="bg-gray-200 hover:bg-black hover:text-white transition-all duration-500 px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm text-gray-700 cursor-pointer transform hover:scale-105 inline-block">
             {event.societyName}
           </span>
-          {event.status && (
-            <Badge 
-              variant={
-                event.status === 'approved' ? 'default' : 
-                event.status === 'pending' ? 'secondary' : 
-                'destructive'
-              }
-              className="text-xs"
-            >
-              {event.status}
-            </Badge>
-          )}
         </div>
 
         {/* Event Name with hover effect - Responsive text size */}

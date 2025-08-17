@@ -9,6 +9,8 @@ import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import EventCard from '@/components/EventCard';
+import EventModal from '@/components/EventModal';
 
 interface Event {
   id: string;
@@ -38,6 +40,50 @@ export default function StudentRSVPs() {
   const [rsvps, setRSVPs] = useState<RSVP[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const selectedEvent = selectedEventId
+    ? (() => {
+        const rsvp = rsvps.find(r => r.event.id === selectedEventId);
+        if (!rsvp) return null;
+        const e = rsvp.event;
+        return {
+          ...e,
+          eventName: e.title,
+          organiserID: '',
+          societyName: e.society?.name || '',
+          date: e.date && !isNaN(Date.parse(e.date)) ? new Date(e.date).toISOString() : new Date().toISOString(),
+          endTime: e.date && !isNaN(Date.parse(e.date)) ? new Date(e.date).toISOString() : new Date().toISOString(),
+          location: e.location,
+          description: e.description,
+          attendeeCount: e.max_attendees || 0,
+          requiresOrganizerSignup: false,
+          organizerEmail: '',
+          signup_link: '',
+        };
+      })()
+    : null;
+
+  // Calculate stats
+  const yourTotalRSVPs = rsvps.length;
+  const startOfWeek = new Date('2025-08-11T00:00:00Z');
+  const endOfWeek = new Date('2025-08-18T00:00:00Z');
+  // Events happening this week (from RSVP'd events)
+  const eventsThisWeek = rsvps.filter(rsvp => {
+    const eventDate = new Date(rsvp.event.date);
+    return eventDate >= startOfWeek && eventDate < endOfWeek;
+  }).length;
+
+  // Platform-wide RSVP count (async fetch)
+  const [platformTotalRSVPs, setPlatformTotalRSVPs] = useState<number | null>(null);
+  useEffect(() => {
+    const fetchPlatformTotalRSVPs = async () => {
+      const { count, error } = await supabase
+        .from('rsvp')
+        .select('*', { count: 'exact', head: true });
+      if (!error) setPlatformTotalRSVPs(count ?? 0);
+    };
+    fetchPlatformTotalRSVPs();
+  }, []);
 
   useEffect(() => {
     checkAuth();
@@ -51,33 +97,41 @@ export default function StudentRSVPs() {
         return;
       }
       setUser(user);
-      await fetchUserRSVPs(user.id);
+      // Fetch studentId from student table
+      const { data: studentData, error: studentError } = await supabase
+        .from('student')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      if (studentError || !studentData) {
+        navigate('/login/student');
+        return;
+      }
+      await fetchUserRSVPs(studentData.id);
     } catch (error) {
-      console.error('Auth check failed:', error);
       navigate('/login/student');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUserRSVPs = async (userId: string) => {
+  const fetchUserRSVPs = async (studentId: string) => {
     try {
       const { data, error } = await supabase
-        .from('rsvps')
+        .from('rsvp')
         .select(`
           *,
-          event:events(
+          event:event(
             *,
-            society:societies(name)
+            society:society(name)
           )
         `)
-        .eq('user_id', userId)
+        .eq('student_id', studentId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       setRSVPs(data || []);
     } catch (error) {
-      console.error('Error fetching RSVPs:', error);
       toast({
         title: "Error",
         description: "Failed to load your RSVPs",
@@ -86,10 +140,49 @@ export default function StudentRSVPs() {
     }
   };
 
+  // RSVP count logic for RSVP page events (same as dashboard)
+  const [eventRSVPCounts, setEventRSVPCounts] = useState<Record<string, number>>({});
+  useEffect(() => {
+    async function fetchRSVPCounts() {
+      const eventIds = rsvps.map(rsvp => rsvp.event.id);
+      if (eventIds.length === 0) {
+        setEventRSVPCounts({});
+        return;
+      }
+      const { data, error } = await supabase
+        .from('rsvp')
+        .select('event_id')
+        .in('event_id', eventIds);
+      if (error) return;
+      const countMap: Record<string, number> = {};
+      data.forEach((rsvp: any) => {
+        countMap[rsvp.event_id] = (countMap[rsvp.event_id] || 0) + 1;
+      });
+      setEventRSVPCounts(countMap);
+    }
+    fetchRSVPCounts();
+  }, [rsvps]);
+
+  // Add this function to refetch RSVP counts after RSVP actions
+  const refetchEventRSVPCounts = async () => {
+    const eventIds = rsvps.map(rsvp => rsvp.event.id);
+    if (eventIds.length === 0) return;
+    const { data, error } = await supabase
+      .from('rsvp')
+      .select('event_id')
+      .in('event_id', eventIds);
+    if (error) return;
+    const countMap: Record<string, number> = {};
+    data.forEach((rsvp: any) => {
+      countMap[rsvp.event_id] = (countMap[rsvp.event_id] || 0) + 1;
+    });
+    setEventRSVPCounts(countMap);
+  };
+
   const cancelRSVP = async (rsvpId: string) => {
     try {
       const { error } = await supabase
-        .from('rsvps')
+        .from('rsvp')
         .update({ status: 'cancelled' })
         .eq('id', rsvpId);
 
@@ -104,7 +197,6 @@ export default function StudentRSVPs() {
         description: "Your RSVP has been cancelled successfully",
       });
     } catch (error) {
-      console.error('Error cancelling RSVP:', error);
       toast({
         title: "Error",
         description: "Failed to cancel RSVP",
@@ -131,7 +223,6 @@ export default function StudentRSVPs() {
         description: "Your RSVP has been confirmed successfully",
       });
     } catch (error) {
-      console.error('Error confirming RSVP:', error);
       toast({
         title: "Error",
         description: "Failed to confirm RSVP",
@@ -169,7 +260,7 @@ export default function StudentRSVPs() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="mb-8">
           <Button 
             variant="outline" 
@@ -189,26 +280,29 @@ export default function StudentRSVPs() {
           <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Confirmed</CardTitle>
+                <CardTitle className="text-lg">Your RSVP Count</CardTitle>
+                <CardDescription>Total events you've signed up for</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{confirmedRSVPs.length}</div>
+                <div className="text-2xl font-bold text-blue-600">{yourTotalRSVPs}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Pending</CardTitle>
+                <CardTitle className="text-lg">Events Happening This Week</CardTitle>
+                <CardDescription>Events you're attending this week</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">{pendingRSVPs.length}</div>
+                <div className="text-2xl font-bold text-green-600">{eventsThisWeek}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Total RSVPs</CardTitle>
+                <CardTitle className="text-lg">Total RSVPs on Pulse</CardTitle>
+                <CardDescription>All RSVPs made by students</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">{rsvps.length}</div>
+                <div className="text-2xl font-bold text-purple-600">{platformTotalRSVPs !== null ? platformTotalRSVPs : <LoadingSpinner />}</div>
               </CardContent>
             </Card>
           </div>
@@ -223,96 +317,48 @@ export default function StudentRSVPs() {
                   <p className="text-gray-600 mb-6">
                     You haven't signed up for any events yet. Start exploring!
                   </p>
-                  <Button onClick={() => navigate('/')}>
-                    Browse Events
-                  </Button>
+                  <Button onClick={() => {
+  if (window.location.pathname === '/') {
+    setTimeout(() => {
+      const element = document.getElementById('schedule');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  } else {
+    navigate('/');
+    setTimeout(() => {
+      const element = document.getElementById('schedule');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 400);
+  }
+}} className="bg-pink-500 text-white">Browse Events</Button>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {rsvps.map((rsvp) => (
-                  <Card key={rsvp.id} className="overflow-hidden">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-xl font-semibold">{rsvp.event.title}</h3>
-                            {getStatusBadge(rsvp.status)}
-                            {isEventPast(rsvp.event.date) && (
-                              <Badge variant="outline">Past Event</Badge>
-                            )}
-                          </div>
-                          <p className="text-gray-600 mb-3">{rsvp.event.description}</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          {new Date(rsvp.event.date).toLocaleDateString()} at {rsvp.event.time}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <MapPin className="w-4 h-4 mr-2" />
-                          {rsvp.event.location}
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Users className="w-4 h-4 mr-2" />
-                          {rsvp.event.society.name}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Clock className="w-3 h-3 mr-1" />
-                          RSVP'd on {new Date(rsvp.created_at).toLocaleDateString()}
-                        </div>
-
-                        {!isEventPast(rsvp.event.date) && (
-                          <div className="flex gap-2">
-                            {rsvp.status === 'pending' && (
-                              <>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => confirmRSVP(rsvp.id)}
-                                >
-                                  <Check className="w-4 h-4 mr-1" />
-                                  Confirm
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => cancelRSVP(rsvp.id)}
-                                >
-                                  <X className="w-4 h-4 mr-1" />
-                                  Cancel
-                                </Button>
-                              </>
-                            )}
-                            {rsvp.status === 'confirmed' && (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => cancelRSVP(rsvp.id)}
-                              >
-                                <X className="w-4 h-4 mr-1" />
-                                Cancel RSVP
-                              </Button>
-                            )}
-                            {rsvp.status === 'cancelled' && (
-                              <Button
-                                size="sm"
-                                onClick={() => confirmRSVP(rsvp.id)}
-                              >
-                                <Check className="w-4 h-4 mr-1" />
-                                Re-confirm
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <EventCard
+                    key={`${rsvp.event.id}-${eventRSVPCounts[rsvp.event.id] || 0}`}
+                    event={{
+                      ...rsvp.event,
+                      eventName: rsvp.event.title,
+                      date: rsvp.event.date && !isNaN(Date.parse(rsvp.event.date)) ? new Date(rsvp.event.date).toISOString() : '',
+                      endTime: rsvp.event.time || '', // fallback to time string if no endTime field
+                      location: rsvp.event.location,
+                      description: rsvp.event.description,
+                      societyName: rsvp.event.society.name,
+                      attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
+                      organiserID: '',
+                      requiresOrganizerSignup: false,
+                      organizerEmail: '',
+                      signup_link: '',
+                    }}
+                    onClick={() => setSelectedEventId(rsvp.event.id)}
+                    onRSVPChange={refetchEventRSVPCounts}
+                  />
                 ))}
               </div>
             )}
@@ -321,6 +367,14 @@ export default function StudentRSVPs() {
       </main>
 
       <Footer />
+
+      {/* Event Modal */}
+      {selectedEvent && (
+        <EventModal
+          event={selectedEvent}
+          onClose={() => setSelectedEventId(null)}
+        />
+      )}
     </div>
   );
 }
