@@ -341,7 +341,7 @@ export default function StudentRSVPs() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {rsvps.map((rsvp) => (
                   <EventCard
-                    key={rsvp.event.id}
+                    key={`${rsvp.event.id}-${eventRSVPCounts[rsvp.event.id] || 0}`}
                     event={{
                       ...rsvp.event,
                       eventName: rsvp.event.title,
