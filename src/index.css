@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Remove horizontal scrollbars and ensure full-width layout */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100vw;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+/* Hide horizontal scrollbars for webkit browsers but keep vertical */
+::-webkit-scrollbar:horizontal {
+  height: 0px !important;
+  background: transparent !important;
+}
+
+/* Hide horizontal scrollbars for Firefox but keep vertical */
+html {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent !important;
+}
+
+/* Ensure root container takes full width */
+#root {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+}
+
 /* 
   Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
   All colors MUST be HSL.

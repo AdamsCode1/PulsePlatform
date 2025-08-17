@@ -1,16 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Rocket, Users, Calendar, Sparkles, Clock, Mail, Share2 } from 'lucide-react';
+import CircularText from '@/blocks/TextAnimations/CircularText/CircularText';
+import GlitchText from '@/blocks/TextAnimations/GlitchText/GlitchText';
+import Aurora from '@/blocks/Backgrounds/Aurora/Aurora';
 
 interface CountdownTimerProps {
   launchDate: string;
+  onJoinWaitlist?: () => void;
 }
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate }) => {
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitlist }) => {
+  const [isLoaded, setIsLoaded] = useState(false);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -19,9 +24,18 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate }) => {
   });
 
   useEffect(() => {
+    // Trigger animations after component mounts
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     const calculateTimeLeft = () => {
       const difference = +new Date(launchDate) - +new Date();
-      
+
       if (difference > 0) {
         setTimeLeft({
           days: Math.floor(difference / (1000 * 60 * 60 * 24)),
@@ -39,102 +53,529 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate }) => {
   }, [launchDate]);
 
   return (
-    <div className="text-center py-20">
-      <div className="flex items-center justify-center mb-8">
-        <Rocket className="w-16 h-16 text-blue-500 mr-4" />
-        <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          PulsePlatform
-        </h1>
-      </div>
-      
-      <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-        The next-generation platform connecting Durham University students, societies, and local partners. 
-        <br />
-        <span className="font-semibold text-blue-600">Something amazing is coming...</span>
-      </p>
-      
-      <div className="flex justify-center space-x-8 mb-12">
-        {Object.entries(timeLeft).map(([unit, value]) => (
-          <Card key={unit} className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-            <CardContent className="p-6 text-center">
-              <div className="text-4xl font-bold text-blue-600">{value}</div>
-              <div className="text-sm uppercase text-gray-500 font-medium">{unit}</div>
-            </CardContent>
-          </Card>
-        ))}
+    <div className="w-screen overflow-x-hidden">
+      {/* Modern Minimal Landing Page */}
+      <div
+        className="h-screen w-screen relative overflow-hidden bg-gradient-to-br from-black via-gray-900 to-purple-900"
+        style={{
+          margin: 0,
+          padding: 0,
+        }}
+      >
+        {/* Aurora Background */}
+        <div className="absolute inset-0 w-full h-full">
+          <Aurora
+            colorStops={["#ff87dd", "#f9a8d4", "#fce7f3"]}
+            amplitude={1.2}
+            blend={0.6}
+            speed={0.8}
+          />
+        </div>
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            @keyframes slideInFromTop {
+              0% {
+                transform: translateY(-50px);
+                opacity: 0;
+              }
+              100% {
+                transform: translateY(0);
+                opacity: 1;
+              }
+            }
+            
+            @keyframes slideInFromBottom {
+              0% {
+                transform: translateY(50px);
+                opacity: 0;
+              }
+              100% {
+                transform: translateY(0);
+                opacity: 1;
+              }
+            }
+            
+            @keyframes fadeIn {
+              0% {
+                opacity: 0;
+              }
+              100% {
+                opacity: 1;
+              }
+            }
+            
+            @keyframes glow {
+              0%, 100% {
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+              }
+              50% {
+                box-shadow: 0 0 30px rgba(34, 197, 94, 0.6);
+              }
+            }
+            
+            .animate-slide-top {
+              animation: slideInFromTop 0.8s ease-out forwards;
+            }
+            
+            .animate-slide-bottom {
+              animation: slideInFromBottom 0.8s ease-out forwards;
+            }
+            
+            .animate-fade-in {
+              animation: fadeIn 0.8s ease-out forwards;
+            }
+            
+            .animate-glow {
+              animation: glow 2s ease-in-out infinite;
+            }
+            
+            .animate-delay-100 {
+              animation-delay: 0.1s;
+            }
+            
+            .animate-delay-200 {
+              animation-delay: 0.2s;
+            }
+            
+            .animate-delay-300 {
+              animation-delay: 0.3s;
+            }
+            
+            .animate-delay-400 {
+              animation-delay: 0.4s;
+            }
+            
+            .animate-delay-500 {
+              animation-delay: 0.5s;
+            }
+            
+            .animate-delay-600 {
+              animation-delay: 0.6s;
+            }
+          `
+        }} />
+
+        {/* Navigation Bar */}
+        <nav className="relative z-10 flex justify-between items-center p-6 w-screen">
+          {/* Logo */}
+          <div className={`flex items-center ${isLoaded ? 'animate-slide-top animate-delay-100' : 'opacity-0'}`}>
+            <h1 className="text-2xl font-bold text-white">DUPulse</h1>
+          </div>
+
+          {/* Navigation Links */}
+          <div className={`flex items-center space-x-8 ${isLoaded ? 'animate-slide-top animate-delay-200' : 'opacity-0'}`}>
+            <a href="#events" className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium">Events</a>
+            <a href="#societies" className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium">Societies</a>
+            <a href="#deals" className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium">Deals</a>
+            <a href="#about" className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium">About</a>
+            <div className="w-5 h-5 text-gray-400">
+              <svg fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <div className="relative z-10 flex items-center justify-center h-full px-6 w-screen">
+          <div className="text-center w-full max-w-4xl">
+
+            {/* Coming Soon Pill - Now with Circular Animation */}
+            <div className={`mb-8 flex justify-center ${isLoaded ? 'animate-fade-in animate-delay-300' : 'opacity-0'}`}>
+              <div className="relative">
+                {/* Circular Text Animation */}
+                <CircularText
+                  text="•COMING SOON•COMING SOON"
+                  spinDuration={15}
+                  onHover="speedUp"
+                  className="w-32 h-32 text-pink-400 text-sm"
+                />
+                {/* Center icon/text */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-pink-400 text-xl font-bold">✨</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Main Headline */}
+            <div className={`mb-6 ${isLoaded ? 'animate-slide-bottom animate-delay-400' : 'opacity-0'}`}>
+              <GlitchText
+                speed={0.8}
+                enableShadows={true}
+                enableOnHover={false}
+                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white"
+              >
+                DUPulse - The social heart of Durham student life
+              </GlitchText>
+            </div>
+
+            {/* Subheading */}
+            <p className={`text-lg sm:text-xl md:text-2xl text-gray-400 leading-relaxed mb-12 max-w-3xl mx-auto ${isLoaded ? 'animate-fade-in animate-delay-500' : 'opacity-0'}`}>
+              Connect with societies, discover events, find exclusive deals, and experience everything Durham University has to offer in one place!
+            </p>
+
+            {/* Circular Countdown Timer */}
+            <div className={`mb-12 ${isLoaded ? 'animate-fade-in animate-delay-600' : 'opacity-0'}`}>
+              <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
+                {/* Days */}
+                <div className="relative">
+                  <svg className="w-24 h-24 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="rgba(139, 92, 246, 0.2)"
+                      strokeWidth="8"
+                      fill="none"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="url(#gradient-days)"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 40}`}
+                      strokeDashoffset={`${2 * Math.PI * 40 * (1 - (timeLeft.days % 365) / 365)}`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    <defs>
+                      <linearGradient id="gradient-days" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#ec4899" />
+                        <stop offset="100%" stopColor="#8b5cf6" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl sm:text-3xl font-bold text-pink-400">{timeLeft.days}</span>
+                    <span className="text-xs sm:text-sm text-gray-400">DAYS</span>
+                  </div>
+                </div>
+
+                {/* Hours */}
+                <div className="relative">
+                  <svg className="w-24 h-24 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="rgba(139, 92, 246, 0.2)"
+                      strokeWidth="8"
+                      fill="none"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="url(#gradient-hours)"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 40}`}
+                      strokeDashoffset={`${2 * Math.PI * 40 * (1 - timeLeft.hours / 24)}`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    <defs>
+                      <linearGradient id="gradient-hours" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#8b5cf6" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl sm:text-3xl font-bold text-purple-400">{timeLeft.hours}</span>
+                    <span className="text-xs sm:text-sm text-gray-400">HOURS</span>
+                  </div>
+                </div>
+
+                {/* Minutes */}
+                <div className="relative">
+                  <svg className="w-24 h-24 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="rgba(139, 92, 246, 0.2)"
+                      strokeWidth="8"
+                      fill="none"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="url(#gradient-minutes)"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 40}`}
+                      strokeDashoffset={`${2 * Math.PI * 40 * (1 - timeLeft.minutes / 60)}`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    <defs>
+                      <linearGradient id="gradient-minutes" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#ec4899" />
+                        <stop offset="100%" stopColor="#a855f7" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl sm:text-3xl font-bold text-pink-400">{timeLeft.minutes}</span>
+                    <span className="text-xs sm:text-sm text-gray-400">MIN</span>
+                  </div>
+                </div>
+
+                {/* Seconds */}
+                <div className="relative">
+                  <svg className="w-24 h-24 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="rgba(139, 92, 246, 0.2)"
+                      strokeWidth="8"
+                      fill="none"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="url(#gradient-seconds)"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 40}`}
+                      strokeDashoffset={`${2 * Math.PI * 40 * (1 - timeLeft.seconds / 60)}`}
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    <defs>
+                      <linearGradient id="gradient-seconds" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#a855f7" />
+                        <stop offset="100%" stopColor="#ec4899" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl sm:text-3xl font-bold text-purple-400">{timeLeft.seconds}</span>
+                    <span className="text-xs sm:text-sm text-gray-400">SEC</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Launch Date Display */}
+              <div className="text-center mt-8">
+                <p className="text-gray-400 text-sm">Launching</p>
+                <p className="text-white text-lg font-semibold">
+                  {new Date(launchDate).toLocaleDateString('en-GB', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
-interface FeaturePreviewProps {}
+interface FeaturePreviewProps {
+  onJoinWaitlist: () => void;
+}
 
-const FeaturePreview: React.FC<FeaturePreviewProps> = () => {
-  const features = [
-    {
-      icon: <Calendar className="w-8 h-8 text-blue-500" />,
-      title: "Smart Event Discovery",
-      description: "AI-powered recommendations tailored to your interests and schedule",
-      status: "Coming Soon"
-    },
-    {
-      icon: <Users className="w-8 h-8 text-purple-500" />,
-      title: "Society Integration",
-      description: "Seamless connection between students and university societies",
-      status: "Ready"
-    },
-    {
-      icon: <Sparkles className="w-8 h-8 text-green-500" />,
-      title: "Local Partnerships",
-      description: "Exclusive deals and opportunities from Durham businesses",
-      status: "Beta"
+const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      {
+        threshold: 0.3, // Trigger when 30% of the section is visible
+      }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
     }
-  ];
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current);
+      }
+    };
+  }, []);
 
   return (
-    <section className="py-20 bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-4xl font-bold text-center mb-4">What's Coming</h2>
-        <p className="text-xl text-gray-600 text-center mb-16">
-          A complete ecosystem designed for the Durham University community
-        </p>
-        
-        <div className="grid md:grid-cols-3 gap-8">
-          {features.map((feature, index) => (
-            <Card key={index} className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  {feature.icon}
-                  <Badge variant={feature.status === 'Ready' ? 'default' : 'secondary'}>
-                    {feature.status}
-                  </Badge>
-                </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
+    <section
+      ref={sectionRef}
+      className="min-h-screen w-screen bg-gradient-to-b from-black via-purple-950 to-gray-900 flex flex-col items-center justify-center text-center px-6 py-20 relative"
+    >
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes slideInFromBottom {
+            0% {
+              transform: translateY(50px);
+              opacity: 0;
+            }
+            100% {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          
+          @keyframes fadeInUp {
+            0% {
+              transform: translateY(30px);
+              opacity: 0;
+            }
+            100% {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+          
+          @keyframes pulse {
+            0%, 100% {
+              opacity: 1;
+            }
+            50% {
+              opacity: 0.7;
+            }
+          }
+          
+          .slide-in-bottom {
+            animation: slideInFromBottom 0.8s ease-out forwards;
+          }
+          
+          .fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+          }
+          
+          .animate-pulse-slow {
+            animation: pulse 3s ease-in-out infinite;
+          }
+          
+          .animate-delay-1 {
+            animation-delay: 0.2s;
+          }
+          
+          .animate-delay-2 {
+            animation-delay: 0.4s;
+          }
+          
+          .animate-delay-3 {
+            animation-delay: 0.6s;
+          }
+          
+          .animate-delay-4 {
+            animation-delay: 0.8s;
+          }
+        `
+      }} />
+
+      {/* What You'll Learn Section */}
+      <div className="max-w-5xl mx-auto">
+
+        {/* Section Title */}
+        <div className={`mb-16 ${isVisible ? 'slide-in-bottom' : 'opacity-0'}`}>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
+            Your Complete Durham University Experience
+          </h2>
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+            Everything you need to make the most of your time at Durham University
+          </p>
         </div>
+
+        {/* Feature Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+
+          {/* Feature 1 */}
+          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm ${isVisible ? 'fade-in-up animate-delay-1' : 'opacity-0'}`}>
+            <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Society Discovery</h3>
+            <p className="text-gray-400">Find and connect with Durham University societies that match your interests and passions</p>
+          </div>
+
+          {/* Feature 2 */}
+          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm ${isVisible ? 'fade-in-up animate-delay-2' : 'opacity-0'}`}>
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Event Management</h3>
+            <p className="text-gray-400">Discover campus events, RSVP easily, and never miss out on what's happening at Durham</p>
+          </div>
+
+          {/* Feature 3 */}
+          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-6 backdrop-blur-sm ${isVisible ? 'fade-in-up animate-delay-3' : 'opacity-0'}`}>
+            <div className="w-12 h-12 bg-gradient-to-br from-pink-600 to-purple-500 rounded-xl flex items-center justify-center mb-4">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732L14.146 12.8l-1.179 4.456a1 1 0 01-1.934 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732L9.854 7.2l1.179-4.456A1 1 0 0112 2z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-2">Exclusive Deals</h3>
+            <p className="text-gray-400">Access student discounts and exclusive offers from local Durham businesses and partners</p>
+          </div>
+
+        </div>
+
+        {/* Tech Stack */}
+        <div className={`mb-12 ${isVisible ? 'fade-in-up animate-delay-4' : 'opacity-0'}`}>
+          <h3 className="text-2xl font-bold text-white mb-8">What Makes DUPulse Special</h3>
+          <div className="flex flex-wrap justify-center gap-4">
+            {['Society Integration', 'Event Discovery', 'Student Deals', 'RSVP System', 'Durham Focus', 'Mobile Friendly', 'Real-time Updates', 'Community Driven'].map((tech, index) => (
+              <span key={tech} className="px-4 py-2 bg-gray-800/50 border border-gray-600/50 rounded-full text-gray-300 text-sm font-medium">
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* CTA Button */}
+        <div className={`${isVisible ? 'slide-in-bottom animate-delay-4' : 'opacity-0'}`}>
+          <button
+            onClick={onJoinWaitlist}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-2xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-lg"
+          >
+            Join the Waitlist
+          </button>
+          <p className="text-gray-400 text-sm mt-4">
+            Limited spots available • Launching for Durham University students
+          </p>
+        </div>
+
       </div>
     </section>
   );
 };
 
 interface EarlyAccessSignupProps {
-  onSignup: (data: { 
-    email: string; 
+  isOpen: boolean;
+  onClose: () => void;
+  onSignup: (data: {
+    email: string;
     name: string;
-    userType: string; 
+    userType: string;
     referralCode?: string;
     joinWhatsApp: boolean;
   }) => Promise<void>;
 }
 
-const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
+const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, onSignup }) => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [userType, setUserType] = useState('student');
@@ -150,17 +591,17 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
     setIsLoading(true);
 
     try {
-      await onSignup({ 
-        email, 
+      await onSignup({
+        email,
         name,
-        userType, 
+        userType,
         referralCode: referralCode || undefined,
-        joinWhatsApp 
+        joinWhatsApp
       });
       setIsSuccess(true);
       // Generate a shareable referral code for the user
       setGeneratedCode(name.substring(0, 3).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase());
-      
+
       // Set WhatsApp group link if they opted in
       if (joinWhatsApp) {
         setWhatsAppLink('https://chat.whatsapp.com/your-group-link-here'); // Replace with actual link
@@ -172,163 +613,194 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
     }
   };
 
+  const resetForm = () => {
+    setEmail('');
+    setName('');
+    setUserType('student');
+    setReferralCode('');
+    setJoinWhatsApp(false);
+    setIsLoading(false);
+    setIsSuccess(false);
+    setGeneratedCode('');
+    setWhatsAppLink('');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
   if (isSuccess) {
     return (
-      <Card className="max-w-md mx-auto bg-gradient-to-br from-green-50 to-blue-50 border-green-200">
-        <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="w-8 h-8 text-green-600" />
-          </div>
-          <CardTitle className="text-green-800">Welcome {name}! 🎉</CardTitle>
-          <CardDescription>
-            You're now on the exclusive early access list
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="text-center space-y-4">
-          <div className="bg-white/80 rounded-lg p-4">
-            <p className="text-sm text-gray-600 mb-2">Your referral code:</p>
-            <p className="text-2xl font-bold text-blue-600 tracking-wider">{generatedCode}</p>
-            <p className="text-xs text-gray-500 mt-2">Share for VIP perks!</p>
-          </div>
-          
-          {joinWhatsApp && whatsAppLink && (
-            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-              <p className="text-sm text-green-800 mb-3">🚀 Join our pre-launch community!</p>
-              <a 
-                href={whatsAppLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Join WhatsApp Group 💬
-              </a>
-              <p className="text-xs text-green-600 mt-2">
-                Get behind-the-scenes updates, early feature previews, and connect with other early users!
-              </p>
-            </div>
-          )}
-          
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => navigator.clipboard.writeText(`Join me on PulsePlatform with code: ${generatedCode}`)}
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <Card className="max-w-md w-full bg-gradient-to-br from-purple-900 to-black border border-purple-700/50 relative shadow-2xl rounded-2xl">
+          <button
+            onClick={handleClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl font-bold transition-colors"
           >
-            <Share2 className="w-4 h-4 mr-2" />
-            Share Your Code
-          </Button>
-        </CardContent>
-      </Card>
+            ×
+          </button>
+          <CardHeader className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="w-8 h-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-white">Welcome {name}! 🎉</CardTitle>
+            <CardDescription className="text-gray-400">
+              You're now on the exclusive early access list for DUPulse
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <div className="bg-gray-800/50 border border-gray-600/50 rounded-xl p-4">
+              <p className="text-sm text-gray-400 mb-2">Your referral code:</p>
+              <p className="text-2xl font-bold text-blue-400 tracking-wider">{generatedCode}</p>
+              <p className="text-xs text-gray-500 mt-2">Share for VIP perks!</p>
+            </div>
+
+            {joinWhatsApp && whatsAppLink && (
+              <div className="bg-green-900/20 border border-green-600/30 rounded-xl p-4">
+                <p className="text-sm text-green-400 mb-3">🚀 Join our pre-launch community!</p>
+                <a
+                  href={whatsAppLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                >
+                  Join WhatsApp Group 💬
+                </a>
+                <p className="text-xs text-green-400 mt-2">
+                  Get behind-the-scenes updates, early feature previews, and connect with other Durham students!
+                </p>
+              </div>
+            )}
+
+            <Button
+              variant="outline"
+              className="w-full bg-gray-800/50 border-gray-600/50 text-white hover:bg-gray-700/50"
+              onClick={() => navigator.clipboard.writeText(`Join me on DUPulse with code: ${generatedCode}`)}
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Share Your Code
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <section className="py-20">
-      <div className="max-w-md mx-auto px-4">
-        <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-blue-200">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Mail className="w-8 h-8 text-blue-600" />
-            </div>
-            <CardTitle className="text-2xl">Join the Waitlist</CardTitle>
-            <CardDescription>
-              Get exclusive early access + VIP perks
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Input
-                  placeholder="Your full name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="text-center"
-                />
-              </div>
-              
-              <div>
-                <Input
-                  type="email"
-                  placeholder="your@durham.ac.uk"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="text-center"
-                />
-              </div>
-              
-              <div>
-                <Select value={userType} onValueChange={setUserType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="I am a..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Durham Student</SelectItem>
-                    <SelectItem value="society">Society Representative</SelectItem>
-                    <SelectItem value="partner">Local Business Partner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Input
-                  placeholder="Referral code (optional)"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  className="text-center"
-                />
-              </div>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <Card className="max-w-sm w-full bg-gradient-to-br from-purple-900 to-black border border-purple-700/50 relative shadow-2xl rounded-2xl">
+        <button
+          onClick={handleClose}
+          className="absolute top-3 right-3 text-gray-400 hover:text-white text-xl font-light w-6 h-6 flex items-center justify-center transition-colors"
+        >
+          ×
+        </button>
+        <CardHeader className="text-center pb-4 pt-6">
+          <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-8 h-8 text-white" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-white mb-1">Join the Waitlist</CardTitle>
+          <CardDescription className="text-sm text-gray-400">
+            Get exclusive early access to DUPulse + VIP perks
+          </CardDescription>
+        </CardHeader>
 
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                <label className="flex items-start space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={joinWhatsApp}
-                    onChange={(e) => setJoinWhatsApp(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                  />
-                  <div className="text-sm">
-                    <span className="font-medium text-green-800">
-                      Join our pre-launch WhatsApp community 💬
-                    </span>
-                    <p className="text-green-600 mt-1">
-                      Get exclusive updates, behind-the-scenes content, and connect with other early users!
-                    </p>
-                  </div>
-                </label>
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Clock className="w-4 h-4 mr-2 animate-spin" />
-                    Joining...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Get Early Access
-                  </>
-                )}
-              </Button>
-            </form>
-            
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                🎁 <span className="font-semibold">First 100 signups</span> get premium features 
-                <br />
-                <span className="text-blue-600 font-medium">free for 6 months</span>
-              </p>
+        <CardContent className="px-6 pb-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Input
+                placeholder="Your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-400 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
+              />
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    </section>
+
+            <div>
+              <Input
+                type="email"
+                placeholder="your@durham.ac.uk"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-400 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            <div>
+              <Select value={userType} onValueChange={setUserType}>
+                <SelectTrigger className="h-12 border-gray-600/40 rounded-lg bg-gray-800/70 text-white focus:border-blue-500">
+                  <SelectValue placeholder="Durham Student" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600/40">
+                  <SelectItem value="student" className="text-white hover:bg-gray-700">Durham Student</SelectItem>
+                  <SelectItem value="society" className="text-white hover:bg-gray-700">Society Representative</SelectItem>
+                  <SelectItem value="partner" className="text-white hover:bg-gray-700">Local Business Partner</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Input
+                placeholder="Referral code (optional)"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-400 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
+              />
+            </div>
+
+            <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-600/30">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={joinWhatsApp}
+                  onChange={(e) => setJoinWhatsApp(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-500 rounded"
+                />
+                <div className="text-xs">
+                  <span className="font-semibold text-gray-200 text-sm">
+                    Join our Durham student community 💬
+                  </span>
+                  <p className="text-gray-400 mt-1 leading-relaxed">
+                    Get exclusive updates and connect with other Durham students!
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-12 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Clock className="w-4 h-4 mr-2 animate-spin" />
+                  Joining...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Join the Waitlist
+                </>
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-400 leading-relaxed">
+              🎁 <span className="font-semibold">First 100 signups</span> get VIP features
+              <br />
+              <span className="text-blue-400 font-semibold">free for the first year</span>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

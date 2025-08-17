@@ -26,7 +26,7 @@ const About = () => {
                         <div className="flex justify-center lg:justify-end">
                             <img
                                 src="/image-uploads/about_us1.jpeg"
-                                alt="Our team collaborating"
+                                alt="Pulse Logo"
                                 className="rounded-2xl shadow-2xl max-w-lg w-full h-auto object-cover"
                             />
                         </div>
