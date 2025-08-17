@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { Eye, EyeOff } from "lucide-react";
 
 const AdminLogin = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -113,9 +115,9 @@ const AdminLogin = () => {
                         </div>
 
                         {/* Password Input */}
-                        <div>
+                        <div className="relative">
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full p-4 bg-white/60 border-2 border-purple-200 rounded-xl text-purple-800 placeholder-purple-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors duration-300 text-sm sm:text-base backdrop-blur-sm"
@@ -123,6 +125,17 @@ const AdminLogin = () => {
                                 required
                                 disabled={loading}
                             />
+                            <button
+                                type="button"
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                                onClick={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4 text-purple-400 hover:text-purple-600" />
+                                ) : (
+                                    <Eye className="h-4 w-4 text-purple-400 hover:text-purple-600" />
+                                )}
+                            </button>
                         </div>
 
                         {/* Submit Button */}
