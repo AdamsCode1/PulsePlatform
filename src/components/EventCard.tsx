@@ -10,9 +10,10 @@ import { toast } from '../hooks/use-toast';
 interface EventCardProps {
   event: Event;
   onClick: () => void;
+  onRSVPChange?: () => void;
 }
 
-const EventCard = ({ event, onClick }: EventCardProps) => {
+const EventCard = ({ event, onClick, onRSVPChange }: EventCardProps) => {
   const [hasRSVPed, setHasRSVPed] = useState(false);
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
   const [isClicked, setIsClicked] = useState(false);
@@ -79,6 +80,7 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         // Update local state
         setHasRSVPed(true);
         setAttendeeCount(prev => prev + 1);
+        if (onRSVPChange) onRSVPChange();
       } else {
         // Remove RSVP from database
         const { error } = await supabase
@@ -95,6 +97,7 @@ const EventCard = ({ event, onClick }: EventCardProps) => {
         // Update local state
         setHasRSVPed(false);
         setAttendeeCount(prev => Math.max(0, prev - 1));
+        if (onRSVPChange) onRSVPChange();
       }
     } catch (error) {
       console.error('Error handling RSVP:', error);
