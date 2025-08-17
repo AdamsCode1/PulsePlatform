@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Rocket, Users, Calendar, Sparkles, Clock, Mail, Share2 } from 'lucide-react';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface CountdownTimerProps {
   launchDate: string;
@@ -305,10 +306,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <>
-                    <Clock className="w-4 h-4 mr-2 animate-spin" />
-                    Joining...
-                  </>
+                  <LoadingSpinner variant="button" size="sm" text="Joining..." />
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />

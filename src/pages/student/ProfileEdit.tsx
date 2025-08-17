@@ -106,7 +106,9 @@ const ProfileEdit = () => {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <LoadingSpinner />
+              <div className="py-8">
+                <LoadingSpinner variant="page" size="md" text="Loading profile data..." />
+              </div>
             ) : (
               <form onSubmit={handleSave} className="space-y-4">
                 <div>

@@ -281,7 +281,11 @@ export default function AdminDeals() {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner variant="page" size="lg" text="Loading deals dashboard..." />
+      </div>
+    );
   }
 
   const stats = getDealStats();

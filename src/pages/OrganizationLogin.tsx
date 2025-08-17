@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabaseClient";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const OrganizationLogin = () => {
   const [email, setEmail] = useState("");
@@ -48,7 +49,11 @@ const OrganizationLogin = () => {
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isLoading} size="lg">
-              {isLoading ? "Logging in..." : "Login"}
+              {isLoading ? (
+                <LoadingSpinner variant="button" size="sm" text="Logging in..." />
+              ) : (
+                "Login"
+              )}
             </Button>
           </CardFooter>
         </form>
