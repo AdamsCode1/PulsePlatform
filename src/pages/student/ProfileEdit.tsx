@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
@@ -7,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 const ProfileEdit = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +77,9 @@ const ProfileEdit = () => {
       setError('Failed to update profile');
     } else {
       setSuccess(true);
+  // Redirect to student dashboard after successful save
+  navigate('/student/dashboard');
+  return;
       // Refetch profile to update UI
       const { data, error: fetchError } = await supabase
         .from('student')

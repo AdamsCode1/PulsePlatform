@@ -381,168 +381,181 @@ export default function StudentDashboard() {
         )}
         {activeSection === 'dashboard' && (
           <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <Card className="border-blue-200 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center"><Calendar className="w-5 h-5 mr-2 text-blue-500" />Total Events</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">{totalEvents}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-green-200 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center"><Check className="w-5 h-5 mr-2 text-green-500" />Events Attended</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{eventsAttended}</div>
-                </CardContent>
-              </Card>
-              <Card className="border-purple-200 shadow-md">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg flex items-center"><Users className="w-5 h-5 mr-2 text-purple-500" />Total RSVPs</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-purple-600">{totalRSVPs}</div>
-                </CardContent>
-              </Card>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Quick Actions */}
-              <div className="lg:col-span-1">
-                <Card className="border-pink-200 shadow-md">
-                  <CardHeader>
-                    <CardTitle className="text-pink-600">Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <Button 
-                      onClick={() => navigate('/')}
-                      className="w-full justify-start"
-                      variant="outline"
-                    >
-                      <Calendar className="w-4 h-4 mr-2 text-pink-500" />
-                      Browse Events
-                    </Button>
-                    <Button 
-                      onClick={() => navigate('/student/rsvps')}
-                      className="w-full justify-start"
-                      variant="outline"
-                    >
-                      <Users className="w-4 h-4 mr-2 text-purple-500" />
-                      Manage RSVPs
-                    </Button>
-                    <Button 
-                      onClick={() => navigate('/deals')}
-                      className="w-full justify-start"
-                      variant="outline"
-                    >
-                      <MapPin className="w-4 h-4 mr-2 text-blue-500" />
-                      View Deals
-                    </Button>
-                    <Button 
-                      onClick={() => navigate('/student/profile')}
-                      className="w-full justify-start"
-                      variant="outline"
-                    >
-                      <Users className="w-4 h-4 mr-2 text-green-500" />
-                      Profile
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Your Societies */}
-                <Card className="mt-6 border-green-200 shadow-md">
-                  <CardHeader>
-                    <CardTitle className="text-green-600">Your Societies</CardTitle>
-                    <CardDescription>Societies whose events you've attended or RSVP'd to</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="list-disc pl-5 space-y-1">
-                      {[...new Set(userRSVPs.map(rsvp => rsvp.event.society.name))].map((socName) => (
-                        <li key={socName} className="text-green-700 font-medium">{socName}</li>
-                      ))}
-                      {userRSVPs.length === 0 && (
-                        <li className="text-gray-500">No societies yet</li>
-                      )}
-                    </ul>
-                  </CardContent>
-                </Card>
+            <div className="flex flex-col">
+              {/* Stats Cards: after main content on small, before on md+ */}
+              <div className="order-2 md:order-1">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  {/* Events Attended (4th on small) */}
+                  <Card className="border-green-200 shadow-md order-1 md:order-2">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center"><Check className="w-5 h-5 mr-2 text-green-500" />Events Attended</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-green-600">{eventsAttended}</div>
+                    </CardContent>
+                  </Card>
+                  {/* Total RSVPs (5th on small) */}
+                  <Card className="border-purple-200 shadow-md order-2 md:order-3">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center"><Users className="w-5 h-5 mr-2 text-purple-500" />Total RSVPs</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-purple-600">{totalRSVPs}</div>
+                    </CardContent>
+                  </Card>
+                  {/* Total Events (6th on small) */}
+                  <Card className="border-blue-200 shadow-md order-3 md:order-1">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center"><Calendar className="w-5 h-5 mr-2 text-blue-500" />Total Events</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-blue-600">{totalEvents}</div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
 
-              {/* Your Events */}
-              <div className="lg:col-span-2">
-                <Card className="border-pink-200 shadow-md">
-                  <CardHeader>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <CardTitle className="text-pink-600">Your Events</CardTitle>
-                        <CardDescription>Events you've RSVP'd to</CardDescription>
-                      </div>
-                      <Button 
-                        size="sm"
-                        onClick={() => setActiveSection('rsvps')}
-                        variant="outline"
-                        className="text-pink-600 border-pink-300"
-                      >
-                        Manage RSVPs
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {userRSVPs.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Calendar className="w-12 h-12 text-pink-400 mx-auto mb-4" />
-                        <p className="text-gray-500 mb-4">You haven't RSVP'd to any events yet</p>
-                        <Button onClick={() => {
-                          if (window.location.pathname === '/') {
-                            setTimeout(() => {
-                              const element = document.getElementById('schedule');
-                              if (element) {
-                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              {/* Main grid: reorder items on small */}
+              <div className="order-1 md:order-2">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Quick Actions (3rd on small, 1st on lg) */}
+                  <div className="lg:col-span-1 order-3 lg:order-1">
+                    <Card className="border-pink-200 shadow-md">
+                      <CardHeader>
+                        <CardTitle className="text-pink-600">Quick Actions</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <Button 
+                          onClick={() => navigate('/')}
+                          className="w-full justify-start"
+                          variant="outline"
+                        >
+                          <Calendar className="w-4 h-4 mr-2 text-pink-500" />
+                          Browse Events
+                        </Button>
+                        <Button 
+                          onClick={() => navigate('/student/rsvps')}
+                          className="w-full justify-start"
+                          variant="outline"
+                        >
+                          <Users className="w-4 h-4 mr-2 text-purple-500" />
+                          Manage RSVPs
+                        </Button>
+                        <Button 
+                          onClick={() => navigate('/deals')}
+                          className="w-full justify-start"
+                          variant="outline"
+                        >
+                          <MapPin className="w-4 h-4 mr-2 text-blue-500" />
+                          View Deals
+                        </Button>
+                        <Button 
+                          onClick={() => navigate('/student/profile')}
+                          className="w-full justify-start"
+                          variant="outline"
+                        >
+                          <Users className="w-4 h-4 mr-2 text-green-500" />
+                          Edit Profile
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Your Societies (now 2nd on small) */}
+                  <div className="lg:col-span-1 order-2 lg:order-3">
+                    <Card className="border-green-200 shadow-md">
+                      <CardHeader>
+                        <CardTitle className="text-green-600">Your Societies</CardTitle>
+                        <CardDescription>Societies whose events you've attended or RSVP'd to</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="list-disc pl-5 space-y-1">
+                          {[...new Set(userRSVPs.map(rsvp => rsvp.event.society.name))].map((socName) => (
+                            <li key={socName} className="text-green-700 font-medium">{socName}</li>
+                          ))}
+                          {userRSVPs.length === 0 && (
+                            <li className="text-gray-500">No societies yet</li>
+                          )}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Your Events (now 1st on small, spans 2 cols on lg) */}
+                  <div className="lg:col-span-2 order-1 lg:order-2">
+                    <Card className="border-pink-200 shadow-md">
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <CardTitle className="text-pink-600">Your Events</CardTitle>
+                            <CardDescription>Events you've RSVP'd to</CardDescription>
+                          </div>
+                          <Button 
+                            size="sm"
+                            onClick={() => navigate('/student/rsvps')}
+                            variant="outline"
+                            className="text-pink-600 border-pink-300"
+                          >
+                            Manage RSVPs
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {userRSVPs.length === 0 ? (
+                          <div className="text-center py-8">
+                            <Calendar className="w-12 h-12 text-pink-400 mx-auto mb-4" />
+                            <p className="text-gray-500 mb-4">You haven't RSVP'd to any events yet</p>
+                            <Button onClick={() => {
+                              if (window.location.pathname === '/') {
+                                setTimeout(() => {
+                                  const element = document.getElementById('schedule');
+                                  if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }, 100);
+                              } else {
+                                navigate('/');
+                                setTimeout(() => {
+                                  const element = document.getElementById('schedule');
+                                  if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                  }
+                                }, 400);
                               }
-                            }, 100);
-                          } else {
-                            navigate('/');
-                            setTimeout(() => {
-                              const element = document.getElementById('schedule');
-                              if (element) {
-                                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }
-                            }, 400);
-                          }
-                        }} className="bg-pink-500 text-white">Browse Events</Button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {userRSVPs.map((rsvp) => (
-                          <EventCard key={rsvp.event.id} event={{
-                            ...rsvp.event,
-                            eventName: rsvp.event.title,
-                            date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
-                            endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
-                            location: rsvp.event.location,
-                            description: rsvp.event.description,
-                            societyName: rsvp.event.society.name,
-                            attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
-                            organiserID: '',
-                            requiresOrganizerSignup: false,
-                            organizerEmail: '',
-                            signup_link: '',
-                          }}
-                          onClick={() => setSelectedEventId(rsvp.event.id)} />
-                        ))}
-                      </div>
+                            }} className="bg-pink-500 text-white">Browse Events</Button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {userRSVPs.map((rsvp) => (
+                              <EventCard key={rsvp.event.id} event={{
+                                ...rsvp.event,
+                                eventName: rsvp.event.title,
+                                date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
+                                endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
+                                location: rsvp.event.location,
+                                description: rsvp.event.description,
+                                societyName: rsvp.event.society.name,
+                                attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
+                                organiserID: '',
+                                requiresOrganizerSignup: false,
+                                organizerEmail: '',
+                                signup_link: '',
+                              }}
+                              onClick={() => setSelectedEventId(rsvp.event.id)} />
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    {/* Event Modal for Your Events */}
+                    {selectedEvent && (
+                      <EventModal
+                        event={selectedEvent}
+                        onClose={() => setSelectedEventId(null)}
+                      />
                     )}
-                  </CardContent>
-                </Card>
-                {/* Event Modal for Your Events */}
-                {selectedEvent && (
-                  <EventModal
-                    event={selectedEvent}
-                    onClose={() => setSelectedEventId(null)}
-                  />
-                )}
+                  </div>
+                </div>
               </div>
             </div>
           </>
