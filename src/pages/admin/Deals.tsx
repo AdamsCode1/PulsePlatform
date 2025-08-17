@@ -14,6 +14,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { API_BASE_URL } from '@/lib/apiConfig';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Deal {
   id: string;
@@ -53,6 +55,8 @@ export default function AdminDeals() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [dealsPerPage] = useState(10);
+
+  const { isAdmin } = useAdminAuth();
 
   const fetchDeals = useCallback(async (page: number) => {
     setLoading(true);
@@ -111,29 +115,11 @@ export default function AdminDeals() {
     }
   }, [dealsPerPage, searchTerm, statusFilter, toast]);
 
-  const checkAuth = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.app_metadata?.role !== 'admin') {
-        navigate('/admin/login');
-        return;
-      }
-      setUser(user);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      navigate('/admin/login');
-    }
-  }, [navigate]);
-
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
-  useEffect(() => {
-    if (user) {
+    if (isAdmin === true) {
       fetchDeals(currentPage);
     }
-  }, [user, currentPage, searchTerm, statusFilter, fetchDeals]);
+  }, [isAdmin, currentPage, searchTerm, statusFilter, fetchDeals]);
 
   const updateDealStatus = async (dealId: string, status: 'approved' | 'rejected', rejectionReason?: string) => {
     setIsUpdating(true);
@@ -282,6 +268,21 @@ export default function AdminDeals() {
 
   if (loading) {
     return <LoadingSpinner />;
+  }
+
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-100 border border-red-300 rounded-lg p-8 text-red-700 text-center">
+          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+          <p>You are not authorized to access this admin page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAdmin === null) {
+    return <Skeleton className="h-32 w-full" />;
   }
 
   const stats = getDealStats();

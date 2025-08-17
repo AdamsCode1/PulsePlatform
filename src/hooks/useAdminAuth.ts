@@ -22,7 +22,6 @@ export function useAdminAuth() {
         .select('uid')
         .eq('uid', user.id)
         .maybeSingle();
-      console.log('Admin check:', { uid: user.id, adminRow: data, error });
       if (error) {
         console.error('Admin table query error:', error);
       }

@@ -297,12 +297,14 @@ router.post('/:id/reject', requireAdmin, async (req: Request, res: Response) => 
     // Update event status
     const { error } = await supabase.from(tableName).update({ status: 'rejected' }).eq('id', id);
     if (error) throw new Error(error.message);
-    // Send rejection email (placeholder for future implementation)
+    // Send rejection email using SMTP
     try {
-      // TODO: Implement email sending functionality
-      // const { sendRejectionEmail } = await import('../lib/email');
-      // await sendRejectionEmail(contactEmail, eventName, reason);
-      console.log(`Rejection email would be sent to ${contactEmail} for event "${eventName}" with reason: ${reason}`);
+      const { sendEmail } = require('../../api/lib/sendEmail');
+      await sendEmail({
+        to: contactEmail,
+        subject: `Event "${eventName}" Rejected`,
+        text: `Your event titled "${eventName}" has been rejected.\n\nReason: ${reason || 'No reason provided.'}`,
+      });
     } catch (emailErr) {
       // Log but don't fail the request if email fails
       console.error('Failed to send rejection email:', emailErr);

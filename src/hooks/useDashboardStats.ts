@@ -38,52 +38,13 @@ const fetchDashboardStats = async (): Promise<DashboardStats> => {
   let partners = 0;
   let admins = 0;
 
-  // For admin users, try to get user counts via the admin API
-  const { data: adminRow, error: adminError } = await supabase
-    .from('admin')
-    .select('uid')
-    .eq('uid', user.id)
-    .maybeSingle();
-  const isAdmin = !!adminRow && !adminError;
-
-  if (isAdmin) {
-    try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-      if (token) {
-        // Use the Vercel API functions
-        const response = await fetch('/api/admin/users?limit=1000', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        if (response.ok) {
-          const usersData = await response.json();
-          const users = usersData.data || [];
-          students = users.filter((u: UserSummary) => u.role === 'student').length;
-          societies = users.filter((u: UserSummary) => u.role === 'society').length;
-          partners = users.filter((u: UserSummary) => u.role === 'partner').length;
-          admins = users.filter((u: UserSummary) => u.role === 'admin').length;
-        } else {
-          // Fallback to direct table queries for admins
-          const { count: studentCount } = await supabase.from('student').select('*', { count: 'exact', head: true });
-          const { count: societyCount } = await supabase.from('society').select('*', { count: 'exact', head: true });
-          students = studentCount || 0;
-          societies = societyCount || 0;
-          partners = 0; // No partners table yet
-          admins = 0; // Can't count admins from client side
-        }
-      }
-    } catch (error) {
-      students = 0;
-      societies = 0;
-      partners = 0;
-      admins = 0;
-    }
-  } else {
-    // For non-admin users, we can't access user counts due to RLS
-    console.warn('Dashboard stats accessed by non-admin user, returning limited stats');
-  }
+  // Always count records directly from tables
+  const { count: studentCount } = await supabase.from('student').select('*', { count: 'exact', head: true });
+  const { count: societyCount } = await supabase.from('society').select('*', { count: 'exact', head: true });
+  students = studentCount || 0;
+  societies = societyCount || 0;
+  partners = 0; // Partner table not implemented yet
+  admins = 0; // Can't count admins from client side
 
   // System health is hardcoded for now, but could be dynamic in the future
   const systemHealth = { api_status: 'healthy' as const, db_status: 'healthy' as const };

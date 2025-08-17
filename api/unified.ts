@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail } from './lib/sendEmail.js';
 
 // Create Supabase client
 const supabaseUrl = process.env.SUPABASE_URL!;
@@ -177,7 +178,6 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
         .update({ status: 'approved' })
         .eq('id', id)
         .select();
-
       if (error) {
         console.error('Approve event error:', error);
         return res.status(500).json({ error: error.message });
@@ -188,17 +188,47 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
     if (action === 'reject' && method === 'POST' && id) {
       console.log('Handling reject event');
-      const { error } = await supabase
+      // Update event status to 'rejected'
+      const { error: updateError } = await supabase
         .from('event')
-        .delete()
+        .update({ status: 'rejected' })
         .eq('id', id);
-
-      if (error) {
-        console.error('Reject event error:', error);
-        return res.status(500).json({ error: error.message });
+      if (updateError) {
+        console.error('Reject event update error:', updateError);
+        return res.status(500).json({ error: updateError.message });
       }
-      console.log('Reject event success');
-      return res.status(200).json({ message: 'Event rejected and deleted' });
+      // Fetch event details
+      const { data: eventDetails, error: eventError } = await supabase
+        .from('event')
+        .select('name, society_id')
+        .eq('id', id)
+        .single();
+      if (eventError || !eventDetails) {
+        console.error('Reject event fetch error:', eventError);
+        return res.status(500).json({ error: eventError?.message || 'Event not found' });
+      }
+      // Fetch society details
+      const { data: societyDetails, error: societyError } = await supabase
+        .from('society')
+        .select('contact_email')
+        .eq('id', eventDetails.society_id)
+        .single();
+      if (societyError || !societyDetails) {
+        console.error('Reject event society fetch error:', societyError);
+        return res.status(500).json({ error: societyError?.message || 'Society not found' });
+      }
+      // Send rejection email
+      try {
+        await sendEmail({
+          to: societyDetails.contact_email,
+          subject: `Event "${eventDetails.name}" Rejected`,
+          text: `Your event titled "${eventDetails.name}" has been rejected.\n\nReason: ${req.body?.reason || 'No reason provided.'}`,
+        });
+        console.log('Rejection email sent to', societyDetails.contact_email);
+      } catch (emailErr) {
+        console.error('Failed to send rejection email:', emailErr);
+      }
+      return res.status(200).json({ message: 'Event rejected and organiser notified.' });
     }
 
     // Default events CRUD

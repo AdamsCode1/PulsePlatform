@@ -133,7 +133,7 @@ export default function AdminDashboard() {
               <Skeleton className="h-32" />
               <Skeleton className="h-32" />
             </>
-          ) : isErrorStats ? (
+          ) : errorStats ? (
             <div className="col-span-full">
               <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
             </div>
@@ -150,15 +150,6 @@ export default function AdminDashboard() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Total Users</CardTitle>
-                  <CardDescription>All user roles</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-600">{totalUsers}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Students</CardTitle>
                   <CardDescription>Student accounts</CardDescription>
                 </CardHeader>
@@ -168,11 +159,20 @@ export default function AdminDashboard() {
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Societies & Partners</CardTitle>
-                  <CardDescription>{stats.totalUsers.societies} Societies, {stats.totalUsers.partners} Partners</CardDescription>
+                  <CardTitle className="text-lg">Societies</CardTitle>
+                  <CardDescription>Society accounts</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-pink-600">{stats.totalUsers.societies + stats.totalUsers.partners}</div>
+                  <div className="text-3xl font-bold text-purple-600">{stats.totalUsers.societies}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Partners</CardTitle>
+                  <CardDescription>Partner accounts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-pink-600">{stats.totalUsers.partners}</div>
                 </CardContent>
               </Card>
             </>
@@ -192,8 +192,8 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-center h-[300px]">
                     <Skeleton className="h-full w-full" />
                   </div>
-                ) : isErrorChart ? (
-                  <ErrorDisplay message={errorChart.message} onRetry={refetchChart} />
+                ) : errorChart ? (
+                  <ErrorDisplay message={errorChart.message + (errorChart.stack ? `\n${errorChart.stack}` : '')} onRetry={refetchChart} />
                 ) : (
                   <div style={{ minHeight: '300px' }}>
                       <ResponsiveContainer width="100%" height={300}>
@@ -245,7 +245,7 @@ export default function AdminDashboard() {
                     <Skeleton className="h-6 w-full" />
                     <Skeleton className="h-6 w-full" />
                   </div>
-                ) : isErrorStats ? (
+                ) : errorStats ? (
                   <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
                 ) : stats && (
                   <div className="space-y-3">
@@ -285,7 +285,7 @@ export default function AdminDashboard() {
                     <Skeleton className="h-6 w-full" />
                     <Skeleton className="h-6 w-full" />
                   </div>
-                ) : isErrorStats ? (
+                ) : errorStats ? (
                   <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
                 ) : stats && (
                   <div className="space-y-3">
@@ -327,7 +327,7 @@ export default function AdminDashboard() {
                      <Skeleton className="h-12 w-full" />
                      <Skeleton className="h-12 w-full" />
                    </div>
-                 ) : isErrorActivity ? (
+                 ) : errorActivity ? (
                   <ErrorDisplay message={errorActivity.message} onRetry={refetchActivity} />
                  ) : activityLog && activityLog.length > 0 ? (
                     <ul className="space-y-4">
