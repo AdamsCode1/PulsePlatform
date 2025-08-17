@@ -212,6 +212,11 @@ export default function PartnerEventSubmissionPage() {
         });
         form.reset();
         setCurrentStep(0);
+        
+        // Auto-redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          navigate('/partner/dashboard');
+        }, 3000);
       } else {
         const errorMessage = error?.message || 'Could not submit event.';
         toast({ title: "Error", description: errorMessage + ".", variant: "destructive" });

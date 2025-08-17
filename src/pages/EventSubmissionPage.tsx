@@ -271,6 +271,11 @@ export default function EventSubmissionPage() {
         });
         form.reset();
         setCurrentStep(0); // Reset to first step
+        
+        // Auto-redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
       } else {
         // Handle Supabase error
         const errorMessage = error?.message || 'Could not submit event.';
