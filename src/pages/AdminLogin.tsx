@@ -27,16 +27,22 @@ const AdminLogin = () => {
                 return;
             }
 
-            // After successful login, check for admin role in app_metadata
+            // After successful login, check for admin UID in admin table
             if (data.user) {
-                if (data.user.app_metadata?.role === 'admin') {
-                    // Successfully logged in as admin, redirect to admin dashboard
-                    navigate("/admin/dashboard");
-                } else {
-                    // User is not an admin, sign them out and show an error
+                const { id: uid } = data.user;
+                const { data: adminRow, error: adminError } = await supabase
+                    .from('admin')
+                    .select('uid')
+                    .eq('uid', uid)
+                    .maybeSingle();
+                if (adminError || !adminRow) {
                     await supabase.auth.signOut();
                     setError("You are not authorized to access the admin dashboard.");
+                    setLoading(false);
+                    return;
                 }
+                // Successfully logged in as admin, redirect to admin dashboard
+                navigate("/admin/dashboard");
             }
         } catch (err: unknown) {
             setError("An unexpected error occurred. Please try again.");

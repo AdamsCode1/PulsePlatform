@@ -39,7 +39,14 @@ const fetchDashboardStats = async (): Promise<DashboardStats> => {
   let admins = 0;
 
   // For admin users, try to get user counts via the admin API
-  if (user.app_metadata?.role === 'admin') {
+  const { data: adminRow, error: adminError } = await supabase
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  const isAdmin = !!adminRow && !adminError;
+
+  if (isAdmin) {
     try {
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       if (token) {
@@ -50,20 +57,14 @@ const fetchDashboardStats = async (): Promise<DashboardStats> => {
             'Content-Type': 'application/json'
           }
         });
-        
         if (response.ok) {
           const usersData = await response.json();
           const users = usersData.data || [];
-          
-          // Count users by role
           students = users.filter((u: UserSummary) => u.role === 'student').length;
           societies = users.filter((u: UserSummary) => u.role === 'society').length;
           partners = users.filter((u: UserSummary) => u.role === 'partner').length;
           admins = users.filter((u: UserSummary) => u.role === 'admin').length;
-          
-          console.log('✅ Successfully fetched user stats:', { students, societies, partners, admins });
         } else {
-          console.warn('Failed to fetch user stats from admin API, falling back to table counts');
           // Fallback to direct table queries for admins
           const { count: studentCount } = await supabase.from('student').select('*', { count: 'exact', head: true });
           const { count: societyCount } = await supabase.from('society').select('*', { count: 'exact', head: true });
@@ -74,8 +75,6 @@ const fetchDashboardStats = async (): Promise<DashboardStats> => {
         }
       }
     } catch (error) {
-      console.error('Error fetching admin user stats:', error);
-      // Fallback to basic counts
       students = 0;
       societies = 0;
       partners = 0;
