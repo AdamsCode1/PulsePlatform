@@ -13,7 +13,14 @@ const requireAdmin = async (req: VercelRequest) => {
 
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
-  if (user.app_metadata?.role !== 'admin') {
+  
+  // Check admin table for UID
+  const { data: adminRow, error: adminError } = await supabaseAdmin
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  if (adminError || !adminRow) {
     throw new Error('You must be an admin to perform this action.');
   }
   return user;

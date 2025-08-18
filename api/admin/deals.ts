@@ -13,21 +13,20 @@ const supabaseAdmin = createClient(
 // Function to verify the user is an admin
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
-
-  if (!token) {
-    throw new Error('Authentication token not provided.');
-  }
+  if (!token) throw new Error('Authentication token not provided.');
 
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) throw new Error('Authentication failed.');
 
-  if (error || !user) {
-    throw new Error('Authentication failed.');
-  }
-
-  if (user.app_metadata?.role !== 'admin') {
+  // Check admin table for UID
+  const { data: adminRow, error: adminError } = await supabaseAdmin
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  if (adminError || !adminRow) {
     throw new Error('You must be an admin to perform this action.');
   }
-
   return user;
 };
 
