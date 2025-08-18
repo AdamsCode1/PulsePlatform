@@ -1,23 +1,32 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHandler } from '../../lib/utils.js';
 
 // This is a secure, server-side only file.
 
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabaseAdmin: SupabaseClient | undefined;
+function initSupabaseAdmin(): SupabaseClient {
+  if (!supabaseAdmin) {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    }
+    supabaseAdmin = createClient(url, key);
+  }
+  return supabaseAdmin;
+}
 
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  const client = initSupabaseAdmin();
+  const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
 
   // Check admin table for UID
-  const { data: adminRow, error: adminError } = await supabaseAdmin
+  const { data: adminRow, error: adminError } = await client
     .from('admin')
     .select('uid')
     .eq('uid', user.id)
@@ -30,6 +39,7 @@ const requireAdmin = async (req: VercelRequest) => {
 
 // Fallback function for getting users when RPC is not available
 const getAllUsersFallback = async (roleFilter: string, statusFilter: string, searchTerm: string) => {
+  const client = initSupabaseAdmin();
   const users: Array<{
     id: any;
     user_id: any;
@@ -43,7 +53,7 @@ const getAllUsersFallback = async (roleFilter: string, statusFilter: string, sea
 
   // Get students
   if (roleFilter === 'all' || roleFilter === 'student') {
-    let studentQuery = supabaseAdmin
+  let studentQuery = client
       .from('student')
       .select('*, user_id');
 
@@ -51,7 +61,7 @@ const getAllUsersFallback = async (roleFilter: string, statusFilter: string, sea
       studentQuery = studentQuery.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
     }
 
-    const { data: students, error: studentsError } = await studentQuery;
+  const { data: students, error: studentsError } = await studentQuery;
     
     if (!studentsError && students) {
       students.forEach(student => {
@@ -71,7 +81,7 @@ const getAllUsersFallback = async (roleFilter: string, statusFilter: string, sea
 
   // Get societies
   if (roleFilter === 'all' || roleFilter === 'society') {
-    let societyQuery = supabaseAdmin
+  let societyQuery = client
       .from('society')
       .select('*, user_id');
 
@@ -79,7 +89,7 @@ const getAllUsersFallback = async (roleFilter: string, statusFilter: string, sea
       societyQuery = societyQuery.or(`name.ilike.%${searchTerm}%,contact_email.ilike.%${searchTerm}%`);
     }
 
-    const { data: societies, error: societiesError } = await societyQuery;
+  const { data: societies, error: societiesError } = await societyQuery;
     
     if (!societiesError && societies) {
       societies.forEach(society => {
@@ -99,7 +109,7 @@ const getAllUsersFallback = async (roleFilter: string, statusFilter: string, sea
 
   // Get admins
   if (roleFilter === 'all' || roleFilter === 'admin') {
-    let adminQuery = supabaseAdmin
+  let adminQuery = client
       .from('admin')
       .select('*');
 
@@ -107,7 +117,7 @@ const getAllUsersFallback = async (roleFilter: string, statusFilter: string, sea
       adminQuery = adminQuery.or(`email.ilike.%${searchTerm}%,first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
     }
 
-    const { data: admins, error: adminsError } = await adminQuery;
+  const { data: admins, error: adminsError } = await adminQuery;
     
     if (!adminsError && admins) {
       admins.forEach(admin => {
@@ -150,11 +160,12 @@ const handleGetUsers = async (req: VercelRequest, res: VercelResponse) => {
     };
 
     // Try the RPC function first
-    const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('get_all_users', rpcParams).range(from, to);
+  const client = initSupabaseAdmin();
+  const { data: rpcData, error: rpcError } = await client.rpc('get_all_users', rpcParams).range(from, to);
     
     if (!rpcError && rpcData) {
       // Get count using RPC
-      const { count, error: countError } = await supabaseAdmin.rpc('get_all_users', rpcParams, { count: 'exact', head: true });
+  const { count, error: countError } = await client.rpc('get_all_users', rpcParams, { count: 'exact', head: true });
       if (countError) {
         console.error('Error fetching user count:', countError);
         throw new Error(countError.message);

@@ -1,23 +1,32 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHandler } from '../../lib/utils.js';
 
 // This is a secure, server-side only file.
 
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabaseAdmin: SupabaseClient | undefined;
+function initSupabaseAdmin(): SupabaseClient {
+  if (!supabaseAdmin) {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    }
+    supabaseAdmin = createClient(url, key);
+  }
+  return supabaseAdmin;
+}
 
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  const client = initSupabaseAdmin();
+  const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
 
   // Check admin table for UID
-  const { data: adminRow, error: adminError } = await supabaseAdmin
+  const { data: adminRow, error: adminError } = await client
     .from('admin')
     .select('uid')
     .eq('uid', user.id)
@@ -31,7 +40,8 @@ const requireAdmin = async (req: VercelRequest) => {
 // Handler for fetching dashboard chart data
 const handleGetChartData = async (req: VercelRequest, res: VercelResponse) => {
   try {
-    await requireAdmin(req);
+  await requireAdmin(req);
+  const client = initSupabaseAdmin();
 
     const days = req.query.days ? parseInt(req.query.days as string) : 7;
 
@@ -40,7 +50,7 @@ const handleGetChartData = async (req: VercelRequest, res: VercelResponse) => {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
-    const { data, error } = await supabaseAdmin
+  const { data, error } = await client
       .from('event')
       .select('created_at')
       .gte('created_at', cutoffDate.toISOString())

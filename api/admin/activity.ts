@@ -1,26 +1,35 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHandler } from '../../lib/utils.js';
 
 // This is a secure, server-side only file.
 // It uses environment variables that are not exposed to the client.
 
 // Create a Supabase client with the service role key to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabaseAdmin: SupabaseClient | undefined;
+function initSupabaseAdmin(): SupabaseClient {
+  if (!supabaseAdmin) {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    }
+    supabaseAdmin = createClient(url, key);
+  }
+  return supabaseAdmin;
+}
 
 // Function to verify the user is an admin
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  const client = initSupabaseAdmin();
+  const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
 
   // Check admin table for UID
-  const { data: adminRow, error: adminError } = await supabaseAdmin
+  const { data: adminRow, error: adminError } = await client
     .from('admin')
     .select('uid')
     .eq('uid', user.id)
@@ -35,10 +44,11 @@ const requireAdmin = async (req: VercelRequest) => {
 const handleGetActivity = async (req: VercelRequest, res: VercelResponse) => {
   try {
     await requireAdmin(req);
+  const client = initSupabaseAdmin();
 
     // Since admin_activity_log table doesn't exist, let's create a simple fallback
     // using recent events and their status changes as activity
-    const { data: recentEvents, error: eventsError } = await supabaseAdmin
+  const { data: recentEvents, error: eventsError } = await client
       .from('event')
       .select('id, name, status, created_at, updated_at, society:society_id(name)')
       .order('updated_at', { ascending: false })
