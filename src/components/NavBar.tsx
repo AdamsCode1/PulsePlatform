@@ -42,44 +42,63 @@ export default function NavBar() {
     console.log('Debug - Checking database for user type:', userId);
     
     try {
+      // Check if user is an admin first
+      const { data: adminData, error: adminError } = await supabase
+        .from('admin')
+        .select('uid')
+        .eq('uid', userId)
+        .maybeSingle();
+      
+      console.log('Debug - Admin table query:', { data: adminData, error: adminError });
+      
+      if (adminData && !adminError) {
+        console.log('Debug - User found in admin table');
+        setUserType('admin');
+        return;
+      }
+
       // Check if user is a student
-      const { data: studentData } = await supabase
+      const { data: studentData, error: studentError } = await supabase
         .from('student')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
-      if (studentData) {
+      console.log('Debug - Student table query:', { data: studentData, error: studentError });
+      
+      if (studentData && !studentError) {
         console.log('Debug - User found in student table');
         setUserType('student');
         return;
       }
 
       // Check if user is a society
-      const { data: societyData } = await supabase
+      const { data: societyData, error: societyError } = await supabase
         .from('society')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
-      if (societyData) {
+      console.log('Debug - Society table query:', { data: societyData, error: societyError });
+      
+      if (societyData && !societyError) {
         console.log('Debug - User found in society table');
         setUserType('society');
         return;
       }
 
-      // Check if user is a partner
-      const { data: partnerData } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
-      
-      if (partnerData) {
-        console.log('Debug - User found in partners table');
-        setUserType('partner');
-        return;
-      }
+      // Check if user is a partner (skip for now since table doesn't exist)
+      // const { data: partnerData } = await supabase
+      //   .from('partners')
+      //   .select('id')
+      //   .eq('user_id', userId)
+      //   .maybeSingle();
+      // 
+      // if (partnerData) {
+      //   console.log('Debug - User found in partners table');
+      //   setUserType('partner');
+      //   return;
+      // }
 
       console.log('Debug - User type not found in any table');
       setUserType('');
@@ -182,6 +201,24 @@ export default function NavBar() {
     }
   };
 
+  const handleDashboardNavigation = () => {
+    switch (userType) {
+      case 'admin':
+        navigate('/admin/dashboard');
+        break;
+      case 'society':
+        navigate('/society/dashboard');
+        break;
+      case 'partner':
+        navigate('/partner/dashboard');
+        break;
+      case 'student':
+      default:
+        navigate('/student/dashboard');
+        break;
+    }
+  };
+
   return (
     <nav className={`fixed top-3 left-1/2 z-50 -translate-x-1/2 w-[95vw] max-w-3xl rounded-xl bg-white/80 backdrop-blur-md shadow-xl flex items-center justify-between px-3 py-1.5 border border-gray-200 transition-all duration-300 ease-in-out ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}>
@@ -197,7 +234,12 @@ export default function NavBar() {
         <button onClick={() => navigate('/deals')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Deals</button>
         <button onClick={() => navigate('/about')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">About</button>
         {user && (
-          <button onClick={() => navigate('/events/manage')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Manage</button>
+          <>
+            <button onClick={handleDashboardNavigation} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Dashboard</button>
+            {userType === 'society' && (
+              <button onClick={() => navigate('/events/manage')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Manage</button>
+            )}
+          </>
         )}
 
         {/* User Section */}
@@ -231,7 +273,12 @@ export default function NavBar() {
           <button onClick={() => { setMenuOpen(false); navigate('/deals'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</button>
           <button onClick={() => { setMenuOpen(false); navigate('/about'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">About</button>
           {user && (
-            <button onClick={() => { setMenuOpen(false); navigate('/events/manage'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Manage Events</button>
+            <>
+              <button onClick={() => { setMenuOpen(false); handleDashboardNavigation(); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Dashboard</button>
+              {userType === 'society' && (
+                <button onClick={() => { setMenuOpen(false); navigate('/events/manage'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Manage Events</button>
+              )}
+            </>
           )}
 
           {/* Mobile User Section */}
