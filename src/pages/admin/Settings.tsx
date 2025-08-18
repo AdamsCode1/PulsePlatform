@@ -87,7 +87,7 @@ export default function AdminSettings() {
     } catch (error: any) {
       console.error('Failed to fetch settings:', error);
       // Use default settings if fetch fails
-      setSettings(defaultSettings);
+      setSettings(defaultConfig);
     } finally {
       setSettingsLoading(false);
     }
