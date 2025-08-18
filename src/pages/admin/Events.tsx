@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from '@supabase/supabase-js';
+import { useDebounce } from '@/hooks/useDebounce';
 
 // @ts-ignore
 const supabaseEdge = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
@@ -49,11 +50,13 @@ export default function AdminEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [reviewDialog, setReviewDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [eventsPerPage] = useState(10);
@@ -64,32 +67,39 @@ export default function AdminEvents() {
   const fetchEvents = useCallback(async (page: number) => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('event')
-        .select(`
-          *,
-          society:society_id(name, contact_email)
-        `, { count: 'exact' });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/admin/login');
+        return;
+      }
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: eventsPerPage.toString(),
+      });
 
       if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
+        params.append('status', statusFilter);
       }
 
-      if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+      if (debouncedSearchTerm) {
+        params.append('search', debouncedSearchTerm);
       }
 
-      const from = (page - 1) * eventsPerPage;
-      const to = from + eventsPerPage - 1;
+      const response = await fetch(`${API_BASE_URL}/api/admin/events?${params.toString()}`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      query = query.range(from, to).order('created_at', { ascending: false });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      setEvents(data || []);
-      setTotalPages(Math.ceil((count || 0) / eventsPerPage));
+      const result = await response.json();
+      setEvents(result.events || []);
+      setTotalPages(Math.ceil((result.total || 0) / eventsPerPage));
 
     } catch (error) {
       console.error('Error fetching events:', error);
@@ -101,7 +111,7 @@ export default function AdminEvents() {
     } finally {
       setLoading(false);
     }
-  }, [eventsPerPage, searchTerm, statusFilter, toast]);
+  }, [eventsPerPage, debouncedSearchTerm, statusFilter, toast, navigate]);
 
   useEffect(() => {
     const status = searchParams.get('status');
@@ -115,7 +125,7 @@ export default function AdminEvents() {
     if (user) { // only fetch if user is authenticated
       fetchEvents(currentPage);
     }
-  }, [searchTerm, statusFilter, user, currentPage, fetchEvents]);
+  }, [debouncedSearchTerm, statusFilter, user, currentPage, fetchEvents]);
 
   useEffect(() => {
     // Check if we need to open review dialog from URL params
@@ -128,6 +138,15 @@ export default function AdminEvents() {
       }
     }
   }, [searchParams, events]);
+
+  // Track when search is happening (when user is typing vs when debounced search is complete)
+  useEffect(() => {
+    if (searchTerm !== debouncedSearchTerm) {
+      setSearching(true);
+    } else {
+      setSearching(false);
+    }
+  }, [searchTerm, debouncedSearchTerm]);
 
   const updateEventStatus = async (eventId: string, status: 'approved' | 'rejected', reason?: string) => {
     setIsUpdating(true);
@@ -271,7 +290,11 @@ export default function AdminEvents() {
   }, [user]);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner variant="page" size="lg" text="Loading events dashboard..." />
+      </div>
+    );
   }
 
   if (isAdmin === false) {
@@ -350,13 +373,18 @@ export default function AdminEvents() {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${searching ? 'text-blue-500 animate-pulse' : 'text-gray-400'}`} />
                   <Input
                     placeholder="Search events, societies, or locations..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className={`pl-10 ${searching ? 'border-blue-300' : ''}`}
                   />
+                  {searching && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
                 </div>
               </div>
               <select
@@ -375,7 +403,7 @@ export default function AdminEvents() {
 
         {/* Events List */}
         {loading ? (
-          <LoadingSpinner />
+          <LoadingSpinner variant="page" size="md" text="Loading events..." />
         ) : events.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">

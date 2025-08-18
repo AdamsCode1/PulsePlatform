@@ -8,6 +8,26 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Helper functions
+
+// Function to verify the user is an admin
+const requireAdmin = async (req: VercelRequest) => {
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) throw new Error('Authentication token not provided.');
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) throw new Error('Authentication failed.');
+
+  // Check admin table for UID
+  const { data: adminRow, error: adminError } = await supabase
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  if (adminError || !adminRow) {
+    throw new Error('You must be an admin to perform this action.');
+  }
+  return user;
+};
 const isValidEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
@@ -173,6 +193,8 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
     if (action === 'approve' && method === 'POST' && id) {
       console.log('Handling approve event');
+      // Require admin
+      await requireAdmin(req);
       const { data, error } = await supabase
         .from('event')
         .update({ status: 'approved' })
@@ -188,10 +210,13 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
     if (action === 'reject' && method === 'POST' && id) {
       console.log('Handling reject event');
-      // Update event status to 'rejected'
+      // Require admin
+      await requireAdmin(req);
+      // Update event status and persist reason
+      const reason = req.body?.reason || null;
       const { error: updateError } = await supabase
         .from('event')
-        .update({ status: 'rejected' })
+        .update({ status: 'rejected', rejection_reason: reason })
         .eq('id', id);
       if (updateError) {
         console.error('Reject event update error:', updateError);

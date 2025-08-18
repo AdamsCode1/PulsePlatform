@@ -402,7 +402,12 @@ export default function SubmitDealPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
+      <LoadingSpinner variant="page" size="lg" text="Loading deal submission form..." />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">

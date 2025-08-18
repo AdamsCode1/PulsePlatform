@@ -63,7 +63,11 @@ const ManageRedirect = () => {
   }, [navigate]);
 
   // Display a loading spinner while the redirect is happening
-  return <LoadingSpinner />;
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <LoadingSpinner variant="page" size="lg" text="Redirecting you to your dashboard..." />
+    </div>
+  );
 };
 
 export default ManageRedirect;

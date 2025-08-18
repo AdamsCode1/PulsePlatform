@@ -9,6 +9,9 @@ const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
 const FROM_EMAIL = Deno.env.get("SENDGRID_FROM_EMAIL") ?? "noreply@yourdomain.com";
 
 serve(async (req) => {
+  if (!SENDGRID_API_KEY) {
+    return new Response("SendGrid API key not configured", { status: 500 });
+  }
   if (req.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }

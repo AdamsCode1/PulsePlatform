@@ -16,6 +16,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface Deal {
   id: string;
@@ -46,12 +47,12 @@ export default function AdminDeals() {
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [reviewDialog, setReviewDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [dealsPerPage] = useState(10);
@@ -85,8 +86,8 @@ export default function AdminDeals() {
         deals = deals.filter((deal: Deal) => deal.status === statusFilter);
       }
 
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
+      if (debouncedSearchTerm) {
+        const searchLower = debouncedSearchTerm.toLowerCase();
         deals = deals.filter((deal: Deal) =>
           deal.title.toLowerCase().includes(searchLower) ||
           deal.description.toLowerCase().includes(searchLower) ||
@@ -113,13 +114,13 @@ export default function AdminDeals() {
     } finally {
       setLoading(false);
     }
-  }, [dealsPerPage, searchTerm, statusFilter, toast]);
+  }, [dealsPerPage, debouncedSearchTerm, statusFilter, toast]);
 
   useEffect(() => {
     if (isAdmin === true) {
       fetchDeals(currentPage);
     }
-  }, [isAdmin, currentPage, searchTerm, statusFilter, fetchDeals]);
+  }, [isAdmin, currentPage, debouncedSearchTerm, statusFilter, fetchDeals]);
 
   const updateDealStatus = async (dealId: string, status: 'approved' | 'rejected', rejectionReason?: string) => {
     setIsUpdating(true);
@@ -267,7 +268,11 @@ export default function AdminDeals() {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner variant="page" size="lg" text="Loading deals dashboard..." />
+      </div>
+    );
   }
 
   if (isAdmin === false) {
@@ -380,7 +385,7 @@ export default function AdminDeals() {
               <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No deals found</h3>
               <p className="text-gray-600">
-                {searchTerm || statusFilter !== 'all' 
+                {debouncedSearchTerm || statusFilter !== 'all' 
                   ? 'Try adjusting your search or filters.' 
                   : 'No deals have been submitted yet.'}
               </p>

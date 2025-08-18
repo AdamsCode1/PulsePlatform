@@ -249,7 +249,7 @@ export default function EventSubmissionPage() {
       if (!error && insertedEvent) {
         toast({
           title: "Event Submitted Successfully!",
-          description: `${data.eventName} has been submitted for review. Event ID: ${insertedEvent[0]?.id}`,
+          description: "Your event has been submitted for review.",
           action: (
             <div className="flex gap-2 mt-2">
               <Button
@@ -264,13 +264,18 @@ export default function EventSubmissionPage() {
                 size="sm"
                 onClick={() => navigate('/')}
               >
-                Home
+                Dashboard
               </Button>
             </div>
           )
         });
         form.reset();
         setCurrentStep(0); // Reset to first step
+        
+        // Auto-redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
       } else {
         // Handle Supabase error
         const errorMessage = error?.message || 'Could not submit event.';

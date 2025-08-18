@@ -28,6 +28,7 @@ import PartnerRegister from './pages/PartnerRegister';
 // Student Dashboard Components
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentRSVPs from "./pages/student/RSVPs";
+import ProfileEdit from "./pages/student/ProfileEdit";
 
 // Society Dashboard Components  
 import SocietyDashboard from "./pages/society/Dashboard";
@@ -89,6 +90,7 @@ const App = () => (
           {/* Student Dashboard Routes */}
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/rsvps" element={<StudentRSVPs />} />
+          <Route path="/student/profile" element={<ProfileEdit />} />
 
           {/* Society Dashboard Routes */}
           <Route path="/society/dashboard" element={<SocietyDashboard />} />

@@ -183,8 +183,8 @@ export default function AdminUsers() {
         {/* User List */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
             {loading ? (
-              <div className="p-12">
-                <LoadingSpinner />
+              <div className="p-4 sm:p-12">
+                <LoadingSpinner variant="page" size="md" text="Loading users..." />
               </div>
             ) : users.length === 0 ? (
               <div className="text-center py-12 px-4">

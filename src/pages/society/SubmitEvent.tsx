@@ -1,9 +1,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
+import { format, addWeeks, addMonths } from "date-fns";
 import { CalendarIcon, Clock, MapPin, Tag, FileText, Type, ChevronLeft, ChevronRight, Calendar as CalendarIconAlias, Clock as ClockIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
@@ -62,6 +63,10 @@ const formSchema = z.object({
   location: z.string().min(1, "Location is required").min(3, "Location must be at least 3 characters"),
   requiresExternalSignup: z.boolean().optional(),
   externalSignupLink: z.string().optional(),
+  // Recurrence
+  isRecurring: z.boolean().optional(),
+  recurrenceFrequency: z.enum(["weekly", "fortnightly", "monthly"]).optional(),
+  recurrenceEndDate: z.date().optional(),
 }).refine((data) => {
   if (data.requiresExternalSignup && (!data.externalSignupLink || data.externalSignupLink.trim() === '')) {
     return false;
@@ -78,6 +83,27 @@ const formSchema = z.object({
 }, {
   message: "Valid external signup URL is required when external registration is enabled",
   path: ["externalSignupLink"]
+}).superRefine((data, ctx) => {
+  // Ensure end datetime is after start datetime
+  try {
+    const start = data.startDate && data.startTime ? new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`) : null;
+    const end = data.endDate && data.endTime ? new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`) : null;
+    if (start && end && end <= start) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "End must be after start", path: ["endTime"] });
+    }
+  } catch {}
+
+  // Recurrence validations
+  if (data.isRecurring) {
+    if (!data.recurrenceFrequency) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Select a repeat frequency", path: ["recurrenceFrequency"] });
+    }
+    if (!data.recurrenceEndDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Select a repeat-until date", path: ["recurrenceEndDate"] });
+    } else if (data.startDate && data.recurrenceEndDate < data.startDate) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Repeat-until date must be on or after the start date", path: ["recurrenceEndDate"] });
+    }
+  }
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -90,6 +116,9 @@ export default function EventSubmissionPage() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  // Review step: track if description exceeds two lines in the standard (two-column) layout
+  const descMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const [isDescOverflowing, setIsDescOverflowing] = useState(false);
 
   const steps = [
     {
@@ -137,8 +166,27 @@ export default function EventSubmissionPage() {
       location: "",
       requiresExternalSignup: false,
       externalSignupLink: "",
+  isRecurring: false,
+  recurrenceFrequency: undefined,
+  recurrenceEndDate: undefined,
     },
   });
+
+  // Watch description value to re-measure on change
+  const descriptionValue = form.watch('description');
+
+  // When on Review step, detect if description exceeds two lines with the standard layout
+  useEffect(() => {
+    if (currentStep !== 4) {
+      setIsDescOverflowing(false);
+      return;
+    }
+    const el = descMeasureRef.current;
+    if (!el) return;
+    // With line-clamp-2 applied, if scrollHeight > clientHeight then content exceeds two lines
+    const overflow = el.scrollHeight > el.clientHeight + 1;
+    setIsDescOverflowing(overflow);
+  }, [descriptionValue, currentStep]);
 
   // Redirect to login if not logged in, and return to this page after login
   useEffect(() => {
@@ -169,6 +217,15 @@ export default function EventSubmissionPage() {
     // Ensure the external signup field is set to false by default
     form.setValue('requiresExternalSignup', false);
   }, []);
+
+  // When recurrence is turned off, clear related fields
+  const isRecurringWatch = form.watch('isRecurring');
+  useEffect(() => {
+    if (!isRecurringWatch) {
+      form.setValue('recurrenceFrequency', undefined);
+      form.setValue('recurrenceEndDate', undefined);
+    }
+  }, [isRecurringWatch]);
 
   const nextStep = async () => {
     let fieldsToValidate: string[] = [];
@@ -215,7 +272,7 @@ export default function EventSubmissionPage() {
     }
   };
 
-  async function onSubmit(data) {
+  async function onSubmit(data: FormData) {
     if (!societyId) {
       console.error("No society ID found. User needs to be associated with a society.");
       toast({ title: "Error", description: "Could not determine society ID. Please ensure you're logged in as a society member.", variant: "destructive" });
@@ -224,27 +281,60 @@ export default function EventSubmissionPage() {
 
     console.log("Current societyId:", societyId);
 
-    const start = new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`);
-    const end = new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`);
-    const payload = {
+    const baseStart = new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`);
+    const baseEnd = new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`);
+
+    const makePayload = (s: Date, e: Date) => ({
       name: data.eventName,
       description: data.description,
-      start_time: start.toISOString(),
-      end_time: end.toISOString(),
+      start_time: s.toISOString(),
+      end_time: e.toISOString(),
       location: data.location,
       category: data.category,
       society_id: societyId,
-      status: 'pending', // Explicitly set status
+      status: 'pending',
       signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
-    };
+    });
+
+    const payloads = [] as ReturnType<typeof makePayload>[];
+    if (data.isRecurring && data.recurrenceFrequency && data.recurrenceEndDate) {
+      const MAX_OCCURRENCES = 50;
+      let count = 0;
+      let s = baseStart;
+      let e = baseEnd;
+      const until = new Date(data.recurrenceEndDate);
+      // include end of day for inclusivity
+      until.setHours(23, 59, 59, 999);
+      while (s <= until && count < MAX_OCCURRENCES) {
+        payloads.push(makePayload(s, e));
+        count++;
+        // compute next occurrence
+        switch (data.recurrenceFrequency) {
+          case 'weekly':
+            s = addWeeks(s, 1);
+            e = addWeeks(e, 1);
+            break;
+          case 'fortnightly':
+            s = addWeeks(s, 2);
+            e = addWeeks(e, 2);
+            break;
+          case 'monthly':
+            s = addMonths(s, 1);
+            e = addMonths(e, 1);
+            break;
+        }
+      }
+    } else {
+      payloads.push(makePayload(baseStart, baseEnd));
+    }
 
     try {
-      console.log("Submitting event with payload:", payload);
+      console.log("Submitting event payloads:", payloads);
 
       // Use direct Supabase call instead of API
       const { data: insertedEvent, error } = await supabase
         .from('event')
-        .insert([payload])
+        .insert(payloads)
         .select();
 
       console.log("Supabase response:", { insertedEvent, error });
@@ -252,7 +342,7 @@ export default function EventSubmissionPage() {
       if (!error && insertedEvent) {
         toast({
           title: "Event Submitted Successfully!",
-          description: `${data.eventName} has been submitted for review. Event ID: ${insertedEvent[0]?.id}`,
+          description: "Your event has been submitted for review.",
           action: (
             <div className="flex gap-2 mt-2">
               <Button
@@ -274,6 +364,11 @@ export default function EventSubmissionPage() {
         });
         form.reset();
         setCurrentStep(0); // Reset to first step
+        
+        // Auto-redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          navigate('/society/dashboard');
+        }, 3000);
       } else {
         // Handle Supabase error
         const errorMessage = error?.message || 'Could not submit event.';
@@ -477,6 +572,102 @@ export default function EventSubmissionPage() {
                 )}
               />
             </div>
+            {/* Recurrence controls */}
+            <div className="space-y-4 pt-2">
+              <FormField
+                control={form.control}
+                name="isRecurring"
+                render={({ field }) => (
+                  <FormItem className="flex items-center space-x-3">
+                    <Checkbox
+                      checked={!!field.value}
+                      onCheckedChange={(v) => field.onChange(Boolean(v))}
+                      id="isRecurring"
+                    />
+                    <div className="grid gap-1 leading-none">
+                      <FormLabel htmlFor="isRecurring">This is a recurring event</FormLabel>
+                      <FormDescription>
+                        Repeat this event weekly, fortnightly, or monthly until a chosen date.
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              {form.watch('isRecurring') && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="recurrenceFrequency"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                          <ClockIcon className="w-5 h-5 text-primary" />
+                          Repeat Frequency
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
+                          <FormControl>
+                            <SelectTrigger className="form-input text-lg h-14 rounded-xl">
+                              <SelectValue placeholder="Select frequency" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="recurrenceEndDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col space-y-3">
+                        <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                          <CalendarIcon className="w-5 h-5 text-primary" />
+                          Repeat Until
+                        </FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "form-input text-lg h-14 rounded-xl pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick end date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => field.value ? date < new Date() : date < new Date()}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         );
 
@@ -512,7 +703,7 @@ export default function EventSubmissionPage() {
                     <Tag className="w-5 h-5 text-primary" />
                     Category
                   </FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value ?? ''}>
                     <FormControl>
                       <SelectTrigger className="form-input text-lg h-14 rounded-xl">
                         <SelectValue placeholder="Select event category" />
@@ -549,7 +740,6 @@ export default function EventSubmissionPage() {
                   <Select
                     onValueChange={(value) => field.onChange(value === "yes")}
                     value={field.value === true ? "yes" : "no"}
-                    defaultValue="no"
                   >
                     <FormControl>
                       <SelectTrigger className="form-input text-lg h-14 rounded-xl">
@@ -609,21 +799,30 @@ export default function EventSubmissionPage() {
               <h3 className="text-2xl font-bold text-foreground mb-6">Review Your Event</h3>
 
               <div className="space-y-4">
-                <div className="flex justify-between border-b border-border pb-3">
+                <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Event Name:</span>
-                  <span className="font-semibold text-foreground">{formValues.eventName || 'Not specified'}</span>
+                  <span className="font-semibold text-foreground text-right break-words">{formValues.eventName || 'Not specified'}</span>
                 </div>
 
-                <div className="flex justify-between border-b border-border pb-3">
+                <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Description:</span>
-                  <span className="font-semibold text-foreground max-w-xs text-right">
-                    {formValues.description || 'Not specified'}
-                  </span>
+                  {!isDescOverflowing ? (
+                    <span
+                      ref={descMeasureRef}
+                      className="font-semibold text-foreground text-right break-words line-clamp-2"
+                    >
+                      {formValues.description || 'Not specified'}
+                    </span>
+                  ) : (
+                    <span className="font-semibold text-foreground text-right break-words col-span-2">
+                      {formValues.description || 'Not specified'}
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex justify-between border-b border-border pb-3">
+                <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Start:</span>
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold text-foreground text-right break-words">
                     {formValues.startDate && formValues.startTime
                       ? `${format(formValues.startDate, "PPP")} at ${formValues.startTime}`
                       : 'Not specified'
@@ -631,9 +830,9 @@ export default function EventSubmissionPage() {
                   </span>
                 </div>
 
-                <div className="flex justify-between border-b border-border pb-3">
+                <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">End:</span>
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold text-foreground text-right break-words">
                     {formValues.endDate && formValues.endTime
                       ? `${format(formValues.endDate, "PPP")} at ${formValues.endTime}`
                       : 'Not specified'
@@ -641,29 +840,46 @@ export default function EventSubmissionPage() {
                   </span>
                 </div>
 
-                <div className="flex justify-between border-b border-border pb-3">
+                {formValues.isRecurring && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
+                      <span className="font-medium text-muted-foreground">Recurring:</span>
+                      <span className="font-semibold text-foreground text-right break-words">Yes</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
+                      <span className="font-medium text-muted-foreground">Frequency:</span>
+                      <span className="font-semibold text-foreground text-right break-words capitalize">{formValues.recurrenceFrequency}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
+                      <span className="font-medium text-muted-foreground">Repeat Until:</span>
+                      <span className="font-semibold text-foreground text-right break-words">{formValues.recurrenceEndDate ? format(formValues.recurrenceEndDate, 'PPP') : 'Not specified'}</span>
+                    </div>
+                  </>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Location:</span>
-                  <span className="font-semibold text-foreground">{formValues.location || 'Not specified'}</span>
+                  <span className="font-semibold text-foreground text-right break-words">{formValues.location || 'Not specified'}</span>
                 </div>
 
-                <div className="flex justify-between border-b border-border pb-3">
+                <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">Category:</span>
-                  <span className="font-semibold text-foreground capitalize">
+                  <span className="font-semibold text-foreground capitalize text-right break-words">
                     {formValues.category?.replace(/-/g, ' ') || 'Not specified'}
                   </span>
                 </div>
 
-                <div className="flex justify-between border-b border-border pb-3">
+                <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
                   <span className="font-medium text-muted-foreground">External Registration:</span>
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold text-foreground text-right break-words">
                     {formValues.requiresExternalSignup ? 'Required' : 'Not required'}
                   </span>
                 </div>
 
                 {formValues.requiresExternalSignup && formValues.externalSignupLink && (
-                  <div className="flex justify-between">
+                  <div className="grid grid-cols-2 gap-4 items-start">
                     <span className="font-medium text-muted-foreground">Signup URL:</span>
-                    <span className="font-semibold text-foreground max-w-xs text-right break-all">
+                    <span className="font-semibold text-foreground text-right break-all">
                       {formValues.externalSignupLink}
                     </span>
                   </div>
@@ -694,7 +910,7 @@ export default function EventSubmissionPage() {
             </p>
           </div>
 
-          <div className="flex justify-center items-center space-x-4 md:space-x-8">
+          <div className="hidden md:flex justify-center items-center space-x-4 md:space-x-8">
             {steps.map((step, index) => {
               const isActive = step.id === currentStep + 1;
               const isCompleted = step.id < currentStep + 1;
@@ -739,14 +955,14 @@ export default function EventSubmissionPage() {
               {renderStepContent()}
 
               {/* Navigation Buttons */}
-              <div className="flex justify-between items-center pt-12">
+        <div className="flex flex-wrap justify-between items-center gap-3 pt-12">
                 <Button
                   type="button"
                   variant="purple-outline"
-                  size="lg"
+          size="lg"
                   onClick={prevStep}
                   disabled={currentStep === 0}
-                  className="flex items-center gap-2"
+          className="flex items-center gap-2 text-sm px-4 py-2 md:text-base md:px-6 md:py-3"
                 >
                   <ChevronLeft className="w-5 h-5" />
                   Previous
@@ -758,7 +974,7 @@ export default function EventSubmissionPage() {
                     variant="purple"
                     size="lg"
                     onClick={nextStep}
-                    className="flex items-center gap-2 px-8"
+                    className="flex items-center gap-2 text-sm px-4 py-2 md:text-base md:px-8 md:py-3"
                   >
                     Next
                     <ChevronRight className="w-5 h-5" />
@@ -768,7 +984,7 @@ export default function EventSubmissionPage() {
                     type="submit"
                     variant="purple"
                     size="lg"
-                    className="flex items-center gap-2 px-8"
+                    className="flex items-center gap-2 text-sm px-4 py-2 md:text-base md:px-8 md:py-3"
                     disabled={loadingSocietyId}
                   >
                     Submit Event
