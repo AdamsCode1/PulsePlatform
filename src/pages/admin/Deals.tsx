@@ -68,7 +68,7 @@ export default function AdminDeals() {
       }
 
       // Use admin API endpoint instead of direct Supabase query
-      const response = await fetch(`${API_BASE_URL}/api/admin/deals`, {
+  const response = await fetch(`${API_BASE_URL}/admin/deals`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
@@ -135,7 +135,7 @@ export default function AdminDeals() {
         payload.rejection_reason = rejectionReason;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/deals`, {
+  const response = await fetch(`${API_BASE_URL}/admin/deals`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -195,7 +195,7 @@ export default function AdminDeals() {
         throw new Error("Not authenticated");
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/deals`, {
+  const response = await fetch(`${API_BASE_URL}/admin/deals`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

@@ -2,6 +2,7 @@
 // Edge Function to send event rejection emails via SendGrid
 // Deno runtime
 
+/// <reference types="https://deno.land/types/index.d.ts" />
 import { serve } from "std/server";
 
 // Supabase Edge Functions use Deno.env.get for environment variables, but you must set them in the Supabase dashboard.

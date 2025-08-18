@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { createHandler } from '../../lib/utils';
+import { createHandler } from '../../lib/utils.js';
 
 // This is a secure, server-side only file.
 // It uses environment variables that are not exposed to the client.

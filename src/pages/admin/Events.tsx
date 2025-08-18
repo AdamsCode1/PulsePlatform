@@ -16,11 +16,9 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Skeleton } from "@/components/ui/skeleton";
-import { createClient } from '@supabase/supabase-js';
 import { useDebounce } from '@/hooks/useDebounce';
 
-// @ts-ignore
-const supabaseEdge = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+// Using shared HMR-safe Supabase client from lib/supabaseClient
 
 interface Event {
   id: string;
@@ -86,7 +84,7 @@ export default function AdminEvents() {
         params.append('search', debouncedSearchTerm);
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/events?${params.toString()}`, {
+  const response = await fetch(`${API_BASE_URL}/admin/events?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',

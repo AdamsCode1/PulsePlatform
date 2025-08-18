@@ -174,7 +174,7 @@ export default function SubmitDealPage() {
         toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
         return;
       }
-      const response = await fetch(`${API_BASE_URL}/api/deals`, {
+  const response = await fetch(`${API_BASE_URL}/deals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
