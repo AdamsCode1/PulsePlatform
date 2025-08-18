@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { createHandler } from '../../lib/utils';
+import { sendEmail } from '../lib/sendEmail';
 
 // This is a secure, server-side only file.
 // It uses environment variables that are not exposed to the client.
@@ -14,21 +15,20 @@ const supabaseAdmin = createClient(
 // Function to verify the user is an admin
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
-
-  if (!token) {
-    throw new Error('Authentication token not provided.');
-  }
+  if (!token) throw new Error('Authentication token not provided.');
 
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !user) throw new Error('Authentication failed.');
 
-  if (error || !user) {
-    throw new Error('Authentication failed.');
-  }
-
-  if (user.app_metadata?.role !== 'admin') {
+  // Check admin table for UID
+  const { data: adminRow, error: adminError } = await supabaseAdmin
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  if (adminError || !adminRow) {
     throw new Error('You must be an admin to perform this action.');
   }
-
   return user;
 };
 
@@ -145,6 +145,42 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
             // If logging fails, we should probably note it but not fail the whole request
             console.error('Failed to log admin activity:', logError);
         }
+    }
+
+    // Send email notification on rejection
+    if (status === 'rejected') {
+      // Get event details including name and society_id
+      const { data: eventDetails } = await supabaseAdmin
+        .from('event')
+        .select('id, name, society_id')
+        .eq('id', eventId)
+        .single();
+
+      if (eventDetails) {
+        // Fetch society email from society_id
+        const { data: societyDetails } = await supabaseAdmin
+          .from('society')
+          .select('id, contact_email')
+          .eq('id', eventDetails.society_id)
+          .single();
+
+        if (societyDetails && societyDetails.contact_email) {
+          try {
+            await sendEmail({
+              to: societyDetails.contact_email,
+              subject: `Event "${eventDetails.name}" Rejected`,
+              text: `Your event titled "${eventDetails.name}" has been rejected.\n\nReason: ${rejection_reason || 'No reason provided.'}`,
+            });
+          } catch (e) {
+            console.error('Failed to send rejection email:', e);
+            // do not throw; continue to return 200 for the update
+          }
+        } else {
+          console.error('No valid society contact_email found for event:', eventId);
+        }
+      } else {
+        console.error('Event details not found for ID:', eventId);
+      }
     }
 
   return res.status(200).json({ id: eventId, status, ...(status === 'rejected' ? { rejection_reason } : {}) });
