@@ -43,56 +43,62 @@ export default function NavBar() {
     
     try {
       // Check if user is an admin first
-      const { data: adminData } = await supabase
+      const { data: adminData, error: adminError } = await supabase
         .from('admin')
         .select('uid')
         .eq('uid', userId)
-        .single();
+        .maybeSingle();
       
-      if (adminData) {
+      console.log('Debug - Admin table query:', { data: adminData, error: adminError });
+      
+      if (adminData && !adminError) {
         console.log('Debug - User found in admin table');
         setUserType('admin');
         return;
       }
 
       // Check if user is a student
-      const { data: studentData } = await supabase
+      const { data: studentData, error: studentError } = await supabase
         .from('student')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
-      if (studentData) {
+      console.log('Debug - Student table query:', { data: studentData, error: studentError });
+      
+      if (studentData && !studentError) {
         console.log('Debug - User found in student table');
         setUserType('student');
         return;
       }
 
       // Check if user is a society
-      const { data: societyData } = await supabase
+      const { data: societyData, error: societyError } = await supabase
         .from('society')
         .select('id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
-      if (societyData) {
+      console.log('Debug - Society table query:', { data: societyData, error: societyError });
+      
+      if (societyData && !societyError) {
         console.log('Debug - User found in society table');
         setUserType('society');
         return;
       }
 
-      // Check if user is a partner
-      const { data: partnerData } = await supabase
-        .from('partners')
-        .select('id')
-        .eq('user_id', userId)
-        .single();
-      
-      if (partnerData) {
-        console.log('Debug - User found in partners table');
-        setUserType('partner');
-        return;
-      }
+      // Check if user is a partner (skip for now since table doesn't exist)
+      // const { data: partnerData } = await supabase
+      //   .from('partners')
+      //   .select('id')
+      //   .eq('user_id', userId)
+      //   .maybeSingle();
+      // 
+      // if (partnerData) {
+      //   console.log('Debug - User found in partners table');
+      //   setUserType('partner');
+      //   return;
+      // }
 
       console.log('Debug - User type not found in any table');
       setUserType('');
