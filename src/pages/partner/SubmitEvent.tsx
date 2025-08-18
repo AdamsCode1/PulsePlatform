@@ -222,7 +222,11 @@ export default function PartnerEventSubmissionPage() {
   }
 
   if (loadingPartnerId) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner variant="page" size="lg" text="Loading event submission form..." />
+      </div>
+    );
   }
 
   return (

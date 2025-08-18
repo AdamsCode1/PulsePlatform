@@ -271,7 +271,11 @@ export default function AdminEvents() {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner variant="page" size="lg" text="Loading events dashboard..." />
+      </div>
+    );
   }
 
   const stats = getEventStats();
@@ -362,7 +366,7 @@ export default function AdminEvents() {
 
         {/* Events List */}
         {loading ? (
-          <LoadingSpinner />
+          <LoadingSpinner variant="page" size="md" text="Loading events..." />
         ) : events.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">

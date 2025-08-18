@@ -124,7 +124,11 @@ export default function AdminSettings() {
   }, [user]);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner variant="page" size="lg" text="Loading settings..." />
+      </div>
+    );
   }
 
   const cfg = settings ?? defaultConfig;

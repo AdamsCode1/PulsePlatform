@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabaseClient";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const StudentRegister = () => {
   const [email, setEmail] = useState("");
@@ -72,7 +73,11 @@ const StudentRegister = () => {
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isLoading} size="lg">
-              {isLoading ? "Registering..." : "Register"}
+              {isLoading ? (
+                <LoadingSpinner variant="button" size="sm" text="Registering..." />
+              ) : (
+                "Register"
+              )}
             </Button>
           </CardFooter>
         </form>
