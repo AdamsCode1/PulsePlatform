@@ -147,6 +147,10 @@ export default {
 					'90%': { 'clip-path': 'inset(15% 0 55% 0)' },
 					'95%': { 'clip-path': 'inset(25% 0 35% 0)' },
 					'100%': { 'clip-path': 'inset(30% 0 40% 0)' }
+				},
+				'shine': {
+					'0%': { 'background-position': '100%' },
+					'100%': { 'background-position': '-100%' }
 				}
 			},
 			animation: {
@@ -157,7 +161,8 @@ export default {
 				'fade-in-up': 'fade-in-up 0.6s ease-out',
 				'scale-in': 'scale-in 0.3s ease-out',
 				'glitch-after': 'glitch var(--after-duration) infinite linear alternate-reverse',
-				'glitch-before': 'glitch var(--before-duration) infinite linear alternate-reverse'
+				'glitch-before': 'glitch var(--before-duration) infinite linear alternate-reverse',
+				'shine': 'shine 5s linear infinite'
 			}
 		}
 	},

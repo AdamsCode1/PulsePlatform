@@ -7,14 +7,16 @@ import { Badge } from '@/components/ui/badge';
 import { Rocket, Users, Calendar, Sparkles, Clock, Mail, Share2 } from 'lucide-react';
 import CircularText from '@/blocks/TextAnimations/CircularText/CircularText';
 import GlitchText from '@/blocks/TextAnimations/GlitchText/GlitchText';
+import ShinyText from '@/blocks/TextAnimations/ShinyText/ShinyText';
 import Aurora from '@/blocks/Backgrounds/Aurora/Aurora';
 
 interface CountdownTimerProps {
   launchDate: string;
   onJoinWaitlist?: () => void;
+  onError?: () => void;
 }
 
-const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitlist }) => {
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitlist, onError }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
@@ -155,71 +157,64 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitl
           `
         }} />
 
-        {/* Navigation Bar */}
-        <nav className="relative z-10 flex justify-between items-center p-6 w-screen">
-          {/* Logo */}
+        {/* Logo Only - Top Left */}
+        <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-10">
           <div className={`flex items-center ${isLoaded ? 'animate-slide-top animate-delay-100' : 'opacity-0'}`}>
-            <h1 className="text-2xl font-bold text-white">DUPulse</h1>
-          </div>
-
-          {/* Navigation Links */}
-          <div className={`flex items-center space-x-8 ${isLoaded ? 'animate-slide-top animate-delay-200' : 'opacity-0'}`}>
-            <a href="#events" className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium">Events</a>
-            <a href="#societies" className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium">Societies</a>
-            <a href="#deals" className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium">Deals</a>
-            <a href="#about" className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium">About</a>
-            <div className="w-5 h-5 text-gray-400">
-              <svg fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white p-1 shadow-lg">
+              <img
+                src="/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png"
+                alt="DUPulse Logo"
+                className="w-full h-full object-contain rounded-full"
+              />
             </div>
           </div>
-        </nav>
+        </div>
 
         {/* Main Content */}
-        <div className="relative z-10 flex items-center justify-center h-full px-6 w-screen">
+        <div className="relative z-10 flex items-center justify-center h-full sm:min-h-[calc(100vh-5rem)] px-4 sm:px-6 w-screen py-4 sm:py-8">
           <div className="text-center w-full max-w-4xl">
 
             {/* Coming Soon Pill - Now with Circular Animation */}
-            <div className={`mb-8 flex justify-center ${isLoaded ? 'animate-fade-in animate-delay-300' : 'opacity-0'}`}>
+            <div className={`mb-6 sm:mb-8 flex justify-center ${isLoaded ? 'animate-fade-in animate-delay-300' : 'opacity-0'}`}>
               <div className="relative">
                 {/* Circular Text Animation */}
                 <CircularText
                   text="•COMING SOON•COMING SOON"
                   spinDuration={15}
                   onHover="speedUp"
-                  className="w-32 h-32 text-pink-400 text-sm"
+                  className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 xl:w-56 xl:h-56 text-pink-400 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl"
                 />
                 {/* Center icon/text */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-pink-400 text-xl font-bold">✨</span>
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16 xl:w-20 xl:h-20 rounded-full bg-white p-1 shadow-lg">
+                    <img
+                      src="/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png"
+                      alt="DUPulse Logo"
+                      className="w-full h-full object-contain rounded-full"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Main Headline */}
             <div className={`mb-6 ${isLoaded ? 'animate-slide-bottom animate-delay-400' : 'opacity-0'}`}>
-              <GlitchText
-                speed={0.8}
-                enableShadows={true}
-                enableOnHover={false}
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white"
-              >
+              <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight text-white px-2 sm:px-0">
                 DUPulse - The social heart of Durham student life
-              </GlitchText>
+              </h1>
             </div>
 
             {/* Subheading */}
-            <p className={`text-lg sm:text-xl md:text-2xl text-gray-400 leading-relaxed mb-12 max-w-3xl mx-auto ${isLoaded ? 'animate-fade-in animate-delay-500' : 'opacity-0'}`}>
+            <p className={`text-base sm:text-lg md:text-xl lg:text-2xl text-gray-400 leading-relaxed mb-8 sm:mb-12 max-w-3xl mx-auto px-4 sm:px-0 ${isLoaded ? 'animate-fade-in animate-delay-500' : 'opacity-0'}`}>
               Connect with societies, discover events, find exclusive deals, and experience everything Durham University has to offer in one place!
             </p>
 
             {/* Circular Countdown Timer */}
             <div className={`mb-12 ${isLoaded ? 'animate-fade-in animate-delay-600' : 'opacity-0'}`}>
-              <div className="flex flex-wrap justify-center gap-6 sm:gap-8">
+              <div className="flex flex-wrap justify-center gap-4 sm:gap-6 lg:gap-8">
                 {/* Days */}
                 <div className="relative">
-                  <svg className="w-24 h-24 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 100 100">
+                  <svg className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 transform -rotate-90" viewBox="0 0 100 100">
                     <circle
                       cx="50"
                       cy="50"
@@ -248,14 +243,14 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitl
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl sm:text-3xl font-bold text-pink-400">{timeLeft.days}</span>
+                    <span className="text-lg sm:text-2xl lg:text-3xl font-bold text-pink-400">{timeLeft.days}</span>
                     <span className="text-xs sm:text-sm text-gray-400">DAYS</span>
                   </div>
                 </div>
 
                 {/* Hours */}
                 <div className="relative">
-                  <svg className="w-24 h-24 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 100 100">
+                  <svg className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 transform -rotate-90" viewBox="0 0 100 100">
                     <circle
                       cx="50"
                       cy="50"
@@ -284,14 +279,14 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitl
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl sm:text-3xl font-bold text-purple-400">{timeLeft.hours}</span>
+                    <span className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-400">{timeLeft.hours}</span>
                     <span className="text-xs sm:text-sm text-gray-400">HOURS</span>
                   </div>
                 </div>
 
                 {/* Minutes */}
                 <div className="relative">
-                  <svg className="w-24 h-24 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 100 100">
+                  <svg className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 transform -rotate-90" viewBox="0 0 100 100">
                     <circle
                       cx="50"
                       cy="50"
@@ -320,14 +315,14 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitl
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl sm:text-3xl font-bold text-pink-400">{timeLeft.minutes}</span>
+                    <span className="text-lg sm:text-2xl lg:text-3xl font-bold text-pink-400">{timeLeft.minutes}</span>
                     <span className="text-xs sm:text-sm text-gray-400">MIN</span>
                   </div>
                 </div>
 
                 {/* Seconds */}
                 <div className="relative">
-                  <svg className="w-24 h-24 sm:w-28 sm:h-28 transform -rotate-90" viewBox="0 0 100 100">
+                  <svg className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 transform -rotate-90" viewBox="0 0 100 100">
                     <circle
                       cx="50"
                       cy="50"
@@ -356,24 +351,12 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitl
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-2xl sm:text-3xl font-bold text-purple-400">{timeLeft.seconds}</span>
+                    <span className="text-lg sm:text-2xl lg:text-3xl font-bold text-purple-400">{timeLeft.seconds}</span>
                     <span className="text-xs sm:text-sm text-gray-400">SEC</span>
                   </div>
                 </div>
               </div>
 
-              {/* Launch Date Display */}
-              <div className="text-center mt-8">
-                <p className="text-gray-400 text-sm">Launching</p>
-                <p className="text-white text-lg font-semibold">
-                  {new Date(launchDate).toLocaleDateString('en-GB', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
             </div>
 
           </div>
@@ -487,8 +470,18 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
 
         {/* Section Title */}
         <div className={`mb-16 ${isVisible ? 'slide-in-bottom' : 'opacity-0'}`}>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">
-            Your Complete Durham University Experience
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+            <div
+              className="text-gray-300 bg-clip-text inline-block animate-shine"
+              style={{
+                backgroundImage: "linear-gradient(120deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 255, 255, 0) 60%)",
+                backgroundSize: "200% 100%",
+                WebkitBackgroundClip: "text",
+                animationDuration: "3s",
+              }}
+            >
+              Your Complete Durham University Experience
+            </div>
           </h2>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
             Everything you need to make the most of your time at Durham University
@@ -535,7 +528,19 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
 
         {/* Tech Stack */}
         <div className={`mb-12 ${isVisible ? 'fade-in-up animate-delay-4' : 'opacity-0'}`}>
-          <h3 className="text-2xl font-bold text-white mb-8">What Makes DUPulse Special</h3>
+          <h3 className="text-2xl font-bold mb-8">
+            <div
+              className="text-gray-300 bg-clip-text inline-block animate-shine"
+              style={{
+                backgroundImage: "linear-gradient(120deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 255, 255, 0) 60%)",
+                backgroundSize: "200% 100%",
+                WebkitBackgroundClip: "text",
+                animationDuration: "3s",
+              }}
+            >
+              What Makes DUPulse Special
+            </div>
+          </h3>
           <div className="flex flex-wrap justify-center gap-4">
             {['Society Integration', 'Event Discovery', 'Student Deals', 'RSVP System', 'Durham Focus', 'Mobile Friendly', 'Real-time Updates', 'Community Driven'].map((tech, index) => (
               <span key={tech} className="px-4 py-2 bg-gray-800/50 border border-gray-600/50 rounded-full text-gray-300 text-sm font-medium">

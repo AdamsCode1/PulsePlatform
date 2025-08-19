@@ -6,6 +6,25 @@ const ComingSoonPage: React.FC = () => {
   const { toast } = useToast();
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
 
+  // Add error boundary for countdown
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+          <button
+            onClick={() => setHasError(false)}
+            className="bg-pink-500 hover:bg-pink-600 px-4 py-2 rounded"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleEarlyAccessSignup = async (data: {
     email: string;
     name: string;
@@ -14,12 +33,17 @@ const ComingSoonPage: React.FC = () => {
     joinWhatsApp: boolean;
   }) => {
     try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       // Use the unified API endpoint instead of direct Supabase
       const response = await fetch('/api/unified/early-access', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        signal: controller.signal,
         body: JSON.stringify({
           email: data.email,
           name: data.name,
@@ -33,6 +57,8 @@ const ComingSoonPage: React.FC = () => {
           }
         })
       });
+
+      clearTimeout(timeoutId);
 
       const result = await response.json();
 
@@ -56,12 +82,24 @@ const ComingSoonPage: React.FC = () => {
 
     } catch (error: any) {
       console.error('Signup error:', error);
-      toast({
-        title: "Oops! Something went wrong",
-        description: error.message || "Please try again or contact us if the problem persists.",
-        variant: "destructive"
-      });
-      throw error;
+
+      // Don't let network errors crash the page
+      if (error.name === 'AbortError') {
+        toast({
+          title: "Request timed out",
+          description: "Please check your connection and try again.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Oops! Something went wrong",
+          description: error.message || "Please try again or contact us if the problem persists.",
+          variant: "destructive"
+        });
+      }
+
+      // Don't re-throw the error to prevent crashes
+      return;
     }
   };
 
@@ -69,7 +107,10 @@ const ComingSoonPage: React.FC = () => {
     <div className="w-screen overflow-x-hidden" style={{ margin: 0, padding: 0 }}>
       {/* First Section - Hero with Countdown (Full Screen) */}
       <div className="w-screen h-screen">
-        <CountdownTimer launchDate="2025-09-15T09:00:00" />
+        <CountdownTimer
+          launchDate="2025-09-15T09:00:00"
+          onError={() => setHasError(true)}
+        />
       </div>
 
       {/* Second Section - Feature Preview (Full Screen) */}
