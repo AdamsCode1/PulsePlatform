@@ -134,7 +134,7 @@ export default function NavBar() {
           <button onClick={() => { setMenuOpen(false); navigate('/deals'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</button>
           <button onClick={() => { setMenuOpen(false); navigate('/about'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">About</button>
           {user && (
-            <button onClick={() => { setMenuOpen(false); navigate('/events/manage'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Manage Events</button>
+            <button onClick={() => { setMenuOpen(false); navigate('/events/manage'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Dashboard</button>
           )}
 
           {/* Mobile User Section */}
