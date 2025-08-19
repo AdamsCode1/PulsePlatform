@@ -139,7 +139,7 @@ export default function AdminDashboard() {
             </div>
           ) : stats && (
             <>
-              <Card onClick={() => handleCardClick('/admin/events')} className="cursor-pointer hover:bg-gray-100 transition-colors">
+        <Card onClick={() => handleCardClick('/admin/events')} className="cursor-pointer hover:bg-gray-100 transition-colors border-blue-200 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Total Events</CardTitle>
                   <CardDescription>{stats.totalEvents.pending} pending</CardDescription>
@@ -148,25 +148,25 @@ export default function AdminDashboard() {
                   <div className="text-3xl font-bold text-blue-600">{stats.totalEvents.total}</div>
                 </CardContent>
               </Card>
-              <Card>
+        <Card className="border-purple-200 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Students</CardTitle>
                   <CardDescription>Student accounts</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-indigo-600">{stats.totalUsers.students}</div>
+          <div className="text-3xl font-bold text-purple-600">{stats.totalUsers.students}</div>
                 </CardContent>
               </Card>
-              <Card>
+        <Card className="border-green-200 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Societies</CardTitle>
                   <CardDescription>Society accounts</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-purple-600">{stats.totalUsers.societies}</div>
+          <div className="text-3xl font-bold text-green-600">{stats.totalUsers.societies}</div>
                 </CardContent>
               </Card>
-              <Card>
+        <Card className="border-pink-200 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Partners</CardTitle>
                   <CardDescription>Partner accounts</CardDescription>
@@ -203,7 +203,7 @@ export default function AdminDashboard() {
                           <YAxis allowDecimals={false} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="count" fill="#8884d8" name="Submissions" />
+                          <Bar dataKey="count" fill="#ec4899" name="Submissions" />
                       </BarChart>
                       </ResponsiveContainer>
                   </div>
@@ -214,29 +214,29 @@ export default function AdminDashboard() {
 
           {/* Quick Actions & Status */}
           <div className="lg:col-span-1 lg:row-span-2 space-y-8">
-             <Card>
+             <Card className="border-pink-200 shadow-md">
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle className="text-pink-600">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button onClick={() => handleCardClick('/admin/events?status=pending')} className="w-full justify-start">
-                  <Calendar className="w-4 h-4 mr-2" /> Review Pending Events
+                <Button onClick={() => handleCardClick('/admin/events?status=pending')} className="w-full justify-start" variant="outline">
+                  <Calendar className="w-4 h-4 mr-2 text-pink-500" /> Review Pending Events
                 </Button>
-                <Button onClick={() => navigate('/admin/deals')} className="w-full justify-start">
-                  <BarChart3 className="w-4 h-4 mr-2" /> Manage Deals
+                <Button onClick={() => navigate('/admin/deals')} className="w-full justify-start" variant="outline">
+                  <BarChart3 className="w-4 h-4 mr-2 text-purple-500" /> Manage Deals
                 </Button>
-                <Button onClick={() => navigate('/admin/users')} className="w-full justify-start">
-                  <Users className="w-4 h-4 mr-2" /> Manage Users
+                <Button onClick={() => navigate('/admin/users')} className="w-full justify-start" variant="outline">
+                  <Users className="w-4 h-4 mr-2 text-blue-500" /> Manage Users
                 </Button>
                  <Button onClick={() => navigate('/admin/settings')} className="w-full justify-start" variant="outline">
-                  <SettingsIcon className="w-4 h-4 mr-2" /> Manage Settings
+                  <SettingsIcon className="w-4 h-4 mr-2 text-green-500" /> Manage Settings
                 </Button>
               </CardContent>
             </Card>
 
-            <Card>
+      <Card className="border-blue-200 shadow-md">
               <CardHeader>
-                <CardTitle>Event Status Overview</CardTitle>
+        <CardTitle className="text-blue-600">Event Status Overview</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoadingStats ? (
@@ -275,9 +275,9 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card>
+      <Card className="border-purple-200 shadow-md">
               <CardHeader>
-                <CardTitle>System Health</CardTitle>
+        <CardTitle className="text-purple-600">System Health</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoadingStats ? (
