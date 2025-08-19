@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail } from './lib/sendEmail.js';
 
 // Create Supabase client
 const supabaseUrl = process.env.SUPABASE_URL!;
@@ -7,6 +8,26 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABAS
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Helper functions
+
+// Function to verify the user is an admin
+const requireAdmin = async (req: VercelRequest) => {
+  const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) throw new Error('Authentication token not provided.');
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) throw new Error('Authentication failed.');
+
+  // Check admin table for UID
+  const { data: adminRow, error: adminError } = await supabase
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  if (adminError || !adminRow) {
+    throw new Error('You must be an admin to perform this action.');
+  }
+  return user;
+};
 const isValidEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
@@ -172,12 +193,13 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
     if (action === 'approve' && method === 'POST' && id) {
       console.log('Handling approve event');
+      // Require admin
+      await requireAdmin(req);
       const { data, error } = await supabase
         .from('event')
         .update({ status: 'approved' })
         .eq('id', id)
         .select();
-
       if (error) {
         console.error('Approve event error:', error);
         return res.status(500).json({ error: error.message });
@@ -188,17 +210,50 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
     if (action === 'reject' && method === 'POST' && id) {
       console.log('Handling reject event');
-      const { error } = await supabase
+      // Require admin
+      await requireAdmin(req);
+      // Update event status and persist reason
+      const reason = req.body?.reason || null;
+      const { error: updateError } = await supabase
         .from('event')
-        .delete()
+        .update({ status: 'rejected', rejection_reason: reason })
         .eq('id', id);
-
-      if (error) {
-        console.error('Reject event error:', error);
-        return res.status(500).json({ error: error.message });
+      if (updateError) {
+        console.error('Reject event update error:', updateError);
+        return res.status(500).json({ error: updateError.message });
       }
-      console.log('Reject event success');
-      return res.status(200).json({ message: 'Event rejected and deleted' });
+      // Fetch event details
+      const { data: eventDetails, error: eventError } = await supabase
+        .from('event')
+        .select('name, society_id')
+        .eq('id', id)
+        .single();
+      if (eventError || !eventDetails) {
+        console.error('Reject event fetch error:', eventError);
+        return res.status(500).json({ error: eventError?.message || 'Event not found' });
+      }
+      // Fetch society details
+      const { data: societyDetails, error: societyError } = await supabase
+        .from('society')
+        .select('contact_email')
+        .eq('id', eventDetails.society_id)
+        .single();
+      if (societyError || !societyDetails) {
+        console.error('Reject event society fetch error:', societyError);
+        return res.status(500).json({ error: societyError?.message || 'Society not found' });
+      }
+      // Send rejection email
+      try {
+        await sendEmail({
+          to: societyDetails.contact_email,
+          subject: `Event "${eventDetails.name}" Rejected`,
+          text: `Your event titled "${eventDetails.name}" has been rejected.\n\nReason: ${req.body?.reason || 'No reason provided.'}`,
+        });
+        console.log('Rejection email sent to', societyDetails.contact_email);
+      } catch (emailErr) {
+        console.error('Failed to send rejection email:', emailErr);
+      }
+      return res.status(200).json({ message: 'Event rejected and organiser notified.' });
     }
 
     // Default events CRUD

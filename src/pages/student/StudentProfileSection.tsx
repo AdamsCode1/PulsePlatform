@@ -39,7 +39,9 @@ const StudentProfileSection = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <LoadingSpinner />
+          <div className="py-4">
+            <LoadingSpinner variant="page" size="sm" text="Loading profile..." />
+          </div>
         ) : profile ? (
           <div>
             <p><strong>Name:</strong> {profile.name}</p>

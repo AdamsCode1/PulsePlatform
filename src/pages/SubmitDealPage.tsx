@@ -174,7 +174,7 @@ export default function SubmitDealPage() {
         toast({ title: "Authentication Error", description: "Please log in again.", variant: "destructive" });
         return;
       }
-      const response = await fetch(`${API_BASE_URL}/api/deals`, {
+  const response = await fetch(`${API_BASE_URL}/deals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -402,7 +402,12 @@ export default function SubmitDealPage() {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50">
+      <NavBar />
+      <LoadingSpinner variant="page" size="lg" text="Loading deal submission form..." />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">

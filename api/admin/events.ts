@@ -1,34 +1,43 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import { createHandler } from '../../lib/utils';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createHandler } from '../../lib/utils.js';
+import { sendEmail } from '../lib/sendEmail.js';
 
 // This is a secure, server-side only file.
 // It uses environment variables that are not exposed to the client.
 
 // Create a Supabase client with the service role key to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabaseAdmin: SupabaseClient | undefined;
+function initSupabaseAdmin(): SupabaseClient {
+  if (!supabaseAdmin) {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    }
+    supabaseAdmin = createClient(url, key);
+  }
+  return supabaseAdmin;
+}
 
 // Function to verify the user is an admin
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) throw new Error('Authentication token not provided.');
 
-  if (!token) {
-    throw new Error('Authentication token not provided.');
-  }
+  const client = initSupabaseAdmin();
+  const { data: { user }, error } = await client.auth.getUser(token);
+  if (error || !user) throw new Error('Authentication failed.');
 
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) {
-    throw new Error('Authentication failed.');
-  }
-
-  if (user.app_metadata?.role !== 'admin') {
+  // Check admin table for UID
+  const { data: adminRow, error: adminError } = await client
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  if (adminError || !adminRow) {
     throw new Error('You must be an admin to perform this action.');
   }
-
   return user;
 };
 
@@ -44,7 +53,8 @@ const handleGetEvents = async (req: VercelRequest, res: VercelResponse) => {
     const offset = (pageNum - 1) * limitNum;
 
     // Build the query
-    let query = supabaseAdmin
+  const client = initSupabaseAdmin();
+  let query = client
       .from('event')
       .select(`
         *,
@@ -74,7 +84,7 @@ const handleGetEvents = async (req: VercelRequest, res: VercelResponse) => {
     }
 
     // Log the action
-    await supabaseAdmin.from('admin_activity_log').insert({
+  await client.from('admin_activity_log').insert({
       admin_id: adminUser.id,
       admin_email: adminUser.email,
       action: 'view_events',
@@ -120,7 +130,8 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
     updateData.rejection_reason = rejection_reason;
   }
 
-    let { error } = await supabaseAdmin
+  const client = initSupabaseAdmin();
+  let { error } = await client
       .from('event')
       .update(updateData)
       .eq('id', eventId);
@@ -132,7 +143,7 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
 
     // Log the admin activity
     if (status === 'approved' || status === 'rejected') {
-        const { error: logError } = await supabaseAdmin.rpc('log_admin_activity', {
+  const { error: logError } = await client.rpc('log_admin_activity', {
             action: `event.${status}`,
             target_entity: 'event',
             target_id: eventId,
@@ -145,6 +156,43 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
             // If logging fails, we should probably note it but not fail the whole request
             console.error('Failed to log admin activity:', logError);
         }
+    }
+
+    // Send email notification on rejection
+    if (status === 'rejected') {
+      // Get event details including name and society_id
+  const client = initSupabaseAdmin();
+  const { data: eventDetails } = await client
+        .from('event')
+        .select('id, name, society_id')
+        .eq('id', eventId)
+        .single();
+
+      if (eventDetails) {
+        // Fetch society email from society_id
+  const { data: societyDetails } = await client
+          .from('society')
+          .select('id, contact_email')
+          .eq('id', eventDetails.society_id)
+          .single();
+
+        if (societyDetails && societyDetails.contact_email) {
+          try {
+            await sendEmail({
+              to: societyDetails.contact_email,
+              subject: `Event "${eventDetails.name}" Rejected`,
+              text: `Your event titled "${eventDetails.name}" has been rejected.\n\nReason: ${rejection_reason || 'No reason provided.'}`,
+            });
+          } catch (e) {
+            console.error('Failed to send rejection email:', e);
+            // do not throw; continue to return 200 for the update
+          }
+        } else {
+          console.error('No valid society contact_email found for event:', eventId);
+        }
+      } else {
+        console.error('Event details not found for ID:', eventId);
+      }
     }
 
   return res.status(200).json({ id: eventId, status, ...(status === 'rejected' ? { rejection_reason } : {}) });
@@ -168,7 +216,8 @@ const handleDeleteEvent = async (req: any, res: any) => {
     console.log(`DELETE /admin/events: Attempting to delete event ${eventId}`);
 
     // First check if the event exists
-    const { data: eventCheck, error: checkError } = await supabaseAdmin
+  const client = initSupabaseAdmin();
+  const { data: eventCheck, error: checkError } = await client
       .from('event')
       .select('id, title, society_id')
       .eq('id', eventId)
@@ -190,7 +239,7 @@ const handleDeleteEvent = async (req: any, res: any) => {
     console.log(`DELETE /admin/events: Found event "${eventCheck.title}" (ID: ${eventId}), proceeding with deletion`);
 
     // Delete the event
-    const { error: deleteError } = await supabaseAdmin
+  const { error: deleteError } = await client
       .from('event')
       .delete()
       .eq('id', eventId);
@@ -205,7 +254,7 @@ const handleDeleteEvent = async (req: any, res: any) => {
     // Log admin activity (optional - if this fails, we don't fail the whole request)
     try {
       if (adminUser) {
-        await supabaseAdmin.rpc('log_admin_activity', {
+  await client.rpc('log_admin_activity', {
           admin_id: adminUser.id,
           action: 'delete_event',
           details: `Deleted event: ${eventCheck.title} (ID: ${eventId})`
