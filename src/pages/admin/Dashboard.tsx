@@ -179,7 +179,7 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Activity Chart */}
           <div className="lg:col-span-2">
              <Card>
@@ -213,7 +213,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Quick Actions & Status */}
-          <div className="lg:col-span-1 space-y-8">
+          <div className="lg:col-span-1 lg:row-span-2 space-y-8">
              <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
