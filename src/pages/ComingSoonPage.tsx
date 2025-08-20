@@ -5,6 +5,8 @@ import { useToast } from '@/hooks/use-toast';
 const ComingSoonPage: React.FC = () => {
   const { toast } = useToast();
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [isSneakPeakModalOpen, setIsSneakPeakModalOpen] = useState(false);
+  const [sneakPeakPassword, setSneakPeakPassword] = useState('');
 
   // Add error boundary for countdown
   const [hasError, setHasError] = useState(false);
@@ -103,10 +105,47 @@ const ComingSoonPage: React.FC = () => {
     }
   };
 
+  const handleSneakPeakSubmit = () => {
+    if (sneakPeakPassword === 'pulse2025dev') {
+      toast({
+        title: "Access granted!",
+        description: "Welcome to DUPulse!",
+        variant: "default"
+      });
+      // Redirect to main page after a brief delay
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1000);
+    } else {
+      toast({
+        title: "Access denied",
+        description: "Incorrect password. Please try again.",
+        variant: "destructive"
+      });
+      setSneakPeakPassword('');
+    }
+  };
+
+  const handleSneakPeakKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSneakPeakSubmit();
+    }
+  };
+
   return (
     <div className="w-screen overflow-x-hidden" style={{ margin: 0, padding: 0 }}>
       {/* First Section - Hero with Countdown (Full Screen) */}
-      <div className="w-screen h-screen">
+      <div className="w-screen h-screen relative">
+        {/* Join Waitlist Button - Top Right of First Section */}
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+          <button
+            onClick={() => setIsSignupModalOpen(true)}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-4 py-2 sm:px-6 sm:py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base border border-pink-200 backdrop-blur-sm"
+          >
+            Join the waitlist
+          </button>
+        </div>
+
         <CountdownTimer
           launchDate="2025-09-15T09:00:00"
           onError={() => setHasError(true)}
@@ -114,16 +153,80 @@ const ComingSoonPage: React.FC = () => {
       </div>
 
       {/* Second Section - Feature Preview (Full Screen) */}
-      <div className="w-screen">
-        <FeaturePreview onJoinWaitlist={() => setIsSignupModalOpen(true)} />
-      </div>
+      <div className="w-screen relative">
+        <FeaturePreview onJoinWaitlist={null} />
 
-      {/* Early Access Signup Modal */}
+        {/* Buttons Container - Side by side positioning */}
+        <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
+          {/* Join Waitlist Button - Left side */}
+          <button
+            onClick={() => setIsSignupModalOpen(true)}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base border border-pink-200 backdrop-blur-sm"
+          >
+            Join the Waitlist
+          </button>
+
+          {/* Sneak Peak Button - Right side */}
+          <button
+            onClick={() => setIsSneakPeakModalOpen(true)}
+            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base border border-purple-200 backdrop-blur-sm"
+          >
+            🔍 Sneak Peak
+          </button>
+        </div>
+      </div>      {/* Early Access Signup Modal */}
       <EarlyAccessSignup
         isOpen={isSignupModalOpen}
         onClose={() => setIsSignupModalOpen(false)}
         onSignup={handleEarlyAccessSignup}
       />
+
+      {/* Sneak Peak Password Modal */}
+      {isSneakPeakModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gradient-to-br from-white/95 to-purple-50/95 rounded-2xl p-8 max-w-md w-full border border-purple-200 shadow-2xl">
+            <div className="text-center mb-6">
+              <div className="text-4xl mb-4">🔐</div>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+                Sneak Peak Access
+              </h2>
+              <p className="text-purple-600">
+                Enter the password to get early access to DUPulse
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <input
+                type="password"
+                value={sneakPeakPassword}
+                onChange={(e) => setSneakPeakPassword(e.target.value)}
+                onKeyPress={handleSneakPeakKeyPress}
+                placeholder="Enter password..."
+                className="w-full px-4 py-3 rounded-lg border border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
+                autoFocus
+              />
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleSneakPeakSubmit}
+                  className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold py-3 rounded-lg transition-all duration-300"
+                >
+                  Access DUPulse
+                </button>
+                <button
+                  onClick={() => {
+                    setIsSneakPeakModalOpen(false);
+                    setSneakPeakPassword('');
+                  }}
+                  className="px-6 py-3 text-purple-600 hover:text-purple-800 font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
