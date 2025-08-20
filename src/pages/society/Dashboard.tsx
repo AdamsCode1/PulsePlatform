@@ -193,7 +193,7 @@ export default function SocietyDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="border-blue-200 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total Events</CardTitle>
             </CardHeader>
@@ -201,7 +201,7 @@ export default function SocietyDashboard() {
               <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-green-200 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Approved</CardTitle>
             </CardHeader>
@@ -209,7 +209,7 @@ export default function SocietyDashboard() {
               <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-yellow-200 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Pending</CardTitle>
             </CardHeader>
@@ -217,7 +217,7 @@ export default function SocietyDashboard() {
               <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-purple-200 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total RSVPs</CardTitle>
             </CardHeader>
@@ -230,16 +230,17 @@ export default function SocietyDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="border-pink-200 shadow-md">
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle className="text-pink-600">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button 
                   onClick={() => navigate('/society/submit-event')}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-pink-600 border-pink-300"
+                  variant="outline"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4 mr-2 text-pink-500" />
                   Submit New Event
                 </Button>
                 <Button 
@@ -247,7 +248,7 @@ export default function SocietyDashboard() {
                   className="w-full justify-start"
                   variant="outline"
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
+                  <Calendar className="w-4 h-4 mr-2 text-blue-500" />
                   Manage Events
                 </Button>
                 <Button 
@@ -255,16 +256,16 @@ export default function SocietyDashboard() {
                   className="w-full justify-start"
                   variant="outline"
                 >
-                  <BarChart3 className="w-4 h-4 mr-2" />
+                  <BarChart3 className="w-4 h-4 mr-2 text-purple-500" />
                   View Public Events
                 </Button>
               </CardContent>
             </Card>
 
             {/* Society Info */}
-            <Card className="mt-6">
+            <Card className="mt-6 border-green-200 shadow-md">
               <CardHeader>
-                <CardTitle>Society Information</CardTitle>
+                <CardTitle className="text-green-600">Society Information</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -289,11 +290,11 @@ export default function SocietyDashboard() {
 
           {/* Recent Events */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="border-pink-200 shadow-md">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Recent Events</CardTitle>
+                    <CardTitle className="text-pink-600">Recent Events</CardTitle>
                     <CardDescription>Your latest event submissions</CardDescription>
                   </div>
                   <Button 
