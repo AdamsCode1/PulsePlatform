@@ -14,7 +14,7 @@ import EventModal from '@/components/EventModal';
 
 interface Event {
   id: string;
-  title: string;
+  name: string;
   description: string;
   date: string;
   time: string;
@@ -48,7 +48,7 @@ export default function StudentRSVPs() {
         const e = rsvp.event;
         return {
           ...e,
-          eventName: e.title,
+          eventName: e.name,
           organiserID: '',
           societyName: e.society?.name || '',
           date: e.date && !isNaN(Date.parse(e.date)) ? new Date(e.date).toISOString() : new Date().toISOString(),
@@ -351,7 +351,7 @@ export default function StudentRSVPs() {
                     key={`${rsvp.event.id}-${eventRSVPCounts[rsvp.event.id] || 0}`}
                     event={{
                       ...rsvp.event,
-                      eventName: rsvp.event.title,
+                      eventName: rsvp.event.name,
                       date: rsvp.event.date && !isNaN(Date.parse(rsvp.event.date)) ? new Date(rsvp.event.date).toISOString() : '',
                       endTime: rsvp.event.time || '', // fallback to time string if no endTime field
                       location: rsvp.event.location,
