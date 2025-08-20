@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationLink, PaginationNext } from '@/components/ui/pagination';
-import { Calendar, Users, Search, MapPin, Clock, CheckCircle, XCircle, Eye, Trash2 } from 'lucide-react';
+import { Calendar, Users, Search, MapPin, CheckCircle, XCircle, Eye, Trash2 } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
@@ -58,6 +58,7 @@ export default function AdminEvents() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [eventsPerPage] = useState(10);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   // Event stats counters
   const [eventStats, setEventStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
@@ -385,16 +386,34 @@ export default function AdminEvents() {
                   )}
                 </div>
               </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
+
+              {/* Custom status dropdown for better UI */}
+              <div className="relative inline-block w-48">
+                <button
+                  className="w-full text-left px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 text-gray-800 font-medium transition-all duration-200 hover:border-pink-400"
+                  onClick={() => setShowStatusDropdown((prev) => !prev)}
+                  type="button"
+                >
+                  {statusFilter === 'all' ? 'All Status' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                  <span className="float-right">▼</span>
+                </button>
+                {showStatusDropdown && (
+                  <ul className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1">
+                    {['all', 'pending', 'approved', 'rejected'].map((status) => (
+                      <li
+                        key={status}
+                        className={`px-4 py-2 cursor-pointer hover:bg-pink-50 text-gray-700 ${statusFilter === status ? 'bg-pink-100 font-semibold' : ''}`}
+                        onClick={() => {
+                          setStatusFilter(status);
+                          setShowStatusDropdown(false);
+                        }}
+                      >
+                        {status === 'all' ? 'All Status' : status.charAt(0).toUpperCase() + status.slice(1)}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -441,7 +460,7 @@ export default function AdminEvents() {
                       {event.society.name}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
-                      <Clock className="w-4 h-4 mr-2" />
+                      <Users className="w-4 h-4 mr-2" />
                       Max {event.max_attendees}
                     </div>
                   </div>

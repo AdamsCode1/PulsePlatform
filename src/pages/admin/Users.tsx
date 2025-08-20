@@ -45,7 +45,6 @@ export default function AdminUsers() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const fetchUsers = useCallback(async () => {
-    if (!currentUser) return;
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -67,22 +66,32 @@ export default function AdminUsers() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Failed to fetch users.');
 
-      setUsers(result.data);
+      // Map backend user data to frontend User interface
+      const mappedUsers = (result.data || []).map((user: any) => ({
+        id: user.id,
+        name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : (user.first_name || user.name || user.email),
+        email: user.email,
+        role: user.role,
+        status: user.status || 'active',
+        created_at: user.created_at,
+      }));
+      setUsers(mappedUsers);
       setTotalUsers(result.count);
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [toast, currentUser, roleFilter, statusFilter, debouncedSearchTerm, currentPage, usersPerPage]);
+  }, [toast, roleFilter, statusFilter, debouncedSearchTerm, currentPage, usersPerPage]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
   useEffect(() => {
+    // Guard: If currentPage exceeds totalPages, reset to last valid page
     if (currentPage > totalPages && totalPages > 0) {
-        setCurrentPage(totalPages);
+      setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
 
@@ -204,17 +213,17 @@ export default function AdminUsers() {
                 </div>
                 {/* User items */}
                 <ul className="divide-y divide-gray-200">
-                  {users.map(user => (
-                    <li key={user.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                  {users.map((user, idx) => (
+                    <li key={user.id || idx} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                       <div className="grid grid-cols-2 md:grid-cols-6 gap-4 items-center">
                         <div className="col-span-2 flex items-center gap-4">
                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">
-                               {user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase()}
-                           </div>
-                           <div>
-                                <p className="font-medium text-gray-900">{user.name || 'N/A'}</p>
-                                <p className="text-sm text-gray-500">{user.email}</p>
-                           </div>
+                          {user.name ? user.name.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : '?')}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{user.name || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{user.email || 'N/A'}</p>
+                        </div>
                         </div>
                         <div className="hidden md:block">
                           <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
@@ -248,7 +257,16 @@ export default function AdminUsers() {
                         </PaginationItem>
                         <PaginationItem><span className="px-4 py-2 text-sm">Page {currentPage} of {totalPages}</span></PaginationItem>
                         <PaginationItem>
-                            <PaginationNext href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.min(totalPages, p + 1)); }} className={currentPage === totalPages ? 'pointer-events-none opacity-50' : ''} />
+                            <PaginationNext
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              if (currentPage < totalPages) {
+                setCurrentPage(p => Math.min(totalPages, p + 1));
+              }
+            }}
+            className={currentPage === totalPages || users.length === 0 ? 'pointer-events-none opacity-50' : ''}
+          />
                         </PaginationItem>
                     </PaginationContent>
                 </Pagination>

@@ -11,7 +11,7 @@ if (!smtpHost || Number.isNaN(smtpPort) || !smtpUser || !smtpPass || !smtpFrom) 
   throw new Error('SMTP config incomplete: ensure SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and SMTP_FROM_EMAIL are set.');
 }
 
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: smtpHost,
   port: smtpPort,
   secure: smtpSecure, // true for 465 or when SMTP_SECURE=true

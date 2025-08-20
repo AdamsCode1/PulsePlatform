@@ -212,11 +212,10 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
       console.log('Handling reject event');
       // Require admin
       await requireAdmin(req);
-      // Update event status and persist reason
-      const reason = req.body?.reason || null;
+      // Update event status only (do not persist rejection reason)
       const { error: updateError } = await supabase
         .from('event')
-        .update({ status: 'rejected', rejection_reason: reason })
+        .update({ status: 'rejected' })
         .eq('id', id);
       if (updateError) {
         console.error('Reject event update error:', updateError);

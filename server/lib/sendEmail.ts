@@ -1,29 +1,32 @@
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const SENDGRID_FROM_EMAIL = process.env.SENDGRID_FROM_EMAIL;
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
-if (!SENDGRID_API_KEY) {
-  throw new Error('SENDGRID_API_KEY is not set');
-}
-if (!SENDGRID_FROM_EMAIL) {
-  throw new Error('SENDGRID_FROM_EMAIL is not set');
-}
-
-sgMail.setApiKey(SENDGRID_API_KEY);
-
-export async function sendEmail({ to, subject, text, html }: { to: string; subject: string; text: string; html?: string }) {
-  const msg = {
+export async function sendEmail({
+  to,
+  subject,
+  text,
+  html,
+}: {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+}) {
+  const mailOptions = {
+    from: process.env.SMTP_FROM_EMAIL,
     to,
-    from: SENDGRID_FROM_EMAIL,
     subject,
     text,
     html,
   };
-  try {
-    await sgMail.send(msg);
-  } catch (err) {
-    // TODO: route through your logger if available
-    throw new Error(`SendGrid send failed: ${(err as Error)?.message ?? String(err)}`);
-  }
+  await transporter.sendMail(mailOptions);
 }
