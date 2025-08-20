@@ -8,6 +8,7 @@ import { Rocket, Users, Calendar, Sparkles, Clock, Mail, Share2 } from 'lucide-r
 import CircularText from '@/blocks/TextAnimations/CircularText/CircularText';
 import GlitchText from '@/blocks/TextAnimations/GlitchText/GlitchText';
 import Aurora from '@/blocks/Backgrounds/Aurora/Aurora';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 interface CountdownTimerProps {
   launchDate: string;

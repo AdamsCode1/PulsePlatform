@@ -12,6 +12,8 @@ import { supabase } from '@/lib/supabaseClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/apiConfig';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { Skeleton } from "@/components/ui/skeleton";
 
 type SettingsConfig = {
   eventApproval: {
@@ -38,32 +40,11 @@ type SettingsConfig = {
 export default function AdminSettings() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const { isAdmin, user } = useAdminAuth();
   const [settings, setSettings] = useState<SettingsConfig | null>(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
-
-  const checkAuth = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.app_metadata?.role !== 'admin') {
-        navigate('/admin/login');
-        return;
-      }
-      setUser(user);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      navigate('/admin/login');
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
 
   const defaultConfig: SettingsConfig = {
     eventApproval: { autoApproveSocietyEvents: false, requireRejectionReason: true },
@@ -87,7 +68,7 @@ export default function AdminSettings() {
     } catch (error: any) {
       console.error('Failed to fetch settings:', error);
       // Use default settings if fetch fails
-      setSettings(defaultSettings);
+      setSettings(defaultConfig);
     } finally {
       setSettingsLoading(false);
     }
@@ -123,7 +104,17 @@ export default function AdminSettings() {
     }
   }, [user]);
 
-  if (loading) {
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-100 border border-red-300 rounded-lg p-8 text-red-700 text-center">
+          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+          <p>You are not authorized to access this admin page.</p>
+        </div>
+      </div>
+    );
+  }
+  if (isAdmin === null) {
     return <LoadingSpinner />;
   }
 

@@ -247,7 +247,7 @@ const Index = () => {
           </div>
 
           {/* Loading State with Spinner */}
-          {isLoading && <LoadingSpinner />}
+          {isLoading && <LoadingSpinner variant="page" size="md" text="Finding amazing events for you..." />}
 
           {/* Events Grid - Centered with responsive design */}
           {!isLoading && (
