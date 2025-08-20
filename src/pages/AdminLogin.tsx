@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
+import { Eye, EyeOff } from "lucide-react";
 
 const AdminLogin = () => {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
@@ -27,16 +29,22 @@ const AdminLogin = () => {
                 return;
             }
 
-            // After successful login, check for admin role in app_metadata
+            // After successful login, check for admin UID in admin table
             if (data.user) {
-                if (data.user.app_metadata?.role === 'admin') {
-                    // Successfully logged in as admin, redirect to admin dashboard
-                    navigate("/admin/dashboard");
-                } else {
-                    // User is not an admin, sign them out and show an error
+                const { id: uid } = data.user;
+                const { data: adminRow, error: adminError } = await supabase
+                    .from('admin')
+                    .select('uid')
+                    .eq('uid', uid)
+                    .maybeSingle();
+                if (adminError || !adminRow) {
                     await supabase.auth.signOut();
                     setError("You are not authorized to access the admin dashboard.");
+                    setLoading(false);
+                    return;
                 }
+                // Successfully logged in as admin, redirect to admin dashboard
+                navigate("/admin/dashboard");
             }
         } catch (err: unknown) {
             setError("An unexpected error occurred. Please try again.");
@@ -113,9 +121,9 @@ const AdminLogin = () => {
                         </div>
 
                         {/* Password Input */}
-                        <div>
+                        <div className="relative">
                             <input
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 className="w-full p-4 bg-white/60 border-2 border-purple-200 rounded-xl text-purple-800 placeholder-purple-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors duration-300 text-sm sm:text-base backdrop-blur-sm"
@@ -123,6 +131,17 @@ const AdminLogin = () => {
                                 required
                                 disabled={loading}
                             />
+                            <button
+                                type="button"
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center"
+                                onClick={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? (
+                                    <EyeOff className="h-4 w-4 text-purple-400 hover:text-purple-600" />
+                                ) : (
+                                    <Eye className="h-4 w-4 text-purple-400 hover:text-purple-600" />
+                                )}
+                            </button>
                         </div>
 
                         {/* Submit Button */}

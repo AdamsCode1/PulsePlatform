@@ -1,82 +1,76 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import { createHandler } from '../lib/utils';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createHandler } from '../../lib/utils.js';
 
 // This is a secure, server-side only file.
 // It uses environment variables that are not exposed to the client.
 
 // Create a Supabase client with the service role key to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabaseAdmin: SupabaseClient | undefined;
+function initSupabaseAdmin(): SupabaseClient {
+  if (!supabaseAdmin) {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    }
+    supabaseAdmin = createClient(url, key);
+  }
+  return supabaseAdmin;
+}
 
 // Function to verify the user is an admin
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) throw new Error('Authentication token not provided.');
 
-  if (!token) {
-    throw new Error('Authentication token not provided.');
-  }
+  const client = initSupabaseAdmin();
+  const { data: { user }, error } = await client.auth.getUser(token);
+  if (error || !user) throw new Error('Authentication failed.');
 
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) {
-    throw new Error('Authentication failed.');
-  }
-
-  if (user.app_metadata?.role !== 'admin') {
+  // Check admin table for UID
+  const { data: adminRow, error: adminError } = await client
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  if (adminError || !adminRow) {
     throw new Error('You must be an admin to perform this action.');
   }
-
   return user;
 };
 
-// Handler for fetching recent admin activity (no join; resolve emails via Admin API)
+// Handler for fetching recent admin activity (fallback without admin_activity_log table)
 const handleGetActivity = async (req: VercelRequest, res: VercelResponse) => {
   try {
     await requireAdmin(req);
+  const client = initSupabaseAdmin();
 
-    const { data: logs, error: logsError } = await supabaseAdmin
-      .from('admin_activity_log')
-      .select('id,created_at,action,target_entity,target_id,details,user_id')
-      .order('created_at', { ascending: false })
+    // Since admin_activity_log table doesn't exist, let's create a simple fallback
+    // using recent events and their status changes as activity
+  const { data: recentEvents, error: eventsError } = await client
+      .from('event')
+      .select('id, name, status, created_at, updated_at, society:society_id(name)')
+      .order('updated_at', { ascending: false })
       .limit(10);
 
-    if (logsError) {
-      console.error('Error fetching admin activity:', logsError);
-      throw new Error(logsError.message);
+    if (eventsError) {
+      console.error('Error fetching recent events:', eventsError);
+      throw new Error(eventsError.message);
     }
 
-    const userIds = Array.from(
-      new Set((logs || []).map((l: any) => l.user_id).filter(Boolean))
-    ) as string[];
-
-    const emailsById = new Map<string, string>();
-    if (userIds.length > 0) {
-      await Promise.all(
-        userIds.map(async (id) => {
-          try {
-            const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
-            if (!error && data?.user) {
-              emailsById.set(id, (data.user.email as string) || 'Unknown User');
-            }
-          } catch (e) {
-            // Best-effort; ignore individual failures
-            console.warn('Lookup user email failed for id', id, e);
-          }
-        })
-      );
-    }
-
-    const formatted = (logs || []).map((log: any) => ({
-      id: log.id,
-      created_at: log.created_at,
-      action: log.action,
-      target_entity: log.target_entity,
-      target_id: log.target_id,
-      details: log.details,
-      user_email: (log.user_id && emailsById.get(log.user_id)) || 'Unknown User',
+    // Format as activity log entries
+    const formatted = (recentEvents || []).map((event: any, index) => ({
+      id: `event-${event.id}-${index}`,
+      created_at: event.updated_at || event.created_at,
+      action: `event.${event.status}`,
+      target_entity: 'event',
+      target_id: event.id,
+      details: {
+        eventName: event.name,
+        societyName: event.society?.name
+      },
+      user_email: 'Admin User', // Fallback since we don't track who made the change
     }));
 
     return res.status(200).json(formatted);

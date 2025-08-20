@@ -249,7 +249,12 @@ export default function StudentRSVPs() {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavBar />
+        <LoadingSpinner variant="page" size="lg" text="Loading your RSVPs..." />
+      </div>
+    );
   }
 
   const confirmedRSVPs = rsvps.filter(rsvp => rsvp.status === 'confirmed');
@@ -302,7 +307,9 @@ export default function StudentRSVPs() {
                 <CardDescription>All RSVPs made by students</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-purple-600">{platformTotalRSVPs !== null ? platformTotalRSVPs : <LoadingSpinner />}</div>
+                <div className="text-2xl font-bold text-purple-600 min-h-[2rem] flex items-center">
+                  {platformTotalRSVPs !== null ? platformTotalRSVPs : <LoadingSpinner variant="inline" size="sm" />}
+                </div>
               </CardContent>
             </Card>
           </div>

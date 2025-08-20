@@ -14,6 +14,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface User {
   id: string;
@@ -27,6 +29,7 @@ interface User {
 export default function AdminUsers() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, user } = useAdminAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,24 +76,6 @@ export default function AdminUsers() {
     }
   }, [toast, currentUser, roleFilter, statusFilter, debouncedSearchTerm, currentPage, usersPerPage]);
 
-  const checkAuth = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.app_metadata?.role !== 'admin') {
-        navigate('/admin/login');
-        return;
-      }
-      setCurrentUser(user);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      navigate('/admin/login');
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
-
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -117,6 +102,20 @@ export default function AdminUsers() {
   const handleOpenDetails = (user: User) => {
     setSelectedUser(user);
   };
+
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-100 border border-red-300 rounded-lg p-8 text-red-700 text-center">
+          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+          <p>You are not authorized to access this admin page.</p>
+        </div>
+      </div>
+    );
+  }
+  if (isAdmin === null) {
+    return <Skeleton className="h-32 w-full" />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -184,8 +183,8 @@ export default function AdminUsers() {
         {/* User List */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
             {loading ? (
-              <div className="p-12">
-                <LoadingSpinner />
+              <div className="p-4 sm:p-12">
+                <LoadingSpinner variant="page" size="md" text="Loading users..." />
               </div>
             ) : users.length === 0 ? (
               <div className="text-center py-12 px-4">

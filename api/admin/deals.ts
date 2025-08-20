@@ -1,33 +1,41 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import { createHandler } from '../../lib/utils';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createHandler } from '../../lib/utils.js';
 
 // This is a secure, server-side only file.
 
 // Create a Supabase client with the service role key to bypass RLS
-const supabaseAdmin = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let supabaseAdmin: SupabaseClient | undefined;
+function initSupabaseAdmin(): SupabaseClient {
+  if (!supabaseAdmin) {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) {
+      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    }
+    supabaseAdmin = createClient(url, key);
+  }
+  return supabaseAdmin;
+}
 
 // Function to verify the user is an admin
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
+  if (!token) throw new Error('Authentication token not provided.');
 
-  if (!token) {
-    throw new Error('Authentication token not provided.');
-  }
+  const client = initSupabaseAdmin();
+  const { data: { user }, error } = await client.auth.getUser(token);
+  if (error || !user) throw new Error('Authentication failed.');
 
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
-  if (error || !user) {
-    throw new Error('Authentication failed.');
-  }
-
-  if (user.app_metadata?.role !== 'admin') {
+  // Check admin table for UID
+  const { data: adminRow, error: adminError } = await client
+    .from('admin')
+    .select('uid')
+    .eq('uid', user.id)
+    .maybeSingle();
+  if (adminError || !adminRow) {
     throw new Error('You must be an admin to perform this action.');
   }
-
   return user;
 };
 
@@ -36,7 +44,8 @@ const handleGetDeals = async (req: VercelRequest, res: VercelResponse) => {
   try {
     await requireAdmin(req);
 
-    const { data: deals, error } = await supabaseAdmin
+  const client = initSupabaseAdmin();
+  const { data: deals, error } = await client
       .from('deals')
       .select(`
         *,
@@ -67,7 +76,8 @@ const handleUpdateDeal = async (req: VercelRequest, res: VercelResponse) => {
       return res.status(400).json({ message: 'Deal ID and payload are required.' });
     }
 
-    const { data, error } = await supabaseAdmin
+  const client = initSupabaseAdmin();
+  const { data, error } = await client
       .from('deals')
       .update(payload)
       .eq('id', dealId)
@@ -92,7 +102,8 @@ const handleCreateDeal = async (req: VercelRequest, res: VercelResponse) => {
         await requireAdmin(req);
         const dealData = req.body;
 
-        const { data, error } = await supabaseAdmin
+  const client = initSupabaseAdmin();
+  const { data, error } = await client
             .from('deals')
             .insert(dealData)
             .select()
@@ -118,7 +129,8 @@ const handleDeleteDeal = async (req: VercelRequest, res: VercelResponse) => {
             return res.status(400).json({ message: 'Deal ID is required.' });
         }
 
-        const { error } = await supabaseAdmin
+  const client = initSupabaseAdmin();
+  const { error } = await client
             .from('deals')
             .delete()
             .eq('id', dealId);

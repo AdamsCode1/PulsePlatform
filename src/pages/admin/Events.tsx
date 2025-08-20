@@ -14,6 +14,11 @@ import { supabase } from '@/lib/supabaseClient';
 import { API_BASE_URL } from '@/lib/apiConfig';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDebounce } from '@/hooks/useDebounce';
+
+// Using shared HMR-safe Supabase client from lib/supabaseClient
 
 interface Event {
   id: string;
@@ -28,7 +33,7 @@ interface Event {
   created_at: string;
   society: {
     name: string;
-    email: string;
+    contact_email: string;
   };
   rsvp?: {
     count: number;
@@ -39,18 +44,23 @@ export default function AdminEvents() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { isAdmin, user } = useAdminAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms delay
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [reviewDialog, setReviewDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [searching, setSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [eventsPerPage] = useState(10);
+
+  // Event stats counters
+  const [eventStats, setEventStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
 
   const fetchEvents = useCallback(async (page: number) => {
     setLoading(true);
@@ -70,11 +80,11 @@ export default function AdminEvents() {
         params.append('status', statusFilter);
       }
 
-      if (searchTerm) {
-        params.append('search', searchTerm);
+      if (debouncedSearchTerm) {
+        params.append('search', debouncedSearchTerm);
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/admin/events?${params.toString()}`, {
+  const response = await fetch(`${API_BASE_URL}/admin/events?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
@@ -99,25 +109,7 @@ export default function AdminEvents() {
     } finally {
       setLoading(false);
     }
-  }, [eventsPerPage, searchTerm, statusFilter, toast, navigate]);
-
-  const checkAuth = useCallback(async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.app_metadata?.role !== 'admin') {
-        navigate('/admin/login');
-        return;
-      }
-      setUser(user);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      navigate('/admin/login');
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+  }, [eventsPerPage, debouncedSearchTerm, statusFilter, toast, navigate]);
 
   useEffect(() => {
     const status = searchParams.get('status');
@@ -131,7 +123,7 @@ export default function AdminEvents() {
     if (user) { // only fetch if user is authenticated
       fetchEvents(currentPage);
     }
-  }, [searchTerm, statusFilter, user, currentPage, fetchEvents]);
+  }, [debouncedSearchTerm, statusFilter, user, currentPage, fetchEvents]);
 
   useEffect(() => {
     // Check if we need to open review dialog from URL params
@@ -145,52 +137,64 @@ export default function AdminEvents() {
     }
   }, [searchParams, events]);
 
+  // Track when search is happening (when user is typing vs when debounced search is complete)
+  useEffect(() => {
+    if (searchTerm !== debouncedSearchTerm) {
+      setSearching(true);
+    } else {
+      setSearching(false);
+    }
+  }, [searchTerm, debouncedSearchTerm]);
+
   const updateEventStatus = async (eventId: string, status: 'approved' | 'rejected', reason?: string) => {
     setIsUpdating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error("Not authenticated");
+      if (!session) throw new Error('Not authenticated');
+      let response, result, contentType;
+      if (status === 'rejected') {
+        response = await fetch(`/api/unified?resource=events&action=reject&id=${eventId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ reason })
+        });
+        contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          result = await response.json();
+        }
+        if (!response.ok) throw new Error(result?.message || `Failed to ${status} event.`);
+      } else {
+        response = await fetch(`/api/unified?resource=events&action=approve&id=${eventId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          }
+        });
+        contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          result = await response.json();
+        }
+        if (!response.ok) throw new Error(result?.message || `Failed to ${status} event.`);
       }
-
-      const response = await fetch(`${API_BASE_URL}/admin/events`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          eventId,
-          status,
-          rejection_reason: reason,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to update event status.');
-      }
-
-      // Instead of just updating the local state, we refetch the current page
-      // to ensure data consistency.
       fetchEvents(currentPage);
-
+      fetchEventStats(); // Update counters after approval or rejection
+      setReviewDialog(false); // Close the rejection reason window after rejecting
+      setRejectionReason(''); // Clear the rejection reason textbox after rejecting
       toast({
-        title: `Event ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-        description: `The event has been successfully ${status}.`,
+        title: status === 'approved' ? 'Event Approved' : 'Event Rejected',
+        description: status === 'approved'
+          ? 'The event has been successfully approved.'
+          : 'The event has been successfully rejected and the organiser notified.',
       });
-
-      setReviewDialog(false);
-      setSelectedEvent(null);
-      setRejectionReason('');
-
     } catch (error: any) {
-      console.error(`Error ${status} event:`, error);
       toast({
-        title: "Error",
+        title: 'Error',
         description: error.message || `Failed to ${status} event.`,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsUpdating(false);
@@ -263,18 +267,48 @@ export default function AdminEvents() {
     }
   };
 
-  const getEventStats = () => {
-    const pending = events.filter(e => e.status === 'pending').length;
-    const approved = events.filter(e => e.status === 'approved').length;
-    const rejected = events.filter(e => e.status === 'rejected').length;
-    return { pending, approved, rejected, total: events.length };
-  };
-
-  if (loading) {
-    return <LoadingSpinner />;
+  // Move fetchEventStats outside useEffect so it's available in the component scope
+  async function fetchEventStats() {
+    const [{ count: total }, { count: pending }, { count: approved }, { count: rejected }] = await Promise.all([
+      supabase.from('event').select('*', { count: 'exact', head: true }),
+      supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
+      supabase.from('event').select('*', { count: 'exact', head: true }).eq('status', 'rejected'),
+    ]);
+    setEventStats({
+      total: total || 0,
+      pending: pending || 0,
+      approved: approved || 0,
+      rejected: rejected || 0,
+    });
   }
 
-  const stats = getEventStats();
+  useEffect(() => {
+    if (user) fetchEventStats();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner variant="page" size="lg" text="Loading events dashboard..." />
+      </div>
+    );
+  }
+
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-100 border border-red-300 rounded-lg p-8 text-red-700 text-center">
+          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+          <p>You are not authorized to access this admin page.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isAdmin === null) {
+    return <Skeleton className="h-32 w-full" />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -302,7 +336,7 @@ export default function AdminEvents() {
               <CardTitle className="text-lg">Total Events</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
+              <div className="text-2xl font-bold text-blue-600">{eventStats.total}</div>
             </CardContent>
           </Card>
           <Card>
@@ -310,7 +344,7 @@ export default function AdminEvents() {
               <CardTitle className="text-lg">Pending</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+              <div className="text-2xl font-bold text-yellow-600">{eventStats.pending}</div>
             </CardContent>
           </Card>
           <Card>
@@ -318,7 +352,7 @@ export default function AdminEvents() {
               <CardTitle className="text-lg">Approved</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+              <div className="text-2xl font-bold text-green-600">{eventStats.approved}</div>
             </CardContent>
           </Card>
           <Card>
@@ -326,7 +360,7 @@ export default function AdminEvents() {
               <CardTitle className="text-lg">Rejected</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+              <div className="text-2xl font-bold text-red-600">{eventStats.rejected}</div>
             </CardContent>
           </Card>
         </div>
@@ -337,13 +371,18 @@ export default function AdminEvents() {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${searching ? 'text-blue-500 animate-pulse' : 'text-gray-400'}`} />
                   <Input
                     placeholder="Search events, societies, or locations..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
+                    className={`pl-10 ${searching ? 'border-blue-300' : ''}`}
                   />
+                  {searching && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  )}
                 </div>
               </div>
               <select
@@ -362,7 +401,7 @@ export default function AdminEvents() {
 
         {/* Events List */}
         {loading ? (
-          <LoadingSpinner />
+          <LoadingSpinner variant="page" size="md" text="Loading events..." />
         ) : events.length === 0 ? (
           <Card>
             <CardContent className="text-center py-12">
@@ -546,7 +585,7 @@ export default function AdminEvents() {
                   <div>
                     <h4 className="font-medium text-gray-900">Society</h4>
                     <p className="text-gray-600">{selectedEvent.society.name}</p>
-                    <p className="text-sm text-gray-500">{selectedEvent.society.email}</p>
+                    <p className="text-sm text-gray-500">Organiser Email: {selectedEvent.society.contact_email || <span className="text-red-500">No email provided</span>}</p>
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900">Max Attendees</h4>

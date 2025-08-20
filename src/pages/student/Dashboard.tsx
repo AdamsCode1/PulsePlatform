@@ -280,7 +280,12 @@ export default function StudentDashboard() {
   };
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <NavBar />
+        <LoadingSpinner variant="page" size="lg" text="Loading your dashboard..." />
+      </div>
+    );
   }
 
   return (

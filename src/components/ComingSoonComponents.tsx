@@ -9,6 +9,8 @@ import CircularText from '@/blocks/TextAnimations/CircularText/CircularText';
 import GlitchText from '@/blocks/TextAnimations/GlitchText/GlitchText';
 import ShinyText from '@/blocks/TextAnimations/ShinyText/ShinyText';
 import Aurora from '@/blocks/Backgrounds/Aurora/Aurora';
+import LoadingSpinner from '@/components/LoadingSpinner';
+
 
 interface CountdownTimerProps {
   launchDate: string;
@@ -678,6 +680,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
                   Get behind-the-scenes updates, early feature previews, and connect with other Durham students!
                 </p>
               </div>
+
             )}
 
             <Button
@@ -688,6 +691,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
               <Share2 className="w-4 h-4 mr-2" />
               Share Your Code
             </Button>
+
           </CardContent>
         </Card>
       </div>

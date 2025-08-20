@@ -208,10 +208,15 @@ export default function PartnerEventSubmissionPage() {
       if (!error && insertedEvent) {
         toast({
           title: "Event Submitted Successfully!",
-          description: `${data.eventName} has been submitted for review. Event ID: ${insertedEvent[0]?.id}`,
+          description: "Your event has been submitted for review.",
         });
         form.reset();
         setCurrentStep(0);
+        
+        // Auto-redirect to dashboard after 3 seconds
+        setTimeout(() => {
+          navigate('/partner/dashboard');
+        }, 3000);
       } else {
         const errorMessage = error?.message || 'Could not submit event.';
         toast({ title: "Error", description: errorMessage + ".", variant: "destructive" });
@@ -222,7 +227,11 @@ export default function PartnerEventSubmissionPage() {
   }
 
   if (loadingPartnerId) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <LoadingSpinner variant="page" size="lg" text="Loading event submission form..." />
+      </div>
+    );
   }
 
   return (

@@ -12,6 +12,7 @@ import { formatDistanceToNow } from 'date-fns';
 import useApi from '@/hooks/useApi';
 import useDashboardStats, { DashboardStats } from '@/hooks/useDashboardStats';
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 
 interface ActivityLog {
     id: string;
@@ -47,7 +48,7 @@ const ErrorDisplay = ({ message, onRetry }: { message: string, onRetry: () => vo
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const { isAdmin, user } = useAdminAuth();
 
   // --- Data Fetching with React Query ---
   const {
@@ -83,23 +84,27 @@ export default function AdminDashboard() {
   }, [rawChartData]);
 
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || user.app_metadata?.role !== 'admin') {
-        navigate('/admin/login');
-      } else {
-        setUser(user);
-      }
-    };
-    checkAuth();
-  }, [navigate]);
   // Centralized navigation helper for clickable cards/buttons
   const handleCardClick = (path: string) => {
     navigate(path);
   };
 
   const totalUsers = stats ? stats.totalUsers.students + stats.totalUsers.societies + stats.totalUsers.partners + stats.totalUsers.admins : 0;
+
+  // Access control UI
+  if (isAdmin === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-red-100 border border-red-300 rounded-lg p-8 text-red-700 text-center">
+          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+          <p>You are not authorized to access the admin dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+  if (isAdmin === null) {
+    return <Skeleton className="h-32 w-full" />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -128,13 +133,13 @@ export default function AdminDashboard() {
               <Skeleton className="h-32" />
               <Skeleton className="h-32" />
             </>
-          ) : isErrorStats ? (
+          ) : errorStats ? (
             <div className="col-span-full">
               <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
             </div>
           ) : stats && (
             <>
-              <Card onClick={() => handleCardClick('/admin/events')} className="cursor-pointer hover:bg-gray-100 transition-colors">
+        <Card onClick={() => handleCardClick('/admin/events')} className="cursor-pointer hover:bg-gray-100 transition-colors border-blue-200 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Total Events</CardTitle>
                   <CardDescription>{stats.totalEvents.pending} pending</CardDescription>
@@ -143,38 +148,38 @@ export default function AdminDashboard() {
                   <div className="text-3xl font-bold text-blue-600">{stats.totalEvents.total}</div>
                 </CardContent>
               </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Total Users</CardTitle>
-                  <CardDescription>All user roles</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-purple-600">{totalUsers}</div>
-                </CardContent>
-              </Card>
-              <Card>
+        <Card className="border-purple-200 shadow-md">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg">Students</CardTitle>
                   <CardDescription>Student accounts</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-indigo-600">{stats.totalUsers.students}</div>
+          <div className="text-3xl font-bold text-purple-600">{stats.totalUsers.students}</div>
                 </CardContent>
               </Card>
-              <Card>
+        <Card className="border-green-200 shadow-md">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-lg">Societies & Partners</CardTitle>
-                  <CardDescription>{stats.totalUsers.societies} Societies, {stats.totalUsers.partners} Partners</CardDescription>
+                  <CardTitle className="text-lg">Societies</CardTitle>
+                  <CardDescription>Society accounts</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold text-pink-600">{stats.totalUsers.societies + stats.totalUsers.partners}</div>
+          <div className="text-3xl font-bold text-green-600">{stats.totalUsers.societies}</div>
+                </CardContent>
+              </Card>
+        <Card className="border-pink-200 shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg">Partners</CardTitle>
+                  <CardDescription>Partner accounts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-pink-600">{stats.totalUsers.partners}</div>
                 </CardContent>
               </Card>
             </>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Recent Activity Chart */}
           <div className="lg:col-span-2">
              <Card>
@@ -187,8 +192,8 @@ export default function AdminDashboard() {
                   <div className="flex items-center justify-center h-[300px]">
                     <Skeleton className="h-full w-full" />
                   </div>
-                ) : isErrorChart ? (
-                  <ErrorDisplay message={errorChart.message} onRetry={refetchChart} />
+                ) : errorChart ? (
+                  <ErrorDisplay message={errorChart.message + (errorChart.stack ? `\n${errorChart.stack}` : '')} onRetry={refetchChart} />
                 ) : (
                   <div style={{ minHeight: '300px' }}>
                       <ResponsiveContainer width="100%" height={300}>
@@ -198,7 +203,7 @@ export default function AdminDashboard() {
                           <YAxis allowDecimals={false} />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="count" fill="#8884d8" name="Submissions" />
+                          <Bar dataKey="count" fill="#ec4899" name="Submissions" />
                       </BarChart>
                       </ResponsiveContainer>
                   </div>
@@ -208,30 +213,30 @@ export default function AdminDashboard() {
           </div>
 
           {/* Quick Actions & Status */}
-          <div className="lg:col-span-1 space-y-8">
-             <Card>
+          <div className="lg:col-span-1 lg:row-span-2 space-y-8">
+             <Card className="border-pink-200 shadow-md">
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle className="text-pink-600">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button onClick={() => handleCardClick('/admin/events?status=pending')} className="w-full justify-start">
-                  <Calendar className="w-4 h-4 mr-2" /> Review Pending Events
+                <Button onClick={() => handleCardClick('/admin/events?status=pending')} className="w-full justify-start" variant="outline">
+                  <Calendar className="w-4 h-4 mr-2 text-pink-500" /> Review Pending Events
                 </Button>
-                <Button onClick={() => navigate('/admin/deals')} className="w-full justify-start">
-                  <BarChart3 className="w-4 h-4 mr-2" /> Manage Deals
+                <Button onClick={() => navigate('/admin/deals')} className="w-full justify-start" variant="outline">
+                  <BarChart3 className="w-4 h-4 mr-2 text-purple-500" /> Manage Deals
                 </Button>
-                <Button onClick={() => navigate('/admin/users')} className="w-full justify-start">
-                  <Users className="w-4 h-4 mr-2" /> Manage Users
+                <Button onClick={() => navigate('/admin/users')} className="w-full justify-start" variant="outline">
+                  <Users className="w-4 h-4 mr-2 text-blue-500" /> Manage Users
                 </Button>
                  <Button onClick={() => navigate('/admin/settings')} className="w-full justify-start" variant="outline">
-                  <SettingsIcon className="w-4 h-4 mr-2" /> Manage Settings
+                  <SettingsIcon className="w-4 h-4 mr-2 text-green-500" /> Manage Settings
                 </Button>
               </CardContent>
             </Card>
 
-            <Card>
+      <Card className="border-blue-200 shadow-md">
               <CardHeader>
-                <CardTitle>Event Status Overview</CardTitle>
+        <CardTitle className="text-blue-600">Event Status Overview</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoadingStats ? (
@@ -240,7 +245,7 @@ export default function AdminDashboard() {
                     <Skeleton className="h-6 w-full" />
                     <Skeleton className="h-6 w-full" />
                   </div>
-                ) : isErrorStats ? (
+                ) : errorStats ? (
                   <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
                 ) : stats && (
                   <div className="space-y-3">
@@ -270,9 +275,9 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
 
-            <Card>
+      <Card className="border-purple-200 shadow-md">
               <CardHeader>
-                <CardTitle>System Health</CardTitle>
+        <CardTitle className="text-purple-600">System Health</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoadingStats ? (
@@ -280,7 +285,7 @@ export default function AdminDashboard() {
                     <Skeleton className="h-6 w-full" />
                     <Skeleton className="h-6 w-full" />
                   </div>
-                ) : isErrorStats ? (
+                ) : errorStats ? (
                   <ErrorDisplay message={errorStats.message} onRetry={refetchStats} />
                 ) : stats && (
                   <div className="space-y-3">
@@ -322,7 +327,7 @@ export default function AdminDashboard() {
                      <Skeleton className="h-12 w-full" />
                      <Skeleton className="h-12 w-full" />
                    </div>
-                 ) : isErrorActivity ? (
+                 ) : errorActivity ? (
                   <ErrorDisplay message={errorActivity.message} onRetry={refetchActivity} />
                  ) : activityLog && activityLog.length > 0 ? (
                     <ul className="space-y-4">
