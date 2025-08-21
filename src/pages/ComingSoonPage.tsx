@@ -147,22 +147,26 @@ const ComingSoonPage: React.FC = () => {
 
       {/* Combined Section - Hero with Countdown and Feature Preview (Full Screen) */}
       <div className="w-screen min-h-screen relative z-10">
-        {/* Join Waitlist Button - Top Right */}
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
+        {/* Early Adopters Ribbon - Top with 30% opacity - WhatsApp redirect */}
+        <div className="absolute top-0 left-0 right-0 z-30">
           <button
-            onClick={() => setIsSignupModalOpen(true)}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-4 py-2 sm:px-6 sm:py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base border border-pink-200 backdrop-blur-sm"
+            onClick={() => window.open('https://chat.whatsapp.com/EdHwSjET7lcBxhpjQBf1N7', '_blank')}
+            className="w-full bg-gradient-to-r from-pink-500/30 via-purple-600/30 to-pink-500/30 backdrop-blur-sm text-white py-3 px-4 text-sm sm:text-base font-semibold hover:from-pink-600/40 hover:via-purple-700/40 hover:to-pink-600/40 transition-all duration-300 border-b border-pink-200/5"
           >
-            Join the waitlist
+            🚀 Click to join early adopters groupchat - Get exclusive updates & behind-the-scenes access
           </button>
         </div>
 
         {/* First Part - Countdown Timer */}
-        <div className="h-screen relative">
+        <div className="h-screen relative pt-12">
           <CountdownTimer
             launchDate="2025-09-15T09:00:00"
+            onJoinWaitlist={() => setIsSignupModalOpen(true)}
+            onSneakPeak={() => setIsSneakPeakModalOpen(true)}
             onError={() => setHasError(true)}
           />
+
+          {/* Buttons now rendered within CountdownTimer for consistent placement */}
 
           {/* Scroll Indicator */}
           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-20 flex flex-col items-center animate-bounce">
@@ -180,25 +184,6 @@ const ComingSoonPage: React.FC = () => {
         {/* Second Part - Feature Preview */}
         <div className="relative">
           <FeaturePreview onJoinWaitlist={null} />
-
-          {/* Buttons Container - Side by side positioning */}
-          <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-20 flex space-x-4">
-            {/* Join Waitlist Button - Left side */}
-            <button
-              onClick={() => setIsSignupModalOpen(true)}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base border border-pink-200 backdrop-blur-sm"
-            >
-              Join the Waitlist
-            </button>
-
-            {/* Sneak Peak Button - Right side */}
-            <button
-              onClick={() => setIsSneakPeakModalOpen(true)}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 text-sm sm:text-base border border-purple-200 backdrop-blur-sm"
-            >
-              🔍 Sneak Peak
-            </button>
-          </div>
         </div>
       </div>      {/* Early Access Signup Modal */}
       <EarlyAccessSignup
@@ -254,27 +239,7 @@ const ComingSoonPage: React.FC = () => {
         </div>
       )}
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-gray-400 mb-4">
-            Built with ❤️ for the Durham University student community
-          </p>
-          <div className="flex justify-center space-x-6 text-sm">
-            <a href="mailto:hello@dupulse.com" className="hover:text-blue-400 transition-colors">
-              Contact Us
-            </a>
-            <span className="text-gray-600">|</span>
-            <a href="/privacy" className="hover:text-blue-400 transition-colors">
-              Privacy Policy
-            </a>
-            <span className="text-gray-600">|</span>
-            <a href="/terms" className="hover:text-blue-400 transition-colors">
-              Terms of Service
-            </a>
-          </div>
-        </div>
-      </footer>
+
     </div>
   );
 };
