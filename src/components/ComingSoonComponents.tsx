@@ -127,45 +127,23 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = () => {
 
 interface EarlyAccessSignupProps {
   onSignup: (data: { 
-    email: string; 
     name: string;
-    userType: string; 
-    referralCode?: string;
-    joinWhatsApp: boolean;
+    email: string;
   }) => Promise<void>;
 }
 
 const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [userType, setUserType] = useState('student');
-  const [referralCode, setReferralCode] = useState('');
-  const [joinWhatsApp, setJoinWhatsApp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState('');
-  const [whatsAppLink, setWhatsAppLink] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
-      await onSignup({ 
-        email, 
-        name,
-        userType, 
-        referralCode: referralCode || undefined,
-        joinWhatsApp 
-      });
+      await onSignup({ name, email });
       setIsSuccess(true);
-      // Generate a shareable referral code for the user
-      setGeneratedCode(name.substring(0, 3).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase());
-      
-      // Set WhatsApp group link if they opted in
-      if (joinWhatsApp) {
-        setWhatsAppLink('https://chat.whatsapp.com/your-group-link-here'); // Replace with actual link
-      }
     } catch (error) {
       console.error('Signup error:', error);
     } finally {
@@ -182,42 +160,9 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
           </div>
           <CardTitle className="text-green-800">Welcome {name}! 🎉</CardTitle>
           <CardDescription>
-            You're now on the exclusive early access list
+            You're now on the exclusive waitlist
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-center space-y-4">
-          <div className="bg-white/80 rounded-lg p-4">
-            <p className="text-sm text-gray-600 mb-2">Your referral code:</p>
-            <p className="text-2xl font-bold text-blue-600 tracking-wider">{generatedCode}</p>
-            <p className="text-xs text-gray-500 mt-2">Share for VIP perks!</p>
-          </div>
-          
-          {joinWhatsApp && whatsAppLink && (
-            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-              <p className="text-sm text-green-800 mb-3">🚀 Join our pre-launch community!</p>
-              <a 
-                href={whatsAppLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-              >
-                Join WhatsApp Group 💬
-              </a>
-              <p className="text-xs text-green-600 mt-2">
-                Get behind-the-scenes updates, early feature previews, and connect with other early users!
-              </p>
-            </div>
-          )}
-          
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => navigator.clipboard.writeText(`Join me on PulsePlatform with code: ${generatedCode}`)}
-          >
-            <Share2 className="w-4 h-4 mr-2" />
-            Share Your Code
-          </Button>
-        </CardContent>
       </Card>
     );
   }
@@ -232,10 +177,9 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
             </div>
             <CardTitle className="text-2xl">Join the Waitlist</CardTitle>
             <CardDescription>
-              Get exclusive early access + VIP perks
+              Get exclusive early access
             </CardDescription>
           </CardHeader>
-          
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -247,59 +191,16 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
                   className="text-center"
                 />
               </div>
-              
               <div>
                 <Input
                   type="email"
-                  placeholder="your@durham.ac.uk"
+                  placeholder="your@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="text-center"
                 />
               </div>
-              
-              <div>
-                <Select value={userType} onValueChange={setUserType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="I am a..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="student">Durham Student</SelectItem>
-                    <SelectItem value="society">Society Representative</SelectItem>
-                    <SelectItem value="partner">Local Business Partner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Input
-                  placeholder="Referral code (optional)"
-                  value={referralCode}
-                  onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                  className="text-center"
-                />
-              </div>
-
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                <label className="flex items-start space-x-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={joinWhatsApp}
-                    onChange={(e) => setJoinWhatsApp(e.target.checked)}
-                    className="mt-1 h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                  />
-                  <div className="text-sm">
-                    <span className="font-medium text-green-800">
-                      Join our pre-launch WhatsApp community 💬
-                    </span>
-                    <p className="text-green-600 mt-1">
-                      Get exclusive updates, behind-the-scenes content, and connect with other early users!
-                    </p>
-                  </div>
-                </label>
-              </div>
-              
               <Button 
                 type="submit" 
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
@@ -310,19 +211,11 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup }) => {
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Get Early Access
+                    Join Waitlist
                   </>
                 )}
               </Button>
             </form>
-            
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                🎁 <span className="font-semibold">First 100 signups</span> get premium features 
-                <br />
-                <span className="text-blue-600 font-medium">free for 6 months</span>
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
