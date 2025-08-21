@@ -1,6 +1,8 @@
 import React from 'react';
 import Aurora from '@/blocks/Backgrounds/Aurora/Aurora';
 import CircularText from '@/blocks/TextAnimations/CircularText/CircularText';
+import NavBar from '@/components/NavBar';
+import Footer from '@/components/Footer';
 import { Users, Heart, Sparkles, Calendar, Coffee, PartyPopper } from 'lucide-react';
 
 const About = () => {
@@ -16,21 +18,11 @@ const About = () => {
                 />
             </div>
 
-            {/* Logo - Top Left */}
-            <div className="fixed top-4 left-4 sm:top-6 sm:left-6 z-20">
-                <div className="flex items-center">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 p-1 shadow-lg border border-pink-200">
-                        <img
-                            src="/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png"
-                            alt="DUPulse Logo"
-                            className="w-full h-full object-contain rounded-full"
-                        />
-                    </div>
-                </div>
-            </div>
+            {/* Global Navigation */}
+            <NavBar />
 
             {/* Section 1: What is DUPulse */}
-            <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 w-screen py-20">
+            <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 w-screen py-24">
                 <div className="text-center w-full max-w-6xl">
                     {/* Circular Animation */}
                     <div className="mb-8 sm:mb-12 flex justify-center">
@@ -58,9 +50,9 @@ const About = () => {
                         Your social life at Durham, all in one place
                     </h1>
 
-                    {/* Subtitle */}
-                    <p className="text-lg sm:text-xl md:text-2xl text-purple-700 mb-12 leading-relaxed max-w-4xl mx-auto">
-                        We're making it easier for Durham students to discover events, meet people, and create unforgettable memories together.
+                    {/* Subtitle (concise) */}
+                    <p className="text-lg sm:text-xl md:text-2xl text-purple-700 mb-10 leading-relaxed max-w-3xl mx-auto">
+                        Discover events. Meet people. Make memories — all in one place.
                     </p>
 
                     {/* Features Grid */}
@@ -71,9 +63,7 @@ const About = () => {
                                 <Calendar className="w-8 h-8 text-white" />
                             </div>
                             <h3 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">Find Your Thing</h3>
-                            <p className="text-purple-600 leading-relaxed">
-                                From society socials to study groups, from sports events to cultural celebrations - discover what's happening around campus that matches your interests.
-                            </p>
+                            <p className="text-purple-600 leading-relaxed">From society socials to study groups, find what's happening around campus that matches your interests.</p>
                         </div>
 
                         {/* Connect with People */}
@@ -82,9 +72,7 @@ const About = () => {
                                 <Users className="w-8 h-8 text-white" />
                             </div>
                             <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">Meet Your People</h3>
-                            <p className="text-purple-600 leading-relaxed">
-                                Connect with students who share your passions. Whether you're into gaming, hiking, or theatre - find your community and make lasting friendships.
-                            </p>
+                            <p className="text-purple-600 leading-relaxed">Connect with students who share your passions and build real communities.</p>
                         </div>
 
                         {/* Create Memories */}
@@ -93,9 +81,7 @@ const About = () => {
                                 <Heart className="w-8 h-8 text-white" />
                             </div>
                             <h3 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">Make Memories</h3>
-                            <p className="text-purple-600 leading-relaxed">
-                                Your university years fly by fast. We help you make the most of them by ensuring you never miss the moments that matter.
-                            </p>
+                            <p className="text-purple-600 leading-relaxed">Never miss the moments that matter during your time at Durham.</p>
                         </div>
                     </div>
                 </div>
@@ -113,24 +99,21 @@ const About = () => {
 
                     <div className="text-left max-w-3xl mx-auto">
                         <div className="bg-gradient-to-r from-white/95 to-pink-50/95 rounded-2xl p-8 border border-pink-200 backdrop-blur-sm shadow-xl">
-                            <p className="text-lg text-purple-700 leading-relaxed mb-6">
-                                <span className="text-4xl font-bold text-pink-500 float-left mr-4 mt-1">W</span>
-                                e were Durham students too. We know how overwhelming it can feel trying to find your place on campus.
-                                With so many societies, events, and opportunities, it's easy to feel lost or miss out on amazing experiences.
+                            <p className="text-lg text-purple-700 leading-relaxed mb-4">
+                                We were Durham students too. Finding your place on campus is hard when info is scattered across platforms.
                             </p>
-                            <p className="text-lg text-purple-600 leading-relaxed mb-6">
-                                We saw friends struggle to find events they'd love, societies that matched their interests, or even just
-                                a place to grab coffee and study with like-minded people. The information was scattered everywhere -
-                                Facebook groups, Instagram stories, random posters around campus.
+                            <p className="text-lg text-purple-600 leading-relaxed mb-4">
+                                DUPulse brings events, societies, and people together in one simple, easy-to-use place.
                             </p>
                             <p className="text-lg text-purple-600 leading-relaxed">
-                                So we decided to change that. DUPulse brings everything together in one simple, easy-to-use place.
-                                No more FOMO, no more missed opportunities. Just your Durham social life, organized and accessible.
+                                No more FOMO. Just a more connected, inclusive Durham for everyone.
                             </p>
                         </div>
                     </div>
                 </div>
-            </div>            {/* Section 3: Our Dream for Durham */}
+            </div>
+
+            {/* Section 3: Our Dream for Durham */}
             <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 w-screen py-20">
                 <div className="text-center w-full max-w-6xl">
                     <div className="mb-12">
@@ -169,16 +152,14 @@ const About = () => {
                             <PartyPopper className="w-5 h-5" />
                             <Heart className="w-5 h-5" />
                         </div>
-                        <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">
-                            Ready to dive into Durham life?
-                        </h3>
-                        <p className="text-purple-600 text-lg max-w-2xl mx-auto leading-relaxed mb-20">
-                            Join us in creating a more connected, vibrant, and inclusive Durham experience for everyone.
-                            Your university years are waiting - let's make them unforgettable.
-                        </p>
+                        <h3 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent mb-4">Ready to dive into Durham life?</h3>
+                        <p className="text-purple-600 text-lg max-w-2xl mx-auto leading-relaxed mb-24">Help us build a more connected, vibrant, and inclusive Durham experience.</p>
                     </div>
                 </div>
             </div>
+
+            {/* Global Footer */}
+            <Footer />
         </div>
     );
 };
