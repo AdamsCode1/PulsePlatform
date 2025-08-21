@@ -60,21 +60,12 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitl
     <div className="w-screen overflow-x-hidden">
       {/* Modern Minimal Landing Page */}
       <div
-        className="h-screen w-screen relative overflow-hidden bg-gradient-to-br from-black via-gray-900 to-purple-900"
+        className="h-screen w-screen relative overflow-hidden"
         style={{
           margin: 0,
           padding: 0,
         }}
       >
-        {/* Aurora Background */}
-        <div className="absolute inset-0 w-full h-full">
-          <Aurora
-            colorStops={["#ff87dd", "#f9a8d4", "#fce7f3"]}
-            amplitude={1.2}
-            blend={0.6}
-            speed={0.8}
-          />
-        </div>
         <style dangerouslySetInnerHTML={{
           __html: `
             @keyframes slideInFromTop {
@@ -369,7 +360,7 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitl
 };
 
 interface FeaturePreviewProps {
-  onJoinWaitlist: () => void;
+  onJoinWaitlist?: (() => void) | null;
 }
 
 const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
@@ -402,7 +393,7 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
   return (
     <section
       ref={sectionRef}
-      className="min-h-screen w-screen bg-gradient-to-b from-black via-purple-950 to-gray-900 flex flex-col items-center justify-center text-center px-6 py-20 relative"
+      className="min-h-screen w-screen flex flex-col items-center justify-center text-center px-6 py-20 relative"
     >
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -500,8 +491,8 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Society Discovery</h3>
-            <p className="text-gray-400">Find and connect with Durham University societies that match your interests and passions</p>
+            <h3 className="text-xl font-semibold text-white mb-2">Society Event Creation</h3>
+            <p className="text-gray-400">Societies can easily add and manage their own events, reaching all Durham University students</p>
           </div>
 
           {/* Feature 2 */}
@@ -544,7 +535,7 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
             </div>
           </h3>
           <div className="flex flex-wrap justify-center gap-4">
-            {['Society Integration', 'Event Discovery', 'Student Deals', 'RSVP System', 'Durham Focus', 'Mobile Friendly', 'Real-time Updates', 'Community Driven'].map((tech, index) => (
+            {['Society Integration', 'Personal Timetable', 'Student Deals', 'RSVP System', 'Durham Focus', 'Mobile Friendly', 'Real-time Updates', 'Community Driven'].map((tech, index) => (
               <span key={tech} className="px-4 py-2 bg-gray-800/50 border border-gray-600/50 rounded-full text-gray-300 text-sm font-medium">
                 {tech}
               </span>
@@ -553,17 +544,19 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
         </div>
 
         {/* CTA Button */}
-        <div className={`${isVisible ? 'slide-in-bottom animate-delay-4' : 'opacity-0'}`}>
-          <button
-            onClick={onJoinWaitlist}
-            className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-2xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-lg"
-          >
-            Join the Waitlist
-          </button>
-          <p className="text-gray-400 text-sm mt-4">
-            Limited spots available • Launching for Durham University students
-          </p>
-        </div>
+        {onJoinWaitlist && (
+          <div className={`${isVisible ? 'slide-in-bottom animate-delay-4' : 'opacity-0'}`}>
+            <button
+              onClick={onJoinWaitlist}
+              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-2xl transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-lg"
+            >
+              Join the Waitlist
+            </button>
+            <p className="text-gray-400 text-sm mt-4">
+              Limited spots available • Launching for Durham University students
+            </p>
+          </div>
+        )}
 
       </div>
     </section>
@@ -712,8 +705,8 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
             <Mail className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold text-white mb-1">Join the Waitlist</CardTitle>
-          <CardDescription className="text-sm text-gray-400">
-            Get exclusive early access to DUPulse + VIP perks
+          <CardDescription className="text-sm text-gray-200">
+            Get early access to DUPulse
           </CardDescription>
         </CardHeader>
 
@@ -725,7 +718,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-400 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
+                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-200 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
               />
             </div>
 
@@ -736,7 +729,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-400 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
+                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-200 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
               />
             </div>
 
@@ -758,7 +751,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
                 placeholder="Referral code (optional)"
                 value={referralCode}
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-400 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
+                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-200 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
               />
             </div>
 
@@ -771,10 +764,10 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
                   className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-500 rounded"
                 />
                 <div className="text-xs">
-                  <span className="font-semibold text-gray-200 text-sm">
+                  <span className="font-semibold text-white text-sm">
                     Join our Durham student community 💬
                   </span>
-                  <p className="text-gray-400 mt-1 leading-relaxed">
+                  <p className="text-gray-200 mt-1 leading-relaxed">
                     Get exclusive updates and connect with other Durham students!
                   </p>
                 </div>
@@ -801,10 +794,10 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
           </form>
 
           <div className="mt-4 text-center">
-            <p className="text-xs text-gray-400 leading-relaxed">
-              🎁 <span className="font-semibold">First 100 signups</span> get VIP features
+            <p className="text-xs text-gray-300 leading-relaxed">
+              🚀 <span className="font-semibold">Be among the first</span> to experience
               <br />
-              <span className="text-blue-400 font-semibold">free for the first year</span>
+              <span className="text-purple-400 font-semibold">the future of Durham student life</span>
             </p>
           </div>
         </CardContent>
