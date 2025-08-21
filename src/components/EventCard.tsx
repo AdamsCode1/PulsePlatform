@@ -11,9 +11,10 @@ interface EventCardProps {
   event: Event;
   onClick: () => void;
   onRSVPChange?: () => void;
+  rightAction?: React.ReactNode; // Optional override for right-side action (replaces RSVP/sign-up)
 }
 
-const EventCard = ({ event, onClick, onRSVPChange }: EventCardProps) => {
+const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps) => {
   const [hasRSVPed, setHasRSVPed] = useState(false);
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
   const [isClicked, setIsClicked] = useState(false);
@@ -237,7 +238,7 @@ const EventCard = ({ event, onClick, onRSVPChange }: EventCardProps) => {
           </div>
         )}
         
-        {/* Bottom buttons - Enhanced with animations and responsive design */}
+  {/* Bottom buttons - Enhanced with animations and responsive design */}
         <div className="flex justify-between items-center mt-auto gap-2">
           {/* Check Detail Button */}
           <button
@@ -249,8 +250,10 @@ const EventCard = ({ event, onClick, onRSVPChange }: EventCardProps) => {
             <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
           </button>
 
-          {/* RSVP or Sign Up Button */}
-          {event.signup_link && event.signup_link.trim() !== '' ? (
+          {/* Right action: status tag (if provided) OR RSVP/Sign Up */}
+          {rightAction ? (
+            <div className="flex-shrink-0 select-none pointer-events-none bg-transparent">{rightAction}</div>
+          ) : event.signup_link && event.signup_link.trim() !== '' ? (
             <a
               href={event.signup_link}
               target="_blank"
