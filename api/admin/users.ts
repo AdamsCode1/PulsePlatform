@@ -179,7 +179,7 @@ const handleGetUsers = async (req: VercelRequest, res: VercelResponse) => {
     const allUsers = await getAllUsersFallback(role as string, status as string, search as string);
     
     // Apply pagination
-    const data = allUsers.slice(from, to + 1);
+    const data = allUsers.slice(from, from + limitNum); // Fix: use from + limitNum for correct page size
     const count = allUsers.length;
 
     return res.status(200).json({ data, count });

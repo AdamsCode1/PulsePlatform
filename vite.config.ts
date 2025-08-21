@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => ({
     // In development, proxy API requests to the serverless dev server if it's running
     proxy: {
       '/api': {
-  target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:3001', // default matches dev:full; override if needed
+        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:3000', // now defaults to Vercel dev port
         changeOrigin: true,
         // Avoid Vite rewriting the path; we want /api/... as-is
         rewrite: (path) => path,
