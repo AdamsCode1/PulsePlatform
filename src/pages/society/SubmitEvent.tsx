@@ -34,7 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const eventCategories = [
   "academic",
@@ -111,8 +111,12 @@ type FormData = z.infer<typeof formSchema>;
 export default function EventSubmissionPage() {
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
+  const [loadingEvent, setLoadingEvent] = useState(false);
 
   const navigate = useNavigate(); // Use useNavigate hook for navigation (from Jakub's code)
+  const [searchParams] = useSearchParams();
+  const editingEventId = searchParams.get('edit');
+  const isEditing = Boolean(editingEventId);
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -218,6 +222,53 @@ export default function EventSubmissionPage() {
     form.setValue('requiresExternalSignup', false);
   }, []);
 
+  // Load existing event for editing
+  useEffect(() => {
+    async function loadEvent() {
+      if (!editingEventId || !societyId) return;
+      setLoadingEvent(true);
+      try {
+        const { data, error } = await supabase
+          .from('event')
+          .select('*')
+          .eq('id', editingEventId)
+          .eq('society_id', societyId)
+          .maybeSingle();
+        if (error) throw error;
+        if (data) {
+          // Populate form values
+          form.setValue('eventName', data.name || '');
+          form.setValue('description', data.description || '');
+          const start = data.start_time ? new Date(data.start_time) : null;
+            if (start && !isNaN(start.getTime())) {
+              form.setValue('startDate', start);
+              form.setValue('startTime', format(start, 'HH:mm'));
+            }
+          const end = data.end_time ? new Date(data.end_time) : null;
+            if (end && !isNaN(end.getTime())) {
+              form.setValue('endDate', end);
+              form.setValue('endTime', format(end, 'HH:mm'));
+            }
+          form.setValue('location', data.location || '');
+          form.setValue('category', data.category || undefined);
+          if (data.signup_link) {
+            form.setValue('requiresExternalSignup', true);
+            form.setValue('externalSignupLink', data.signup_link);
+          } else {
+            form.setValue('requiresExternalSignup', false);
+            form.setValue('externalSignupLink', '');
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load event for edit:', e);
+        toast({ title: 'Error', description: 'Unable to load event for editing', variant: 'destructive' });
+      } finally {
+        setLoadingEvent(false);
+      }
+    }
+    loadEvent();
+  }, [editingEventId, societyId]);
+
   // When recurrence is turned off, clear related fields
   const isRecurringWatch = form.watch('isRecurring');
   useEffect(() => {
@@ -296,8 +347,9 @@ export default function EventSubmissionPage() {
       signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
     });
 
-    const payloads = [] as ReturnType<typeof makePayload>[];
-    if (data.isRecurring && data.recurrenceFrequency && data.recurrenceEndDate) {
+  const payloads = [] as ReturnType<typeof makePayload>[];
+
+  if (!isEditing && data.isRecurring && data.recurrenceFrequency && data.recurrenceEndDate) {
       const MAX_OCCURRENCES = 50;
       let count = 0;
       let s = baseStart;
@@ -324,14 +376,35 @@ export default function EventSubmissionPage() {
             break;
         }
       }
-    } else {
+    } else if (!isEditing) {
       payloads.push(makePayload(baseStart, baseEnd));
     }
 
     try {
-      console.log("Submitting event payloads:", payloads);
+      if (isEditing) {
+        console.log('Updating event:', editingEventId);
+        const updatePayload = makePayload(baseStart, baseEnd);
+        const { data: updated, error } = await supabase
+          .from('event')
+          .update(updatePayload)
+          .eq('id', editingEventId)
+          .select();
+        if (error) throw error;
+        toast({
+          title: 'Event Updated',
+          description: 'Your event changes have been saved.',
+          action: (
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" size="sm" onClick={() => navigate('/society/events')}>Manage Events</Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/society/dashboard')}>Dashboard</Button>
+            </div>
+          )
+        });
+        navigate('/society/events');
+        return;
+      }
 
-      // Use direct Supabase call instead of API
+      console.log("Submitting event payloads:", payloads);
       const { data: insertedEvent, error } = await supabase
         .from('event')
         .insert(payloads)
@@ -572,102 +645,104 @@ export default function EventSubmissionPage() {
                 )}
               />
             </div>
-            {/* Recurrence controls */}
-            <div className="space-y-4 pt-2">
-              <FormField
-                control={form.control}
-                name="isRecurring"
-                render={({ field }) => (
-                  <FormItem className="flex items-center space-x-3">
-                    <Checkbox
-                      checked={!!field.value}
-                      onCheckedChange={(v) => field.onChange(Boolean(v))}
-                      id="isRecurring"
-                    />
-                    <div className="grid gap-1 leading-none">
-                      <FormLabel htmlFor="isRecurring">This is a recurring event</FormLabel>
-                      <FormDescription>
-                        Repeat this event weekly, fortnightly, or monthly until a chosen date.
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
+            {/* Recurrence controls (hidden in edit mode) */}
+            {!isEditing && (
+              <div className="space-y-4 pt-2">
+                <FormField
+                  control={form.control}
+                  name="isRecurring"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center space-x-3">
+                      <Checkbox
+                        checked={!!field.value}
+                        onCheckedChange={(v) => field.onChange(Boolean(v))}
+                        id="isRecurring"
+                      />
+                      <div className="grid gap-1 leading-none">
+                        <FormLabel htmlFor="isRecurring">This is a recurring event</FormLabel>
+                        <FormDescription>
+                          Repeat this event weekly, fortnightly, or monthly until a chosen date.
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
 
-              {form.watch('isRecurring') && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="recurrenceFrequency"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
-                          <ClockIcon className="w-5 h-5 text-primary" />
-                          Repeat Frequency
-                        </FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                          <FormControl>
-                            <SelectTrigger className="form-input text-lg h-14 rounded-xl">
-                              <SelectValue placeholder="Select frequency" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="weekly">Weekly</SelectItem>
-                            <SelectItem value="fortnightly">Fortnightly</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="recurrenceEndDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col space-y-3">
-                        <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
-                          <CalendarIcon className="w-5 h-5 text-primary" />
-                          Repeat Until
-                        </FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
+                {form.watch('isRecurring') && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="recurrenceFrequency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                            <ClockIcon className="w-5 h-5 text-primary" />
+                            Repeat Frequency
+                          </FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value ?? ''}>
                             <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "form-input text-lg h-14 rounded-xl pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP")
-                                ) : (
-                                  <span>Pick end date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
+                              <SelectTrigger className="form-input text-lg h-14 rounded-xl">
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
                             </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-popover" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => field.value ? date < new Date() : date < new Date()}
-                              initialFocus
-                              className="p-3 pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-            </div>
+                            <SelectContent>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="fortnightly">Fortnightly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="recurrenceEndDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col space-y-3">
+                          <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                            <CalendarIcon className="w-5 h-5 text-primary" />
+                            Repeat Until
+                          </FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "form-input text-lg h-14 rounded-xl pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick end date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => field.value ? date < new Date() : date < new Date()}
+                                initialFocus
+                                className="p-3 pointer-events-auto"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
 
@@ -725,7 +800,7 @@ export default function EventSubmissionPage() {
         );
 
       case 3: {
-        const requiresExternalSignup = form.watch("requiresExternalSignup");
+  const requiresExternalSignup = form.watch("requiresExternalSignup");
         return (
           <div className={`${baseClasses} space-y-8`}>
             <FormField
@@ -738,7 +813,14 @@ export default function EventSubmissionPage() {
                     External Registration Required
                   </FormLabel>
                   <Select
-                    onValueChange={(value) => field.onChange(value === "yes")}
+                    onValueChange={(value) => {
+                      const isYes = value === 'yes';
+                      field.onChange(isYes);
+                      if (!isYes) {
+                        // Clear the link when switching to No so it will be removed on save
+                        form.setValue('externalSignupLink', '', { shouldValidate: true });
+                      }
+                    }}
                     value={field.value === true ? "yes" : "no"}
                   >
                     <FormControl>
@@ -840,7 +922,7 @@ export default function EventSubmissionPage() {
                   </span>
                 </div>
 
-                {formValues.isRecurring && (
+                {!isEditing && formValues.isRecurring && (
                   <>
                     <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
                       <span className="font-medium text-muted-foreground">Recurring:</span>
@@ -899,6 +981,11 @@ export default function EventSubmissionPage() {
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
+        {isEditing && (
+          <div className="mb-6 rounded-md bg-gradient-to-r from-pink-500 to-pink-600 px-4 py-2 text-white text-sm font-medium shadow-sm flex items-center justify-center text-center">
+            <span className="inline-flex items-center">Event Edit Mode</span>
+          </div>
+        )}
         {/* Back Navigation */}
         <div className="mb-4">
           <Button
@@ -1000,7 +1087,7 @@ export default function EventSubmissionPage() {
                     className="flex items-center gap-2 text-sm px-4 py-2 md:text-base md:px-8 md:py-3"
                     disabled={loadingSocietyId}
                   >
-                    Submit Event
+                    {editingEventId ? 'Update Event' : 'Submit Event'}
                     <ChevronRight className="w-5 h-5" />
                   </Button>
                 )}

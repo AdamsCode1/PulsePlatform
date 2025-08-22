@@ -310,8 +310,8 @@ export default function SocietyEvents() {
                       )}
                       <Button
                         size="sm"
-                        variant="destructive"
-                        className="border-red-300 text-red-700 hover:bg-red-50"
+                        variant="outline"
+                        className="border-red-300 bg-red-50 text-red-700 hover:bg-red-600 hover:text-white hover:border-red-600 transition-colors"
                         onClick={e => { e.stopPropagation(); deleteEvent(event.id); }}
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
