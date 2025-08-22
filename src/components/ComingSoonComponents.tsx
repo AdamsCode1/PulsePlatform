@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Rocket, Users, Calendar, Sparkles, Clock, Mail, Share2 } from 'lucide-react';
 import GlitchText from '@/blocks/TextAnimations/GlitchText/GlitchText';
 import ShinyText from '@/blocks/TextAnimations/ShinyText/ShinyText';
+import CircularText from '@/blocks/TextAnimations/CircularText/CircularText';
 import Aurora from '@/blocks/Backgrounds/Aurora/Aurora';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
@@ -154,46 +155,27 @@ const CountdownTimer: React.FC<CountdownTimerProps> = ({ launchDate, onJoinWaitl
         <div className="relative z-10 flex items-center justify-center h-full px-3 sm:px-4 md:px-6 w-screen py-4 sm:py-6 md:py-8 -mt-8 sm:-mt-12 md:-mt-16">
           <div className="text-center w-full max-w-4xl">
 
-      {/* Coming Soon Pill - Enlarged logo with rotating text */
-      }
-            <div className={`mb-4 sm:mb-6 md:mb-8 flex justify-center ${isLoaded ? 'animate-fade-in animate-delay-300' : 'opacity-0'}`}>
-              <div className="relative">
-                {/* CSS-based rotating text - larger container */}
-        <div className="relative w-40 h-40 sm:w-44 sm:h-44 md:w-52 md:h-52 lg:w-60 lg:h-60 xl:w-72 xl:h-72">
-                  {/* Individual letters positioned around circle */}
-                  <div className="absolute inset-0 animate-spin" style={{ animationDuration: '20s' }}>
-                    {Array.from("•COMING SOON•COMING SOON•COMING SOON•").map((letter, index, array) => {
-                      const angle = (360 / array.length) * index;
-            const radius = 48; // Radius as percentage of container
-                      return (
-                        <span
-                          key={index}
-              className="absolute text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-bold text-pink-200 transform -translate-x-1/2 -translate-y-1/2 drop-shadow-lg"
-                          style={{
-                            left: '50%',
-                            top: '50%',
-                            transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-${radius}%) rotate(-${angle}deg)`,
-                            textShadow: '0 0 10px rgba(236, 72, 153, 0.8)',
-                          }}
-                        >
-                          {letter}
-                        </span>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* Enhanced glow effect for visibility */}
-                  <div className="absolute inset-0 rounded-full bg-pink-500/15 blur-2xl animate-pulse"></div>
-                </div>
-                
-                {/* Center icon/text - ENLARGED logo */}
-                <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 xl:w-40 xl:h-40 rounded-full bg-white p-2 sm:p-3 shadow-2xl ring-4 ring-pink-200/30">
-                    <img
-                      src="/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png"
-                      alt="DUPulse Logo"
-                      className="w-full h-full object-contain rounded-full"
-                    />
+            {/* Coming Soon Pill - Smaller logo with rotating text */}
+            <div className={`mb-4 sm:mb-6 md:mb-8 mt-8 sm:mt-12 md:mt-16 flex justify-center px-4 ${isLoaded ? 'animate-fade-in animate-delay-300' : 'opacity-0'}`}>
+              <div className="relative flex items-center justify-center overflow-visible">
+                {/* CircularText component with proper container */}
+                <div className="relative flex items-center justify-center overflow-visible">
+                  <CircularText
+                    text="•COMING SOON•COMING SOON"
+                    spinDuration={15}
+                    onHover="speedUp"
+                    className="w-36 h-36 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-52 lg:h-52 xl:w-56 xl:h-56 text-pink-200 text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl overflow-visible"
+                  />
+
+                  {/* Center icon/text - SMALLER logo */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 lg:w-22 lg:h-22 xl:w-24 xl:h-24 rounded-full bg-white p-2 shadow-2xl ring-4 ring-pink-200/30">
+                      <img
+                        src="/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png"
+                        alt="DUPulse Logo"
+                        className="w-full h-full object-contain rounded-full"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -516,8 +498,8 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12 sm:mb-16">
 
           {/* Feature 1 - Mobile optimized */}
-          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm ${isVisible ? 'fade-in-up animate-delay-1' : 'opacity-0'}`}>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm text-center ${isVisible ? 'fade-in-up animate-delay-1' : 'opacity-0'}`}>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z" />
               </svg>
@@ -527,8 +509,8 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
           </div>
 
           {/* Feature 2 - Mobile optimized */}
-          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm ${isVisible ? 'fade-in-up animate-delay-2' : 'opacity-0'}`}>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm text-center ${isVisible ? 'fade-in-up animate-delay-2' : 'opacity-0'}`}>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
               </svg>
@@ -538,8 +520,8 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
           </div>
 
           {/* Feature 3 - Mobile optimized */}
-          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm ${isVisible ? 'fade-in-up animate-delay-3' : 'opacity-0'}`}>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-600 to-purple-500 rounded-xl flex items-center justify-center mb-3 sm:mb-4">
+          <div className={`bg-gray-900/50 border border-gray-700/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm text-center ${isVisible ? 'fade-in-up animate-delay-3' : 'opacity-0'}`}>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-pink-600 to-purple-500 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
               <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732L14.146 12.8l-1.179 4.456a1 1 0 01-1.934 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732L9.854 7.2l1.179-4.456A1 1 0 0112 2z" clipRule="evenodd" />
               </svg>

@@ -1,5 +1,5 @@
 /*
-	Installed from https://reactbits.dev/ts/tailwind/
+  Installed from https://reactbits.dev/ts/tailwind/
 */
 
 import React, { useEffect } from "react";
@@ -114,16 +114,22 @@ const CircularText: React.FC<CircularTextProps> = ({
     >
       {letters.map((letter, i) => {
         const rotationDeg = (360 / letters.length) * i;
-        const factor = Math.PI / letters.length;
-        const x = factor * i;
-        const y = factor * i;
-        const transform = `rotateZ(${rotationDeg}deg) translate3d(${x}px, ${y}px, 0)`;
+        const radius = 85; // Slightly larger radius for better readability
+        const radian = (rotationDeg * Math.PI) / 180;
+        const x = Math.cos(radian - Math.PI / 2) * radius; // Start from top
+        const y = Math.sin(radian - Math.PI / 2) * radius;
 
         return (
           <span
             key={i}
-            className="absolute inline-block inset-0 text-2xl transition-all duration-500 ease-[cubic-bezier(0,0,0,1)]"
-            style={{ transform, WebkitTransform: transform }}
+            className="absolute text-2xl transition-all duration-500 ease-[cubic-bezier(0,0,0,1)] font-bold"
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotationDeg}deg)`,
+              WebkitTransform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${rotationDeg}deg)`,
+              transformOrigin: 'center center'
+            }}
           >
             {letter}
           </span>
