@@ -13,6 +13,7 @@ import EventModal from '@/components/EventModal';
 
 interface Event {
   id: string;
+  name: string; // Added for DB event name
   title: string;
   description: string;
   start_time: string;
@@ -59,6 +60,7 @@ export default function StudentDashboard() {
   // RSVP count loading state
   const [rsvpCountsLoading, setRsvpCountsLoading] = useState(true);
 
+  // Find the selected event from userRSVPs by id
   const selectedEvent = selectedEventId
     ? (() => {
         const rsvp = userRSVPs.find(r => r.event.id === selectedEventId);
@@ -66,7 +68,7 @@ export default function StudentDashboard() {
         const e = rsvp.event;
         return {
           ...e,
-          eventName: e.title,
+          eventName: e.name || e.title || 'Untitled Event',
           organiserID: '',
           societyName: e.society?.name || '',
           date: e.start_time && !isNaN(Date.parse(e.start_time)) ? new Date(e.start_time).toISOString() : new Date().toISOString(),
@@ -136,8 +138,7 @@ export default function StudentDashboard() {
         .select('*')
         .eq('status', 'approved')
         .gte('start_time', new Date().toISOString())
-        .order('start_time', { ascending: true })
-        .limit(6);
+        .order('start_time', { ascending: true });
 
       if (eventsError) throw eventsError;
       if (!eventsData || eventsData.length === 0) {
@@ -247,7 +248,7 @@ export default function StudentDashboard() {
   // Calculate stats for dashboard cards
   const totalEvents = upcomingEvents.length;
   const totalRSVPs = userRSVPs.length;
-  const eventsAttended = userRSVPs.filter(rsvp => new Date(rsvp.event.start_time) < new Date()).length;
+  const eventsAttended = userRSVPs.filter(rsvp => rsvp.status === 'confirmed' && new Date(rsvp.event.start_time) < new Date()).length;
 
   // RSVP count logic for dashboard events
   useEffect(() => {
@@ -342,46 +343,41 @@ export default function StudentDashboard() {
                           if (element) {
                             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                           }
-                        }, 400);
+                        }, 100);
                       }
                     }} className="bg-pink-500 text-white">Browse Events</Button>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {userRSVPs.map((rsvp) => (
-                      <EventCard key={rsvp.event.id} event={{
-                        ...rsvp.event,
-                        eventName: rsvp.event.title,
-                        date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
-                        endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
-                        location: rsvp.event.location,
-                        description: rsvp.event.description,
-                        societyName: rsvp.event.society.name,
-                        attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
-                        organiserID: '',
-                        requiresOrganizerSignup: false,
-                        organizerEmail: '',
-                        signup_link: '',
-                      }}
-                      onClick={() => setSelectedEventId(rsvp.event.id)}
-                      onRSVPChange={async () => {
-                        // Refetch RSVP count for this event only
-                        const count = await fetchRSVPCountForEvent(rsvp.event.id);
-                        setYourEventsRSVPCounts(prev => ({ ...prev, [rsvp.event.id]: count }));
-                      }}
-                    />
+                      <EventCard
+                        key={rsvp.event.id}
+                        event={{
+                          ...rsvp.event,
+                          eventName: rsvp.event.name || rsvp.event.title || 'Untitled Event',
+                          date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
+                          endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
+                          location: rsvp.event.location,
+                          description: rsvp.event.description,
+                          societyName: rsvp.event.society.name,
+                          attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
+                          organiserID: '',
+                          requiresOrganizerSignup: false,
+                          organizerEmail: '',
+                          signup_link: '',
+                        }}
+                        onClick={() => setSelectedEventId(rsvp.event.id)}
+                        onRSVPChange={async () => {
+                          // Refetch RSVP count for this event only
+                          const count = await fetchRSVPCountForEvent(rsvp.event.id);
+                          setYourEventsRSVPCounts(prev => ({ ...prev, [rsvp.event.id]: count }));
+                        }}
+                      />
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
-            {/* Event Modal */}
-            {selectedEvent && (
-              <EventModal
-                event={selectedEvent}
-                onClose={() => setSelectedEventId(null)}
-              />
-            )}
           </div>
         )}
         {activeSection === 'dashboard' && (
@@ -545,45 +541,52 @@ export default function StudentDashboard() {
                                   if (element) {
                                     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                   }
-                                }, 400);
+                                }, 100);
                               }
-                            }} className="bg-pink-500 text-white">Browse Events</Button>
+                            }}>
+                              View Schedule
+                            </Button>
                           </div>
                         ) : (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {userRSVPs.map((rsvp) => (
-                              <EventCard key={rsvp.event.id} event={{
-                                ...rsvp.event,
-                                eventName: rsvp.event.title,
-                                date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
-                                endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
-                                location: rsvp.event.location,
-                                description: rsvp.event.description,
-                                societyName: rsvp.event.society.name,
-                                attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
-                                organiserID: '',
-                                requiresOrganizerSignup: false,
-                                organizerEmail: '',
-                                signup_link: '',
-                              }}
-                              onClick={() => setSelectedEventId(rsvp.event.id)} />
+                              <EventCard
+                                key={rsvp.event.id}
+                                event={{
+                                  ...rsvp.event,
+                                  eventName: rsvp.event.name || rsvp.event.title || 'Untitled Event',
+                                  date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
+                                  endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
+                                  location: rsvp.event.location,
+                                  description: rsvp.event.description,
+                                  societyName: rsvp.event.society.name,
+                                  attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
+                                  organiserID: '',
+                                  requiresOrganizerSignup: false,
+                                  organizerEmail: '',
+                                  signup_link: '',
+                                }}
+                                onClick={() => setSelectedEventId(rsvp.event.id)}
+                                onRSVPChange={async () => {
+                                  // Refetch RSVP count for this event only
+                                  const count = await fetchRSVPCountForEvent(rsvp.event.id);
+                                  setYourEventsRSVPCounts(prev => ({ ...prev, [rsvp.event.id]: count }));
+                                }}
+                              />
                             ))}
                           </div>
                         )}
                       </CardContent>
                     </Card>
-                    {/* Event Modal for Your Events */}
-                    {selectedEvent && (
-                      <EventModal
-                        event={selectedEvent}
-                        onClose={() => setSelectedEventId(null)}
-                      />
-                    )}
                   </div>
                 </div>
               </div>
             </div>
           </>
+        )}
+        {/* Event Modal - always render when selectedEventId is set */}
+        {selectedEventId && selectedEvent && (
+          <EventModal event={selectedEvent} onClose={() => setSelectedEventId(null)} />
         )}
       </main>
       <Footer />

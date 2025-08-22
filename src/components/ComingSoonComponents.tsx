@@ -609,18 +609,12 @@ interface EarlyAccessSignupProps {
 const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, onSignup }) => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [userType, setUserType] = useState('student');
-  const [referralCode, setReferralCode] = useState('');
-  const [joinWhatsApp, setJoinWhatsApp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState('');
-  const [whatsAppLink, setWhatsAppLink] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
       await onSignup({
         email,
