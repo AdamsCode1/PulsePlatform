@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CountdownTimer, FeaturePreview, EarlyAccessSignup } from '@/components/ComingSoonComponents';
 import { useToast } from '@/hooks/use-toast';
 import Aurora from '@/blocks/Backgrounds/Aurora/Aurora';
+import { supabase } from '@/lib/supabaseClient';
 
 const ComingSoonPage: React.FC = () => {
   const { toast } = useToast();
@@ -28,81 +29,39 @@ const ComingSoonPage: React.FC = () => {
     );
   }
 
-  const handleEarlyAccessSignup = async (data: {
-    email: string;
-    name: string;
-    userType: string;
-    referralCode?: string;
-    joinWhatsApp: boolean;
-  }) => {
+  const handleEarlyAccessSignup = async (data: { email: string; name: string; }) => {
     try {
-      // Add timeout to prevent hanging requests
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const name = data.name.trim();
+      const email = data.email.trim().toLowerCase();
+      const { error } = await supabase
+        .from('waitlist')
+        .insert([{ name, email }]);
 
-      // Use the unified API endpoint instead of direct Supabase
-      const response = await fetch('/api/unified/early-access', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          email: data.email,
-          name: data.name,
-          user_type: data.userType,
-          referred_by: data.referralCode || null,
-          join_whatsapp: data.joinWhatsApp,
-          metadata: {
-            signup_source: 'coming_soon_page',
-            user_agent: navigator.userAgent,
-            timestamp: new Date().toISOString()
-          }
-        })
-      });
-
-      clearTimeout(timeoutId);
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 409) {
+      if (error) {
+        if ((error as any).code === '23505' || /duplicate|unique/i.test((error as any).message || '')) {
           toast({
-            title: "Already signed up!",
+            title: 'Already signed up!',
             description: "You're already on our waitlist. We'll notify you when we launch!",
-            variant: "default"
+            variant: 'default',
           });
           return;
         }
-        throw new Error(result.message || 'Signup failed');
+        throw new Error((error as any).message || 'Signup failed');
       }
 
       toast({
-        title: "Welcome to the community!",
-        description: `You're #${result.position_in_queue} on the list! Check your email for updates.`,
-        variant: "default"
+        title: 'Welcome to the waitlist!',
+        description: "You're on the list! Check your email for updates.",
+        variant: 'default',
       });
-
     } catch (error: any) {
       console.error('Signup error:', error);
-
-      // Don't let network errors crash the page
-      if (error.name === 'AbortError') {
-        toast({
-          title: "Request timed out",
-          description: "Please check your connection and try again.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Oops! Something went wrong",
-          description: error.message || "Please try again or contact us if the problem persists.",
-          variant: "destructive"
-        });
-      }
-
-      // Don't re-throw the error to prevent crashes
-      return;
+      toast({
+        title: 'Oops! Something went wrong',
+        description: error.message || 'Please try again or contact us if the problem persists.',
+        variant: 'destructive',
+      });
+      throw error;
     }
   };
 
@@ -183,15 +142,17 @@ const ComingSoonPage: React.FC = () => {
 
         {/* Second Part - Feature Preview */}
         <div className="relative">
-          <FeaturePreview onJoinWaitlist={null} />
+          <FeaturePreview />
         </div>
-      </div>      {/* Early Access Signup Modal */}
-      <EarlyAccessSignup
-        isOpen={isSignupModalOpen}
-        onClose={() => setIsSignupModalOpen(false)}
-        onSignup={handleEarlyAccessSignup}
-      />
-
+      </div>
+      {/* Early Access Signup Modal */}
+      {isSignupModalOpen && (
+        <EarlyAccessSignup
+          onSignup={handleEarlyAccessSignup}
+          isOpen={isSignupModalOpen}
+          onClose={() => setIsSignupModalOpen(false)}
+        />
+      )}
       {/* Sneak Peak Password Modal */}
       {isSneakPeakModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -238,10 +199,8 @@ const ComingSoonPage: React.FC = () => {
           </div>
         </div>
       )}
-
-
     </div>
   );
-};
+}
 
 export default ComingSoonPage;

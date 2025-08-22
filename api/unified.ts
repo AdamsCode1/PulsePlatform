@@ -48,6 +48,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   console.log('Method:', req.method);
   console.log('URL:', req.url);
   console.log('Query:', req.query);
+  // Avoid logging full headers/body to prevent leaking secrets/PII
+  if (process.env.NODE_ENV !== 'production') {
+    const { authorization, cookie, ...rest } = req.headers || {};
+    console.log('Headers (redacted):', {
+      ...rest,
+      authorization: authorization ? 'REDACTED' : undefined,
+      cookie: cookie ? 'REDACTED' : undefined,
+    });
+    console.log('Body shape:', typeof (req as any).body === 'object' ? Object.keys((req as any).body) : typeof (req as any).body);
+  }
 
   try {
     // Handle CORS
@@ -800,151 +810,38 @@ async function handleStudents(req: VercelRequest, res: VercelResponse, supabase:
   }
 }
 
-// Early Access handler - for coming soon page signups
+// Early Access handler - simplified waitlist signups
 async function handleEarlyAccess(req: VercelRequest, res: VercelResponse, supabase: any) {
-  const { method, body } = req;
-
-  try {
-    switch (method) {
-      case 'POST':
-        // POST /api/unified/early-access - register for early access
-        const { email, name, userType, referralCode, joinWhatsApp, metadata } = body;
-
-        console.log('[API/early-access] Incoming signup:', { email, name, userType, referralCode, joinWhatsApp });
-
-        if (!isNonEmptyString(email) || !isValidEmail(email)) {
-          return res.status(400).json({ message: 'Valid email is required.' });
-        }
-
-        if (!isNonEmptyString(userType) || !['student', 'society', 'partner'].includes(userType)) {
-          return res.status(400).json({ message: 'Valid user type is required (student, society, or partner).' });
-        }
-
-        // Check for duplicate email
-        const { data: existing, error: checkError } = await supabase
-          .from('early_access_signups')
-          .select('id, email')
-          .eq('email', email.trim().toLowerCase())
-          .single();
-
-        if (checkError && checkError.code !== 'PGRST116') {
-          console.error('[API/early-access] Error checking for existing signup:', checkError);
-          return res.status(500).json({ message: 'Error checking for existing signup' });
-        }
-
-        if (existing) {
-          return res.status(409).json({ message: 'Email already registered for early access.' });
-        }
-
-        // Validate referral code if provided
-        let referralValid = true;
-        if (referralCode) {
-          const { data: referrer, error: referralError } = await supabase
-            .from('early_access_signups')
-            .select('id')
-            .eq('referral_code', referralCode.toUpperCase())
-            .single();
-
-          if (referralError || !referrer) {
-            referralValid = false;
-          }
-        }
-
-        const newSignup = {
-          email: email.trim().toLowerCase(),
-          user_type: userType,
-          referred_by: referralValid && referralCode ? referralCode.toUpperCase() : null,
-          metadata: {
-            signup_source: 'coming_soon_page',
-            user_agent: metadata?.user_agent || 'unknown',
-            timestamp: new Date().toISOString(),
-            referral_valid: referralValid,
-            name: name?.trim() || '',
-            join_whatsapp: joinWhatsApp || false,
-            ...metadata
-          }
-        };
-
-        console.log('[API/early-access] Attempting to insert:', newSignup);
-
-        const { data, error } = await supabase
-          .from('early_access_signups')
-          .insert([newSignup])
-          .select()
-          .single();
-
-        if (error) {
-          console.error('[API/early-access] Supabase insert error:', error);
-          if (error.code === '23505') { // Unique constraint violation
-            return res.status(409).json({ message: 'Email already registered for early access.' });
-          }
-          return res.status(500).json({ message: error.message || 'Unknown error', details: error });
-        }
-
-        // Return success with referral code for sharing
-        return res.status(201).json({
-          message: 'Successfully registered for early access!',
-          referral_code: data.referral_code,
-          user_type: data.user_type,
-          position_in_queue: await getQueuePosition(supabase, data.id)
-        });
-
-      case 'GET':
-        // GET /api/unified/early-access - get signup stats (public)
-        const { data: stats, error: statsError } = await supabase
-          .from('early_access_signups')
-          .select('user_type, signup_date')
-          .order('signup_date', { ascending: true });
-
-        if (statsError) {
-          console.error('[API/early-access] Error fetching stats:', statsError);
-          return res.status(500).json({ message: 'Error fetching signup stats' });
-        }
-
-        const totalSignups = stats.length;
-        const userTypeBreakdown = stats.reduce((acc: any, signup: any) => {
-          acc[signup.user_type] = (acc[signup.user_type] || 0) + 1;
-          return acc;
-        }, {});
-
-        const signupsToday = stats.filter((signup: any) => {
-          const today = new Date().toDateString();
-          const signupDate = new Date(signup.signup_date).toDateString();
-          return today === signupDate;
-        }).length;
-
-        return res.status(200).json({
-          total_signups: totalSignups,
-          signups_today: signupsToday,
-          user_type_breakdown: userTypeBreakdown,
-          launch_date: '2025-09-15'
-        });
-
-      default:
-        return res.status(405).json({ message: 'Method not allowed' });
-    }
-  } catch (error: any) {
-    console.error('Early Access API Error:', error);
-    return res.status(500).json({ message: error.message || 'Internal server error' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method not allowed' });
   }
-}
 
-// Helper function to get position in queue
-async function getQueuePosition(supabase: any, signupId: string): Promise<number> {
-  try {
-    const { data, error } = await supabase
-      .from('early_access_signups')
-      .select('id')
-      .order('signup_date', { ascending: true });
-
-    if (error) {
-      console.error('Error getting queue position:', error);
-      return 0;
+  let body: any = (req as any).body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      return res.status(400).json({ message: 'Invalid request body format.' });
     }
-
-    return data.findIndex((signup: any) => signup.id === signupId) + 1;
-  } catch (error) {
-    console.error('Error calculating queue position:', error);
-    return 0;
   }
+
+  const { email, name } = body || {};
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const normalizedName = typeof name === 'string' ? name.trim() : '';
+  if (!isNonEmptyString(normalizedName) || !isValidEmail(normalizedEmail)) {
+    return res.status(400).json({ message: 'Valid name and email are required.' });
+  }
+
+  const { error } = await supabase
+    .from('waitlist')
+    .insert([{ name: normalizedName, email: normalizedEmail }]);
+
+  if (error) {
+    if ((error as any).code === '23505') {
+      return res.status(409).json({ message: 'This email is already on the waitlist.' });
+    }
+    return res.status(500).json({ message: (error as any).message || 'Failed to insert into waitlist.' });
+  }
+
+  return res.status(201).json({ message: 'Successfully registered for waitlist!' });
 }

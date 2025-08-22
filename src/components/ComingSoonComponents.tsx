@@ -595,48 +595,24 @@ const FeaturePreview: React.FC<FeaturePreviewProps> = ({ onJoinWaitlist }) => {
 };
 
 interface EarlyAccessSignupProps {
+  onSignup: (data: { email: string; name: string }) => Promise<void>;
   isOpen: boolean;
   onClose: () => void;
-  onSignup: (data: {
-    email: string;
-    name: string;
-    userType: string;
-    referralCode?: string;
-    joinWhatsApp: boolean;
-  }) => Promise<void>;
 }
 
-const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, onSignup }) => {
+const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup, isOpen, onClose }) => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [userType, setUserType] = useState('student');
-  const [referralCode, setReferralCode] = useState('');
-  const [joinWhatsApp, setJoinWhatsApp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState('');
-  const [whatsAppLink, setWhatsAppLink] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await onSignup({
-        email,
-        name,
-        userType,
-        referralCode: referralCode || undefined,
-        joinWhatsApp
-      });
+  await onSignup({ email, name });
       setIsSuccess(true);
-      // Generate a shareable referral code for the user
-      setGeneratedCode(name.substring(0, 3).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase());
-
-      // Set WhatsApp group link if they opted in
-      if (joinWhatsApp) {
-        setWhatsAppLink('https://chat.whatsapp.com/your-group-link-here'); // Replace with actual link
-      }
     } catch (error) {
       console.error('Signup error:', error);
     } finally {
@@ -647,13 +623,8 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
   const resetForm = () => {
     setEmail('');
     setName('');
-    setUserType('student');
-    setReferralCode('');
-    setJoinWhatsApp(false);
     setIsLoading(false);
     setIsSuccess(false);
-    setGeneratedCode('');
-    setWhatsAppLink('');
   };
 
   const handleClose = () => {
@@ -677,45 +648,19 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
             <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <Sparkles className="w-8 h-8 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold text-white">Welcome {name}! 🎉</CardTitle>
+            <CardTitle className="text-2xl font-bold text-white">You’re on the list! 🎉</CardTitle>
             <CardDescription className="text-gray-400">
-              You're now on the exclusive early access list for DUPulse
+              Thanks {name}. We’ll email you with updates before launch.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <div className="bg-gray-800/50 border border-gray-600/50 rounded-xl p-4">
-              <p className="text-sm text-gray-400 mb-2">Your referral code:</p>
-              <p className="text-2xl font-bold text-blue-400 tracking-wider">{generatedCode}</p>
-              <p className="text-xs text-gray-500 mt-2">Share for VIP perks!</p>
-            </div>
-
-            {joinWhatsApp && whatsAppLink && (
-              <div className="bg-green-900/20 border border-green-600/30 rounded-xl p-4">
-                <p className="text-sm text-green-400 mb-3">🚀 Join our pre-launch community!</p>
-                <a
-                  href={whatsAppLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
-                >
-                  Join WhatsApp Group 💬
-                </a>
-                <p className="text-xs text-green-400 mt-2">
-                  Get behind-the-scenes updates, early feature previews, and connect with other Durham students!
-                </p>
-              </div>
-
-            )}
-
             <Button
               variant="outline"
               className="w-full bg-gray-800/50 border-gray-600/50 text-white hover:bg-gray-700/50"
-              onClick={() => navigator.clipboard.writeText(`Join me on DUPulse with code: ${generatedCode}`)}
+              onClick={handleClose}
             >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share Your Code
+              Close
             </Button>
-
           </CardContent>
         </Card>
       </div>
@@ -764,46 +709,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ isOpen, onClose, 
               />
             </div>
 
-            <div>
-              <Select value={userType} onValueChange={setUserType}>
-                <SelectTrigger className="h-12 border-gray-600/40 rounded-lg bg-gray-800/70 text-white focus:border-blue-500">
-                  <SelectValue placeholder="Durham Student" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600/40">
-                  <SelectItem value="student" className="text-white hover:bg-gray-700">Durham Student</SelectItem>
-                  <SelectItem value="society" className="text-white hover:bg-gray-700">Society Representative</SelectItem>
-                  <SelectItem value="partner" className="text-white hover:bg-gray-700">Local Business Partner</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Input
-                placeholder="Referral code (optional)"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-200 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
-              />
-            </div>
-
-            <div className="bg-gray-800/60 rounded-lg p-3 border border-gray-600/30">
-              <label className="flex items-start space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={joinWhatsApp}
-                  onChange={(e) => setJoinWhatsApp(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-500 rounded"
-                />
-                <div className="text-xs">
-                  <span className="font-semibold text-white text-sm">
-                    Join our Durham student community 💬
-                  </span>
-                  <p className="text-gray-200 mt-1 leading-relaxed">
-                    Get exclusive updates and connect with other Durham students!
-                  </p>
-                </div>
-              </label>
-            </div>
+            {/* Removed user type, referral code, and WhatsApp options for a simpler flow */}
 
             <Button
               type="submit"
