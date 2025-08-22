@@ -8,6 +8,8 @@ import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/lib/supabaseClient';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import EventCard from '@/components/EventCard';
+import EventModal from '@/components/EventModal';
 
 interface Event {
   id: string;
@@ -46,6 +48,7 @@ export default function SocietyDashboard() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -177,6 +180,28 @@ export default function SocietyDashboard() {
 
   const stats = getEventStats();
 
+  const selectedEvent = selectedEventId
+    ? (() => {
+        const e = events.find(ev => ev.id === selectedEventId);
+        if (!e) return null;
+        return {
+          ...e,
+          eventName: e.name,
+          organiserID: '',
+          societyName: society?.name || '',
+          date: e.start_time && !isNaN(Date.parse(e.start_time)) ? new Date(e.start_time).toISOString() : new Date().toISOString(),
+          endTime: e.end_time && !isNaN(Date.parse(e.end_time)) ? new Date(e.end_time).toISOString() : new Date().toISOString(),
+          location: e.location,
+          description: e.description,
+          attendeeCount: (e as any).attendee_count || 0,
+          requiresOrganizerSignup: false,
+          organizerEmail: society?.contact_email || '',
+          signup_link: (e as any).signup_link || '',
+          status: e.status,
+        };
+      })()
+    : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
@@ -193,7 +218,7 @@ export default function SocietyDashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="border-blue-200 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total Events</CardTitle>
             </CardHeader>
@@ -201,7 +226,7 @@ export default function SocietyDashboard() {
               <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-green-200 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Approved</CardTitle>
             </CardHeader>
@@ -209,7 +234,7 @@ export default function SocietyDashboard() {
               <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-yellow-200 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Pending</CardTitle>
             </CardHeader>
@@ -217,7 +242,7 @@ export default function SocietyDashboard() {
               <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="border-purple-200 shadow-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">Total RSVPs</CardTitle>
             </CardHeader>
@@ -230,16 +255,17 @@ export default function SocietyDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="border-pink-200 shadow-md">
               <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
+                <CardTitle className="text-pink-600">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button 
                   onClick={() => navigate('/society/submit-event')}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-pink-600 border-pink-300"
+                  variant="outline"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-4 h-4 mr-2 text-pink-500" />
                   Submit New Event
                 </Button>
                 <Button 
@@ -247,7 +273,7 @@ export default function SocietyDashboard() {
                   className="w-full justify-start"
                   variant="outline"
                 >
-                  <Calendar className="w-4 h-4 mr-2" />
+                  <Calendar className="w-4 h-4 mr-2 text-blue-500" />
                   Manage Events
                 </Button>
                 <Button 
@@ -255,16 +281,16 @@ export default function SocietyDashboard() {
                   className="w-full justify-start"
                   variant="outline"
                 >
-                  <BarChart3 className="w-4 h-4 mr-2" />
+                  <BarChart3 className="w-4 h-4 mr-2 text-purple-500" />
                   View Public Events
                 </Button>
               </CardContent>
             </Card>
 
             {/* Society Info */}
-            <Card className="mt-6">
+            <Card className="mt-6 border-green-200 shadow-md">
               <CardHeader>
-                <CardTitle>Society Information</CardTitle>
+                <CardTitle className="text-green-600">Society Information</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -289,11 +315,11 @@ export default function SocietyDashboard() {
 
           {/* Recent Events */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="border-pink-200 shadow-md">
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Recent Events</CardTitle>
+                    <CardTitle className="text-pink-600">Recent Events</CardTitle>
                     <CardDescription>Your latest event submissions</CardDescription>
                   </div>
                   <Button 
@@ -316,42 +342,39 @@ export default function SocietyDashboard() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {events.slice(0, 5).map((event) => (
-                      <div key={event.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold">{event.name}</h3>
-                          {getStatusBadge(event.status)}
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                          {event.description}
-                        </p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-500">
-                          <div className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-2" />
-                            {new Date(event.start_time).toLocaleDateString()} at {new Date(event.start_time).toLocaleTimeString()}
-                          </div>
-                          <div className="flex items-center">
-                            <MapPin className="w-4 h-4 mr-2" />
-                            {event.location}
-                          </div>
-                          <div className="flex items-center">
-                            <Users className="w-4 h-4 mr-2" />
-                            {event.rsvp?.[0]?.count || 0} RSVP
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-2" />
-                            {event.category}
-                          </div>
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {events.slice(0, 6).map((ev) => (
+                      <EventCard
+                        key={ev.id}
+                        event={{
+                          ...ev,
+                          eventName: ev.name,
+                          date: ev.start_time && !isNaN(Date.parse(ev.start_time)) ? new Date(ev.start_time).toISOString() : new Date().toISOString(),
+                          endTime: ev.end_time && !isNaN(Date.parse(ev.end_time)) ? new Date(ev.end_time).toISOString() : new Date().toISOString(),
+                          location: ev.location,
+                          description: ev.description,
+                          societyName: society?.name || '',
+                          attendeeCount: (ev as any).attendee_count || ev.rsvp?.[0]?.count || 0,
+                          organiserID: '',
+                          requiresOrganizerSignup: false,
+                          organizerEmail: society?.contact_email || '',
+                          signup_link: (ev as any).signup_link || '',
+                          status: ev.status,
+                        }}
+                        onClick={() => setSelectedEventId(ev.id)}
+                        rightAction={getStatusBadge(ev.status)}
+                      />
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
+            {selectedEvent && (
+              <EventModal
+                event={selectedEvent}
+                onClose={() => setSelectedEventId(null)}
+              />
+            )}
           </div>
         </div>
       </main>

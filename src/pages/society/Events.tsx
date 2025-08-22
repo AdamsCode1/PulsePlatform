@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import EventModal from '@/components/EventModal';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Event {
   id: string;
-  title: string;
+  name: string;
   description: string;
   start_time: string;
   end_time: string;
@@ -36,6 +37,7 @@ export default function SocietyEvents() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [user, setUser] = useState<any>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -100,7 +102,7 @@ export default function SocietyEvents() {
 
     if (searchTerm) {
       filtered = filtered.filter(event =>
-        event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.location.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -246,73 +248,73 @@ export default function SocietyEvents() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {filteredEvents.map((event) => (
-              <Card key={event.id} className="overflow-hidden">
+              <Card
+                key={event.id}
+                className="border-pink-200 shadow-md cursor-pointer hover:shadow-lg transition"
+                onClick={() => setSelectedEventId(event.id)}
+              >
                 <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-xl font-semibold">{event.title}</h3>
-                        {getStatusBadge(event.status)}
-                        {isEventPast(event.start_time) && (
-                          <Badge variant="outline">Past Event</Badge>
-                        )}
-                      </div>
-                      <p className="text-gray-600 mb-3">{event.description}</p>
-                    </div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-bold text-gray-900 flex-1">{event.name}</h3>
+                    {getStatusBadge(event.status)}
+                    {isEventPast(event.start_time) && (
+                      <Badge variant="outline">Past Event</Badge>
+                    )}
                   </div>
+                  <p className="text-gray-600 mb-4">{event.description}</p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center text-sm text-gray-600">
                       <Calendar className="w-4 h-4 mr-2" />
-                      {new Date(event.start_time).toLocaleDateString()}
+                      <span className="font-medium text-gray-800">{new Date(event.start_time).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Clock className="w-4 h-4 mr-2" />
-                      {new Date(event.start_time).toLocaleTimeString()} – {new Date(event.end_time).toLocaleTimeString()}
+                      <span className="font-medium text-gray-800">{new Date(event.start_time).toLocaleTimeString()} – {new Date(event.end_time).toLocaleTimeString()}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="w-4 h-4 mr-2" />
-                      {event.location}
+                      <span className="font-medium text-gray-800">{event.location}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-2" />
-                      {event.rsvp?.[0]?.count || 0} RSVPs
+                      <span className="font-medium text-gray-800">{event.rsvp?.[0]?.count || 0} RSVPs</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mt-2">
                     <div className="text-xs text-gray-500">
                       Created on {new Date(event.created_at).toLocaleDateString()}
                     </div>
-
                     <div className="flex gap-2">
                       {event.status === 'pending' && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/society/submit-event?edit=${event.id}`)}
+                          className="border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+                          onClick={e => { e.stopPropagation(); navigate(`/society/submit-event?edit=${event.id}`); }}
                         >
                           <Edit className="w-4 h-4 mr-1" />
                           Edit
                         </Button>
                       )}
-                      
                       {event.status === 'approved' && (
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/?event=${event.id}`)}
+                          className="border-green-300 text-green-700 hover:bg-green-50"
+                          onClick={e => { e.stopPropagation(); navigate(`/?event=${event.id}`); }}
                         >
                           View Public
                         </Button>
                       )}
-
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => deleteEvent(event.id)}
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                        onClick={e => { e.stopPropagation(); deleteEvent(event.id); }}
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
                         Delete
@@ -322,6 +324,31 @@ export default function SocietyEvents() {
                 </CardContent>
               </Card>
             ))}
+            {/* Event Modal */}
+            {selectedEventId && (
+              <EventModal
+                event={(() => {
+                  const event = events.find(ev => ev.id === selectedEventId);
+                  if (!event) return null;
+                  return {
+                    ...event,
+                    eventName: event.name,
+                    organiserID: '',
+                    societyName: '',
+                    date: event.start_time && !isNaN(Date.parse(event.start_time)) ? new Date(event.start_time).toISOString() : new Date().toISOString(),
+                    endTime: event.end_time && !isNaN(Date.parse(event.end_time)) ? new Date(event.end_time).toISOString() : new Date().toISOString(),
+                    location: event.location,
+                    description: event.description,
+                    attendeeCount: event.rsvp?.[0]?.count || 0,
+                    requiresOrganizerSignup: false,
+                    organizerEmail: user?.email || '',
+                    signup_link: '',
+                    status: event.status,
+                  };
+                })()}
+                onClose={() => setSelectedEventId(null)}
+              />
+            )}
           </div>
         )}
       </main>
