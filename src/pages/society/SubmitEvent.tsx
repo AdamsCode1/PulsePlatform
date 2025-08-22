@@ -899,6 +899,19 @@ export default function EventSubmissionPage() {
   return (
     <div className="min-h-screen py-12 px-4">
       <div className="max-w-4xl mx-auto">
+        {/* Back Navigation */}
+        <div className="mb-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/society/dashboard')}
+            className="flex items-center gap-1"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Button>
+        </div>
         {/* Progress Steps */}
         <div className="mb-16">
           <div className="text-center mb-12">
