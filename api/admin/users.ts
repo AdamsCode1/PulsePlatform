@@ -5,23 +5,29 @@ import { createHandler } from '../../lib/utils.js';
 // This is a secure, server-side only file.
 
 let supabaseAdmin: SupabaseClient | undefined;
-function initSupabaseAdmin(): SupabaseClient {
-  if (!supabaseAdmin) {
-    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-    }
-    supabaseAdmin = createClient(url, key);
+function initSupabaseAdmin(req?: VercelRequest): SupabaseClient {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url) {
+    throw new Error('Server configuration error: missing SUPABASE_URL');
   }
-  return supabaseAdmin;
+  if (serviceKey) {
+    if (!supabaseAdmin) supabaseAdmin = createClient(url, serviceKey);
+    return supabaseAdmin;
+  }
+  const token = req?.headers.authorization?.split('Bearer ')[1];
+  if (!anonKey || !token) {
+    throw new Error('Server configuration error: missing SUPABASE_SERVICE_ROLE_KEY and no anon+token fallback available');
+  }
+  return createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
 
@@ -38,8 +44,8 @@ const requireAdmin = async (req: VercelRequest) => {
 };
 
 // Fallback function for getting users when RPC is not available
-const getAllUsersFallback = async (roleFilter: string, statusFilter: string, searchTerm: string) => {
-  const client = initSupabaseAdmin();
+const getAllUsersFallback = async (req: VercelRequest, roleFilter: string, statusFilter: string, searchTerm: string) => {
+  const client = initSupabaseAdmin(req);
   const users: Array<{
     id: any;
     user_id: any;
@@ -160,7 +166,7 @@ const handleGetUsers = async (req: VercelRequest, res: VercelResponse) => {
     };
 
     // Try the RPC function first
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: rpcData, error: rpcError } = await client.rpc('get_all_users', rpcParams).range(from, to);
     
     if (!rpcError && rpcData) {
@@ -175,8 +181,8 @@ const handleGetUsers = async (req: VercelRequest, res: VercelResponse) => {
 
     console.log('RPC function not available, using fallback approach');
 
-    // Fallback: get all users and apply pagination manually
-    const allUsers = await getAllUsersFallback(role as string, status as string, search as string);
+  // Fallback: get all users and apply pagination manually
+  const allUsers = await getAllUsersFallback(req, role as string, status as string, search as string);
     
     // Apply pagination
     const data = allUsers.slice(from, from + limitNum); // Fix: use from + limitNum for correct page size

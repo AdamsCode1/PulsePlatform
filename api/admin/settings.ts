@@ -3,23 +3,29 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHandler } from '../../lib/utils.js';
 
 let supabaseAdmin: SupabaseClient | undefined;
-function initSupabaseAdmin(): SupabaseClient {
-  if (!supabaseAdmin) {
-    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-    }
-    supabaseAdmin = createClient(url, key);
+function initSupabaseAdmin(req?: VercelRequest): SupabaseClient {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url) {
+    throw new Error('Server configuration error: missing SUPABASE_URL');
   }
-  return supabaseAdmin;
+  if (serviceKey) {
+    if (!supabaseAdmin) supabaseAdmin = createClient(url, serviceKey);
+    return supabaseAdmin;
+  }
+  const token = req?.headers.authorization?.split('Bearer ')[1];
+  if (!anonKey || !token) {
+    throw new Error('Server configuration error: missing SUPABASE_SERVICE_ROLE_KEY and no anon+token fallback available');
+  }
+  return createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
   
@@ -35,9 +41,9 @@ const requireAdmin = async (req: VercelRequest) => {
   return user;
 };
 
-const handleGetSettings = async (_req: VercelRequest, res: VercelResponse) => {
+const handleGetSettings = async (req: VercelRequest, res: VercelResponse) => {
   try {
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data, error } = await client
       .rpc('get_or_create_platform_settings');
 
@@ -56,7 +62,7 @@ const handleUpdateSettings = async (req: VercelRequest, res: VercelResponse) => 
       return res.status(400).json({ message: 'Invalid settings payload' });
     }
 
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: existing, error: fetchError } = await client
       .from('platform_settings')
       .select('*')

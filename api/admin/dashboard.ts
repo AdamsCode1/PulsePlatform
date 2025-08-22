@@ -5,23 +5,29 @@ import { createHandler } from '../../lib/utils.js';
 // This is a secure, server-side only file.
 
 let supabaseAdmin: SupabaseClient | undefined;
-function initSupabaseAdmin(): SupabaseClient {
-  if (!supabaseAdmin) {
-    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-    }
-    supabaseAdmin = createClient(url, key);
+function initSupabaseAdmin(req?: VercelRequest): SupabaseClient {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url) {
+    throw new Error('Server configuration error: missing SUPABASE_URL');
   }
-  return supabaseAdmin;
+  if (serviceKey) {
+    if (!supabaseAdmin) supabaseAdmin = createClient(url, serviceKey);
+    return supabaseAdmin;
+  }
+  const token = req?.headers.authorization?.split('Bearer ')[1];
+  if (!anonKey || !token) {
+    throw new Error('Server configuration error: missing SUPABASE_SERVICE_ROLE_KEY and no anon+token fallback available');
+  }
+  return createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
 
@@ -41,7 +47,7 @@ const requireAdmin = async (req: VercelRequest) => {
 const handleGetChartData = async (req: VercelRequest, res: VercelResponse) => {
   try {
   await requireAdmin(req);
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
 
     const days = req.query.days ? parseInt(req.query.days as string) : 7;
 

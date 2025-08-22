@@ -7,16 +7,30 @@ import { createHandler } from '../../lib/utils.js';
 
 // Create a Supabase client with the service role key to bypass RLS
 let supabaseAdmin: SupabaseClient | undefined;
-function initSupabaseAdmin(): SupabaseClient {
-  if (!supabaseAdmin) {
-    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-    }
-    supabaseAdmin = createClient(url, key);
+function initSupabaseAdmin(req?: VercelRequest): SupabaseClient {
+  // Prefer a cached admin client when service role is configured
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url) {
+    throw new Error('Server configuration error: missing SUPABASE_URL');
   }
-  return supabaseAdmin;
+
+  if (serviceKey) {
+    if (!supabaseAdmin) {
+      supabaseAdmin = createClient(url, serviceKey);
+    }
+    return supabaseAdmin;
+  }
+
+  // Fallback: use anon key with the caller's Bearer token so RLS applies
+  const token = req?.headers.authorization?.split('Bearer ')[1];
+  if (!anonKey || !token) {
+    throw new Error('Server configuration error: missing SUPABASE_SERVICE_ROLE_KEY and no anon+token fallback available');
+  }
+  return createClient(url, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
 }
 
 // Function to verify the user is an admin
@@ -24,7 +38,7 @@ const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
 
@@ -44,7 +58,7 @@ const requireAdmin = async (req: VercelRequest) => {
 const handleGetActivity = async (req: VercelRequest, res: VercelResponse) => {
   try {
     await requireAdmin(req);
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
 
     // Since admin_activity_log table doesn't exist, let's create a simple fallback
     // using recent events and their status changes as activity

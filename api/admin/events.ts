@@ -8,16 +8,22 @@ import { sendEmail } from '../lib/sendEmail.js';
 
 // Create a Supabase client with the service role key to bypass RLS
 let supabaseAdmin: SupabaseClient | undefined;
-function initSupabaseAdmin(): SupabaseClient {
-  if (!supabaseAdmin) {
-    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-    }
-    supabaseAdmin = createClient(url, key);
+function initSupabaseAdmin(req?: VercelRequest): SupabaseClient {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url) {
+    throw new Error('Server configuration error: missing SUPABASE_URL');
   }
-  return supabaseAdmin;
+  if (serviceKey) {
+    if (!supabaseAdmin) supabaseAdmin = createClient(url, serviceKey);
+    return supabaseAdmin;
+  }
+  const token = req?.headers.authorization?.split('Bearer ')[1];
+  if (!anonKey || !token) {
+    throw new Error('Server configuration error: missing SUPABASE_SERVICE_ROLE_KEY and no anon+token fallback available');
+  }
+  return createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
 // Function to verify the user is an admin
@@ -25,7 +31,7 @@ const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
 
@@ -53,7 +59,7 @@ const handleGetEvents = async (req: VercelRequest, res: VercelResponse) => {
     const offset = (pageNum - 1) * limitNum;
 
     // Build the query
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   let query = client
       .from('event')
       .select(`
@@ -130,7 +136,7 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
     updateData.rejection_reason = rejection_reason;
   }
 
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   let { error } = await client
       .from('event')
       .update(updateData)
@@ -161,7 +167,7 @@ const handleUpdateEvent = async (req: VercelRequest, res: VercelResponse) => {
     // Send email notification on rejection
     if (status === 'rejected') {
       // Get event details including name and society_id
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: eventDetails } = await client
         .from('event')
         .select('id, name, society_id')
@@ -216,7 +222,7 @@ const handleDeleteEvent = async (req: any, res: any) => {
     console.log(`DELETE /admin/events: Attempting to delete event ${eventId}`);
 
     // First check if the event exists
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: eventCheck, error: checkError } = await client
       .from('event')
       .select('id, title, society_id')
@@ -253,7 +259,7 @@ const handleDeleteEvent = async (req: any, res: any) => {
 
     // Log admin activity (optional - if this fails, we don't fail the whole request)
     try {
-      if (adminUser) {
+    if (adminUser) {
   await client.rpc('log_admin_activity', {
           admin_id: adminUser.id,
           action: 'delete_event',

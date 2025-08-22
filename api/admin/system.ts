@@ -3,23 +3,29 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { createHandler } from '../../lib/utils.js';
 
 let supabaseAdmin: SupabaseClient | undefined;
-function initSupabaseAdmin(): SupabaseClient {
-  if (!supabaseAdmin) {
-    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !key) {
-      throw new Error('Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-    }
-    supabaseAdmin = createClient(url, key);
+function initSupabaseAdmin(req?: VercelRequest): SupabaseClient {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  if (!url) {
+    throw new Error('Server configuration error: missing SUPABASE_URL');
   }
-  return supabaseAdmin;
+  if (serviceKey) {
+    if (!supabaseAdmin) supabaseAdmin = createClient(url, serviceKey);
+    return supabaseAdmin;
+  }
+  const token = req?.headers.authorization?.split('Bearer ')[1];
+  if (!anonKey || !token) {
+    throw new Error('Server configuration error: missing SUPABASE_SERVICE_ROLE_KEY and no anon+token fallback available');
+  }
+  return createClient(url, anonKey, { global: { headers: { Authorization: `Bearer ${token}` } } });
 }
 
 const requireAdmin = async (req: VercelRequest) => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: { user }, error } = await client.auth.getUser(token);
   if (error || !user) throw new Error('Authentication failed.');
   
@@ -35,9 +41,9 @@ const requireAdmin = async (req: VercelRequest) => {
   return user;
 };
 
-const handleHealth = async (_req: VercelRequest, res: VercelResponse) => {
+const handleHealth = async (req: VercelRequest, res: VercelResponse) => {
   try {
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { error } = await client.from('event').select('id').limit(1);
     if (error) throw error;
     return res.status(200).json({ api: 'healthy', db: 'healthy', ts: new Date().toISOString() });
@@ -48,7 +54,7 @@ const handleHealth = async (_req: VercelRequest, res: VercelResponse) => {
 
 const handleCache = async (req: VercelRequest, res: VercelResponse) => {
   try {
-    await requireAdmin(req);
+  await requireAdmin(req);
     // Placeholder: in-memory no-op; wire to cache provider if configured
     return res.status(200).json({ message: 'Cache cleared' });
   } catch (error: any) {
@@ -59,7 +65,7 @@ const handleCache = async (req: VercelRequest, res: VercelResponse) => {
 const handleExport = async (req: VercelRequest, res: VercelResponse) => {
   try {
     await requireAdmin(req);
-  const client = initSupabaseAdmin();
+  const client = initSupabaseAdmin(req);
   const { data: events } = await client.from('event').select('*').limit(1000);
   const { data: deals } = await client.from('deals').select('*').limit(1000);
     const payload = { exported_at: new Date().toISOString(), events, deals };
