@@ -609,7 +609,6 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup, isOpen,
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
     try {
   await onSignup({ email, name });
       setIsSuccess(true);

@@ -166,7 +166,6 @@ const ComingSoonPage: React.FC = () => {
                 Enter the password to get early access to DUPulse
               </p>
             </div>
-
             <div className="space-y-4">
               <input
                 type="password"
@@ -177,7 +176,6 @@ const ComingSoonPage: React.FC = () => {
                 className="w-full px-4 py-3 rounded-lg border border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition-all"
                 autoFocus
               />
-
               <div className="flex space-x-3">
                 <button
                   onClick={handleSneakPeakSubmit}
