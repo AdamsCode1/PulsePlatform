@@ -1,0 +1,7 @@
+{
+  "name": "pulseplatform-server",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Placeholder server package for tests",
+  "license": "UNLICENSED"
+}
