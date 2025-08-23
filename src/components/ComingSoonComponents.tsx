@@ -592,7 +592,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup, isOpen,
     e.preventDefault();
     setIsLoading(true);
     try {
-  await onSignup({ email, name });
+      await onSignup({ email, name });
       setIsSuccess(true);
     } catch (error) {
       console.error('Signup error:', error);
@@ -650,10 +650,10 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup, isOpen,
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <Card className="max-w-sm w-full bg-gradient-to-br from-purple-900 to-black border border-purple-700/50 relative shadow-2xl rounded-2xl">
+      <Card className="max-w-sm w-full bg-gradient-to-br from-pink-300/95 to-purple-400/95 border border-pink-200/50 relative shadow-2xl rounded-2xl">
         <button
           onClick={handleClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-white text-xl font-light w-6 h-6 flex items-center justify-center transition-colors"
+          className="absolute top-3 right-3 text-gray-600 hover:text-gray-800 text-xl font-light w-6 h-6 flex items-center justify-center transition-colors"
         >
           ×
         </button>
@@ -662,7 +662,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup, isOpen,
             <Mail className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl font-bold text-white mb-1">Join the Waitlist</CardTitle>
-          <CardDescription className="text-sm text-gray-200">
+          <CardDescription className="text-sm text-white/90">
             Get early access to DUPulse
           </CardDescription>
         </CardHeader>
@@ -675,7 +675,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup, isOpen,
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-200 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
+                className="h-12 text-center border-white/30 rounded-lg bg-white/20 text-white placeholder-white focus:bg-white/30 focus:border-white/60 transition-all"
               />
             </div>
 
@@ -686,7 +686,7 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup, isOpen,
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-12 text-center border-gray-600/40 rounded-lg bg-gray-800/70 text-white placeholder-gray-200 focus:bg-gray-800/90 focus:border-blue-500 transition-all"
+                className="h-12 text-center border-white/30 rounded-lg bg-white/20 text-white placeholder-white focus:bg-white/30 focus:border-white/60 transition-all"
               />
             </div>
 
@@ -712,10 +712,10 @@ const EarlyAccessSignup: React.FC<EarlyAccessSignupProps> = ({ onSignup, isOpen,
           </form>
 
           <div className="mt-4 text-center">
-            <p className="text-xs text-gray-300 leading-relaxed">
+            <p className="text-xs text-white leading-relaxed">
               🚀 <span className="font-semibold">Be among the first</span> to experience
               <br />
-              <span className="text-purple-400 font-semibold">the future of Durham student life</span>
+              <span className="text-purple-800 font-semibold">the future of Durham student life</span>
             </p>
           </div>
         </CardContent>
