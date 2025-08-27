@@ -229,10 +229,7 @@ const Index = () => {
 
         {/* Events Section */}
         <div className="mt-6 sm:mt-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 text-center sm:text-left">
-              Events for {format(currentDate, 'EEEE, MMMM d')}
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-center sm:justify-end mb-4 sm:mb-6 gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
               <EventFilters
                 onFilterChange={handleFilterChange}
