@@ -286,7 +286,7 @@ const Index = () => {
         />
       )}
       <CommunityCTA />
-      <div className="container mx-auto px-4 py-6 sm:py-8">
+      <div id="deals" className="container mx-auto px-4 py-6 sm:py-8">
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
             DuPulse <span className="bg-gradient-to-r from-blue-500 via-purple-500 via-pink-500 to-pink-300 bg-clip-text text-transparent animate-pulse">Deals</span>

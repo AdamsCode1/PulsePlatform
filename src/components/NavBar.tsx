@@ -40,7 +40,7 @@ export default function NavBar() {
   // Function to determine user type from database tables
   const determineUserTypeFromDatabase = async (userId: string) => {
     console.log('Debug - Checking database for user type:', userId);
-    
+
     try {
       // Check if user is an admin first
       const { data: adminData, error: adminError } = await supabase
@@ -48,9 +48,9 @@ export default function NavBar() {
         .select('uid')
         .eq('uid', userId)
         .maybeSingle();
-      
+
       console.log('Debug - Admin table query:', { data: adminData, error: adminError });
-      
+
       if (adminData && !adminError) {
         console.log('Debug - User found in admin table');
         setUserType('admin');
@@ -63,9 +63,9 @@ export default function NavBar() {
         .select('id')
         .eq('user_id', userId)
         .maybeSingle();
-      
+
       console.log('Debug - Student table query:', { data: studentData, error: studentError });
-      
+
       if (studentData && !studentError) {
         console.log('Debug - User found in student table');
         setUserType('student');
@@ -78,9 +78,9 @@ export default function NavBar() {
         .select('id')
         .eq('user_id', userId)
         .maybeSingle();
-      
+
       console.log('Debug - Society table query:', { data: societyData, error: societyError });
-      
+
       if (societyData && !societyError) {
         console.log('Debug - User found in society table');
         setUserType('society');
@@ -102,7 +102,7 @@ export default function NavBar() {
 
       console.log('Debug - User type not found in any table');
       setUserType('');
-      
+
     } catch (error) {
       console.error('Error determining user type:', error);
       setUserType('');
@@ -115,7 +115,7 @@ export default function NavBar() {
       setUser(user);
       console.log('Debug - User logged in:', user?.email);
       console.log('Debug - User metadata:', user?.user_metadata);
-      
+
       if (user && user.user_metadata && user.user_metadata.full_name) {
         setFirstName(user.user_metadata.full_name.split(' ')[0]);
       } else if (user && user.email) {
@@ -123,7 +123,7 @@ export default function NavBar() {
       } else {
         setFirstName('');
       }
-      
+
       // Set user type from metadata or determine from database
       if (user && user.user_metadata && user.user_metadata.user_type) {
         console.log('Debug - Setting user type from metadata:', user.user_metadata.user_type);
@@ -231,7 +231,7 @@ export default function NavBar() {
       {/* Desktop Nav */}
       <div className="hidden md:flex gap-3 items-center">
         <button onClick={() => handleNavigation('/', 'schedule')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Events</button>
-        <button onClick={() => navigate('/deals')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Deals</button>
+        <button onClick={() => handleNavigation('/', 'deals')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Deals</button>
         <button onClick={() => navigate('/about')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">About</button>
         {user && (
           <>
@@ -270,7 +270,7 @@ export default function NavBar() {
       {menuOpen && (
         <div className="absolute top-16 left-0 w-full bg-white/95 rounded-b-2xl shadow-lg flex flex-col items-center py-4 gap-3 md:hidden animate-fade-in z-50">
           <button onClick={() => { setMenuOpen(false); handleNavigation('/', 'schedule'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Events</button>
-          <button onClick={() => { setMenuOpen(false); navigate('/deals'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</button>
+          <button onClick={() => { setMenuOpen(false); handleNavigation('/', 'deals'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Deals</button>
           <button onClick={() => { setMenuOpen(false); navigate('/about'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">About</button>
           {user && (
             <>
