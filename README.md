@@ -257,7 +257,26 @@ npm run dev
 
 **Requirements:** Node.js 18+ and npm
 
-## 📞 Get Involved
+## � Project Structure
+
+```
+├── api/                    # Serverless API functions (Vercel)
+├── config/                 # Project configuration files
+├── docs/                   # Documentation
+├── lib/                    # Shared utility functions
+├── public/                 # Static assets
+├── scripts/                # Database seeding and admin scripts
+├── server/                 # Express server (if needed)
+├── src/                    # React frontend source code
+├── supabase/              # Supabase configuration and migrations
+├── tests/                 # Test files
+└── tools/                 # Development utilities
+    ├── admin/             # Admin management tools
+    ├── database/          # Database inspection tools
+    └── testing/           # Testing utilities
+```
+
+## �📞 Get Involved
 
 This is a project by Durham students, for Durham students. Got ideas? Found a bug? Want to help out?
 

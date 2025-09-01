@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DUPulse - Interactive Sitemap</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .sitemap-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
+
+        .section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .section h2 {
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            font-size: 1.6rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hierarchy {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .node {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .node h3 {
+            color: #1a1a2e;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .node-routes {
+            list-style: none;
+        }
+
+        .node-routes li {
+            padding: 5px 0;
+            color: #666;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .node-routes li:before {
+            content: "→ ";
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .public-node { border-left-color: #28a745; }
+        .auth-node { border-left-color: #ffc107; }
+        .student-node { border-left-color: #007bff; }
+        .society-node { border-left-color: #6f42c1; }
+        .partner-node { border-left-color: #fd7e14; }
+        .admin-node { border-left-color: #dc3545; }
+        .api-node { border-left-color: #20c997; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .flow-diagram {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+            position: relative;
+            overflow-x: auto;
+        }
+
+        .flow-step {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            margin: 10px;
+            font-weight: 500;
+            position: relative;
+            min-width: 120px;
+        }
+
+        .flow-step:not(:last-child):after {
+            content: "→";
+            position: absolute;
+            right: -25px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        @media (max-width: 768px) {
+            .hierarchy {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 DUPulse Sitemap</h1>
+            <p>Interactive site structure for Durham University Event Platform</p>
+        </div>
+
+        <div class="content">
+            <div class="sitemap-container">
+                <!-- Statistics Section -->
+                <div class="section">
+                    <h2>📊 Platform Statistics</h2>
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-number">28</div>
+                            <div class="stat-label">Frontend Routes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">10+</div>
+                            <div class="stat-label">API Endpoints</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">4</div>
+                            <div class="stat-label">User Roles</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">16</div>
+                            <div class="stat-label">Protected Routes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Flow -->
+                <div class="section">
+                    <h2>🔄 User Journey Flow</h2>
+                    <div class="flow-diagram">
+                        <div class="flow-step">Homepage</div>
+                        <div class="flow-step">User Type</div>
+                        <div class="flow-step">Login/Register</div>
+                        <div class="flow-step">Dashboard</div>
+                    </div>
+                </div>
+
+                <!-- Color Legend -->
+                <div class="section">
+                    <h2>🎨 Section Legend</h2>
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #28a745;"></div>
+                            <span>Public Pages</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #ffc107;"></div>
+                            <span>Authentication</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #007bff;"></div>
+                            <span>Student Portal</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #6f42c1;"></div>
+                            <span>Society Portal</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #fd7e14;"></div>
+                            <span>Partner Portal</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #dc3545;"></div>
+                            <span>Admin Portal</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background-color: #20c997;"></div>
+                            <span>API Endpoints</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Site Structure -->
+                <div class="section">
+                    <h2>🗺️ Site Structure</h2>
+                    <div class="hierarchy">
+                        <div class="node public-node" onclick="showDetails('public')">
+                            <h3>🌐 Public Pages</h3>
+                            <ul class="node-routes">
+                                <li>/</li>
+                                <li>/deals</li>
+                                <li>/about</li>
+                                <li>/team</li>
+                                <li>/schedule</li>
+                            </ul>
+                        </div>
+
+                        <div class="node auth-node" onclick="showDetails('auth')">
+                            <h3>🔐 Authentication</h3>
+                            <ul class="node-routes">
+                                <li>/login</li>
+                                <li>/register</li>
+                                <li>/login/student</li>
+                                <li>/login/society</li>
+                                <li>/login/partner</li>
+                                <li>/admin/login</li>
+                            </ul>
+                        </div>
+
+                        <div class="node student-node" onclick="showDetails('student')">
+                            <h3>👨‍🎓 Student Dashboard</h3>
+                            <ul class="node-routes">
+                                <li>/student/dashboard</li>
+                                <li>/student/rsvps</li>
+                                <li>/student/profile</li>
+                            </ul>
+                        </div>
+
+                        <div class="node society-node" onclick="showDetails('society')">
+                            <h3>🏛️ Society Dashboard</h3>
+                            <ul class="node-routes">
+                                <li>/society/dashboard</li>
+                                <li>/society/events</li>
+                                <li>/society/submit-event</li>
+                            </ul>
+                        </div>
+
+                        <div class="node partner-node" onclick="showDetails('partner')">
+                            <h3>🤝 Partner Dashboard</h3>
+                            <ul class="node-routes">
+                                <li>/partner/dashboard</li>
+                                <li>/partner/events</li>
+                                <li>/partner/deals</li>
+                                <li>/partner/submit-event</li>
+                                <li>/partner/submit-deal</li>
+                            </ul>
+                        </div>
+
+                        <div class="node admin-node" onclick="showDetails('admin')">
+                            <h3>👨‍💼 Admin Dashboard</h3>
+                            <ul class="node-routes">
+                                <li>/admin/dashboard</li>
+                                <li>/admin/users</li>
+                                <li>/admin/events</li>
+                                <li>/admin/deals</li>
+                                <li>/admin/settings</li>
+                            </ul>
+                        </div>
+
+                        <div class="node api-node" onclick="showDetails('api')">
+                            <h3>🔌 API Endpoints</h3>
+                            <ul class="node-routes">
+                                <li>/api/hello</li>
+                                <li>/api/unified</li>
+                                <li>/api/partners</li>
+                                <li>/api/admin/*</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('modal');
+        const modalBody = document.getElementById('modal-body');
+        const closeBtn = document.querySelector('.close');
+
+        const details = {
+            public: {
+                title: '🌐 Public Pages',
+                description: 'These pages are accessible to all visitors without authentication.',
+                features: [
+                    'Homepage with platform introduction',
+                    'Browse available deals and offers',
+                    'Learn about the platform and team',
+                    'View public event schedule'
+                ]
+            },
+            auth: {
+                title: '🔐 Authentication System',
+                description: 'Multi-role authentication system supporting different user types.',
+                features: [
+                    'Role-based login/registration',
+                    'Student authentication',
+                    'Society authentication', 
+                    'Partner authentication',
+                    'Admin authentication'
+                ]
+            },
+            student: {
+                title: '👨‍🎓 Student Portal',
+                description: 'Dedicated dashboard for Durham University students.',
+                features: [
+                    'Browse and discover events',
+                    'RSVP to events',
+                    'Manage personal profile',
+                    'View RSVP history'
+                ]
+            },
+            society: {
+                title: '🏛️ Society Portal',
+                description: 'Management interface for Durham University societies.',
+                features: [
+                    'Create and manage events',
+                    'Track RSVPs and attendance',
+                    'Society profile management',
+                    'Event analytics'
+                ]
+            },
+            partner: {
+                title: '🤝 Partner Portal',
+                description: 'Business portal for external partners and organizations.',
+                features: [
+                    'Submit events and deals',
+                    'Business analytics dashboard',
+                    'Partnership management',
+                    'Deal performance tracking'
+                ]
+            },
+            admin: {
+                title: '👨‍💼 Admin Portal',
+                description: 'Comprehensive platform administration interface.',
+                features: [
+                    'User management and moderation',
+                    'Event and deal approval',
+                    'Platform settings configuration',
+                    'Activity monitoring and analytics',
+                    'System health monitoring'
+                ]
+            },
+            api: {
+                title: '🔌 API Endpoints',
+                description: 'RESTful API endpoints powering the platform functionality.',
+                features: [
+                    'Unified API for common operations',
+                    'Partner-specific endpoints',
+                    'Admin management APIs',
+                    'Authentication endpoints',
+                    'Real-time data synchronization'
+                ]
+            }
+        };
+
+        function showDetails(section) {
+            const detail = details[section];
+            modalBody.innerHTML = `
+                <h2>${detail.title}</h2>
+                <p style="margin: 15px 0; color: #666;">${detail.description}</p>
+                <h3 style="margin: 20px 0 10px 0; color: #1a1a2e;">Key Features:</h3>
+                <ul style="margin-left: 20px;">
+                    ${detail.features.map(feature => `<li style="margin: 5px 0;">${feature}</li>`).join('')}
+                </ul>
+            `;
+            modal.style.display = 'block';
+        }
+
+        closeBtn.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Add hover effects to nodes
+        document.querySelectorAll('.node').forEach(node => {
+            node.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px) scale(1.02)';
+            });
+            
+            node.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
