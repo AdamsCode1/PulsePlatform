@@ -373,6 +373,7 @@ export default function SocietyDashboard() {
               <EventModal
                 event={selectedEvent}
                 onClose={() => setSelectedEventId(null)}
+                isSocietyView={true}
               />
             )}
           </div>

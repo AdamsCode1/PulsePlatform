@@ -10,9 +10,10 @@ import { toast } from '../hooks/use-toast';
 interface EventModalProps {
   event: Event;
   onClose: () => void;
+  isSocietyView?: boolean;
 }
 
-const EventModal = ({ event, onClose }: EventModalProps) => {
+const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
   const [showRSVPForm, setShowRSVPForm] = useState(false);
   const [hasRSVPed, setHasRSVPed] = useState(false);
   const [user, setUser] = useState(null);
@@ -389,6 +390,16 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                   className="bg-pink-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors text-sm sm:text-base"
                 >
                   {event.requiresOrganizerSignup ? "Register Interest" : "RSVP Now"}
+                </button>
+              </div>
+            )}
+            {isSocietyView && (
+              <div className="text-center mt-4">
+                <button
+                  onClick={() => navigate(`/viewRSVPlist/${event.id}`)}
+                  className="w-full bg-purple-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm sm:text-base"
+                >
+                  View RSVP List
                 </button>
               </div>
             )}
