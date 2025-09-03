@@ -13,6 +13,7 @@ import useApi from '@/hooks/useApi';
 import useDashboardStats, { DashboardStats } from '@/hooks/useDashboardStats';
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAdminAuth } from '@/hooks/useAdminAuth';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 interface ActivityLog {
     id: string;
@@ -46,15 +47,15 @@ const ErrorDisplay = ({ message, onRetry }: { message: string, onRetry: () => vo
     </div>
 );
 
-export default function AdminDashboard() {
+function AdminDashboard() {
   const navigate = useNavigate();
   const { isAdmin, user } = useAdminAuth();
+  const [studentCount, setStudentCount] = useState<number>(0);
 
   // --- Data Fetching with React Query ---
   const {
     data: stats,
     isLoading: isLoadingStats,
-    isError: isErrorStats,
     error: errorStats,
     refetch: refetchStats
   } = useDashboardStats();
@@ -62,7 +63,6 @@ export default function AdminDashboard() {
   const {
     data: activityLog,
     isLoading: isLoadingActivity,
-    isError: isErrorActivity,
     error: errorActivity,
     refetch: refetchActivity
   } = useApi<ActivityLog[]>(['activityLog'], 'admin/activity');
@@ -70,7 +70,6 @@ export default function AdminDashboard() {
   const {
     data: rawChartData,
     isLoading: isLoadingChart,
-    isError: isErrorChart,
     error: errorChart,
     refetch: refetchChart
   } = useApi<ChartDataItem[]>(['chartData'], 'admin/dashboard');
@@ -90,6 +89,21 @@ export default function AdminDashboard() {
   };
 
   const totalUsers = stats ? stats.totalUsers.students + stats.totalUsers.societies + stats.totalUsers.partners + stats.totalUsers.admins : 0;
+
+  useEffect(() => {
+    async function fetchStudentCount() {
+      const { count, error } = await supabase
+        .from('student')
+        .select('*', { count: 'exact', head: true });
+      if (error) {
+        console.error('Error fetching student count:', error);
+        setStudentCount(0);
+      } else {
+        setStudentCount(count ?? 0);
+      }
+    }
+    fetchStudentCount();
+  }, []);
 
   // Access control UI
   if (isAdmin === false) {
@@ -154,7 +168,7 @@ export default function AdminDashboard() {
                   <CardDescription>Student accounts</CardDescription>
                 </CardHeader>
                 <CardContent>
-          <div className="text-3xl font-bold text-purple-600">{stats.totalUsers.students}</div>
+          <div className="text-3xl font-bold text-purple-600">{studentCount}</div>
                 </CardContent>
               </Card>
         <Card className="border-green-200 shadow-md">
@@ -193,7 +207,7 @@ export default function AdminDashboard() {
                     <Skeleton className="h-full w-full" />
                   </div>
                 ) : errorChart ? (
-                  <ErrorDisplay message={errorChart.message + (errorChart.stack ? `\n${errorChart.stack}` : '')} onRetry={refetchChart} />
+                  <ErrorDisplay message={errorChart.message} onRetry={refetchChart} />
                 ) : (
                   <div style={{ minHeight: '300px' }}>
                       <ResponsiveContainer width="100%" height={300}>
@@ -370,3 +384,12 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
+// Replace default export with error boundary wrapper
+const AdminDashboardWrapped = () => (
+  <ErrorBoundary>
+    <AdminDashboard />
+  </ErrorBoundary>
+);
+
+export default AdminDashboardWrapped;
