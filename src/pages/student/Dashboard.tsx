@@ -48,6 +48,22 @@ interface User {
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
+
+  // Handle navigation with optional scrolling
+  const handleNavigation = (path: string, sectionId?: string) => {
+    if (path === '/' && sectionId) {
+      navigate(path);
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    } else {
+      navigate(path);
+    }
+  };
+
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [userRSVPs, setUserRSVPs] = useState<RSVP[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,24 +79,24 @@ export default function StudentDashboard() {
   // Find the selected event from userRSVPs by id
   const selectedEvent = selectedEventId
     ? (() => {
-        const rsvp = userRSVPs.find(r => r.event.id === selectedEventId);
-        if (!rsvp) return null;
-        const e = rsvp.event;
-        return {
-          ...e,
-          eventName: e.name || e.title || 'Untitled Event',
-          organiserID: '',
-          societyName: e.society?.name || '',
-          date: e.start_time && !isNaN(Date.parse(e.start_time)) ? new Date(e.start_time).toISOString() : new Date().toISOString(),
-          endTime: e.end_time && !isNaN(Date.parse(e.end_time)) ? new Date(e.end_time).toISOString() : new Date().toISOString(),
-          location: e.location,
-          description: e.description,
-          attendeeCount: e.rsvp?.[0]?.count || 0,
-          requiresOrganizerSignup: false,
-          organizerEmail: '',
-          signup_link: '',
-        };
-      })()
+      const rsvp = userRSVPs.find(r => r.event.id === selectedEventId);
+      if (!rsvp) return null;
+      const e = rsvp.event;
+      return {
+        ...e,
+        eventName: e.name || e.title || 'Untitled Event',
+        organiserID: '',
+        societyName: e.society?.name || '',
+        date: e.start_time && !isNaN(Date.parse(e.start_time)) ? new Date(e.start_time).toISOString() : new Date().toISOString(),
+        endTime: e.end_time && !isNaN(Date.parse(e.end_time)) ? new Date(e.end_time).toISOString() : new Date().toISOString(),
+        location: e.location,
+        description: e.description,
+        attendeeCount: e.rsvp?.[0]?.count || 0,
+        requiresOrganizerSignup: false,
+        organizerEmail: '',
+        signup_link: '',
+      };
+    })()
     : null;
 
   const checkAuth = useCallback(async () => {
@@ -313,7 +329,7 @@ export default function StudentDashboard() {
                     <CardTitle className="text-pink-600">Your Events</CardTitle>
                     <CardDescription>Events you've RSVP'd to</CardDescription>
                   </div>
-                  <Button 
+                  <Button
                     size="sm"
                     onClick={() => navigate('/student/rsvps')}
                     variant="outline"
@@ -426,7 +442,7 @@ export default function StudentDashboard() {
                         <CardTitle className="text-pink-600">Quick Actions</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <Button 
+                        <Button
                           onClick={() => navigate('/')}
                           className="w-full justify-start"
                           variant="outline"
@@ -434,7 +450,7 @@ export default function StudentDashboard() {
                           <Calendar className="w-4 h-4 mr-2 text-pink-500" />
                           Browse Events
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => navigate('/student/rsvps')}
                           className="w-full justify-start"
                           variant="outline"
@@ -442,15 +458,15 @@ export default function StudentDashboard() {
                           <Users className="w-4 h-4 mr-2 text-purple-500" />
                           Manage RSVPs
                         </Button>
-                        <Button 
-                          onClick={() => navigate('/deals')}
+                        <Button
+                          onClick={() => handleNavigation('/', 'deals')}
                           className="w-full justify-start"
                           variant="outline"
                         >
                           <MapPin className="w-4 h-4 mr-2 text-blue-500" />
                           View Deals
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => navigate('/student/profile')}
                           className="w-full justify-start"
                           variant="outline"
@@ -511,7 +527,7 @@ export default function StudentDashboard() {
                             <CardTitle className="text-pink-600">Your Events</CardTitle>
                             <CardDescription>Events you've RSVP'd to</CardDescription>
                           </div>
-                          <Button 
+                          <Button
                             size="sm"
                             onClick={() => navigate('/student/rsvps')}
                             variant="outline"

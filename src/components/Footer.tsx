@@ -138,7 +138,7 @@ export default function Footer() {
                                     {[
                                         { name: 'About', action: () => navigate('/about') },
                                         { name: 'Events', action: () => handleNavigation('/', 'schedule') },
-                                        { name: 'Deals', action: () => navigate('/deals') },
+                                        { name: 'Deals', action: () => handleNavigation('/', 'deals') },
                                         { name: 'Contact', action: () => setIsContactModalOpen(true) }
                                     ].map((link) => (
                                         <motion.button
