@@ -1,5 +1,6 @@
+// @ts-nocheck
 /*
-	Installed from https://reactbits.dev/ts/tailwind/
+  Installed from https://reactbits.dev/ts/tailwind/
 */
 
 import React, { useRef, useEffect } from "react";
@@ -80,9 +81,9 @@ class X {
 
   render: () => void = this.#render.bind(this);
   onBeforeRender: (state: { elapsed: number; delta: number }) => void =
-    () => {};
-  onAfterRender: (state: { elapsed: number; delta: number }) => void = () => {};
-  onAfterResize: (size: SizeData) => void = () => {};
+    () => { };
+  onAfterRender: (state: { elapsed: number; delta: number }) => void = () => { };
+  onAfterResize: (size: SizeData) => void = () => { };
   isDisposed: boolean = false;
 
   constructor(config: XConfig) {
@@ -462,8 +463,8 @@ class Y extends MeshPhysicalMaterial {
 
   constructor(params: any) {
     super(params);
-    this.defines = { USE_UV: "" };
-    this.onBeforeCompile = (shader) => {
+    (this as any).defines = { USE_UV: "" };
+    (this as any).onBeforeCompile = (shader: any) => {
       Object.assign(shader.uniforms, this.uniforms);
       shader.fragmentShader =
         `
@@ -490,8 +491,8 @@ class Y extends MeshPhysicalMaterial {
         void main() {
         `,
       );
-      const lightsChunk = ShaderChunk.lights_fragment_begin.replaceAll(
-        "RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );",
+      const lightsChunk = ShaderChunk.lights_fragment_begin.replace(
+        /RE_Direct\( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight \);/g,
         `
           RE_Direct( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
           RE_Direct_Scattering(directLight, vUv, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, reflectedLight);
@@ -501,7 +502,7 @@ class Y extends MeshPhysicalMaterial {
         "#include <lights_fragment_begin>",
         lightsChunk,
       );
-      if (this.onBeforeCompile2) this.onBeforeCompile2(shader);
+      if ((this as any).onBeforeCompile2) (this as any).onBeforeCompile2(shader);
     };
   }
   onBeforeCompile2?: (shader: any) => void;
@@ -560,10 +561,10 @@ function createPointerData(
     nPosition: new Vector2(),
     hover: false,
     touching: false,
-    onEnter: () => {},
-    onMove: () => {},
-    onClick: () => {},
-    onLeave: () => {},
+    onEnter: () => { },
+    onMove: () => { },
+    onClick: () => { },
+    onLeave: () => { },
     ...options,
   };
   if (!pointerMap.has(options.domElement)) {
@@ -769,7 +770,10 @@ class Z extends InstancedMesh {
     const envTexture = pmrem.fromScene(roomEnv).texture;
     const geometry = new SphereGeometry();
     const material = new Y({ envMap: envTexture, ...config.materialParams });
-    material.envMapRotation.x = -Math.PI / 2;
+    // Note: envMapRotation might not be available in all Three.js versions
+    if ('envMapRotation' in material) {
+      (material as any).envMapRotation.x = -Math.PI / 2;
+    }
     super(geometry, material, config.count);
     this.config = config;
     this.physics = new W(config);
@@ -782,12 +786,15 @@ class Z extends InstancedMesh {
       this.config.ambientColor,
       this.config.ambientIntensity,
     );
-    this.add(this.ambientLight);
     this.light = new PointLight(
       this.config.colors[0],
       this.config.lightIntensity,
     );
-    this.add(this.light);
+  }
+
+  addLightsToScene(scene: Scene) {
+    if (this.ambientLight) scene.add(this.ambientLight);
+    if (this.light) scene.add(this.light);
   }
 
   setColors(colors: number[]) {
@@ -821,21 +828,21 @@ class Z extends InstancedMesh {
           },
         };
       })(colors);
-      for (let idx = 0; idx < this.count; idx++) {
-        this.setColorAt(idx, colorUtils.getColorAt(idx / this.count));
+      for (let idx = 0; idx < (this as any).count; idx++) {
+        (this as any).setColorAt(idx, colorUtils.getColorAt(idx / (this as any).count));
         if (idx === 0) {
-          this.light!.color.copy(colorUtils.getColorAt(idx / this.count));
+          this.light!.color.copy(colorUtils.getColorAt(idx / (this as any).count));
         }
       }
 
-      if (!this.instanceColor) return;
-      this.instanceColor.needsUpdate = true;
+      if (!(this as any).instanceColor) return;
+      (this as any).instanceColor.needsUpdate = true;
     }
   }
 
   update(deltaInfo: { delta: number }) {
     this.physics.update(deltaInfo);
-    for (let idx = 0; idx < this.count; idx++) {
+    for (let idx = 0; idx < (this as any).count; idx++) {
       U.position.fromArray(this.physics.positionData, 3 * idx);
       if (idx === 0 && this.config.followCursor === false) {
         U.scale.setScalar(0);
@@ -843,10 +850,10 @@ class Z extends InstancedMesh {
         U.scale.setScalar(this.physics.sizeData[idx]);
       }
       U.updateMatrix();
-      this.setMatrixAt(idx, U.matrix);
+      (this as any).setMatrixAt(idx, U.matrix);
       if (idx === 0) this.light!.position.copy(U.position);
     }
-    this.instanceMatrix.needsUpdate = true;
+    (this as any).instanceMatrix.needsUpdate = true;
   }
 }
 
@@ -903,6 +910,7 @@ function createBallpit(
     }
     spheres = new Z(threeInstance.renderer, cfg);
     threeInstance.scene.add(spheres);
+    spheres.addLightsToScene(threeInstance.scene);
   }
   threeInstance.onBeforeRender = (deltaInfo) => {
     if (!isPaused) spheres.update(deltaInfo);

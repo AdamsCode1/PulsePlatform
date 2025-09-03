@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 interface UserSummary {
-    id: string;
-    role: string;
+  id: string;
+  role: string;
 }
 
 export interface DashboardStats {
@@ -16,6 +16,7 @@ interface UseDashboardStatsResult {
   data: DashboardStats | undefined;
   error: Error | null;
   isLoading: boolean;
+  isError: boolean;
   refetch: () => void;
 }
 
@@ -51,16 +52,16 @@ const fetchDashboardStats = async (): Promise<DashboardStats> => {
 
   return {
     totalEvents: {
-        total: total || 0,
-        pending: pending || 0,
-        approved: approved || 0,
-        rejected: rejected || 0,
+      total: total || 0,
+      pending: pending || 0,
+      approved: approved || 0,
+      rejected: rejected || 0,
     },
     totalUsers: {
-        students,
-        societies,
-        partners,
-        admins,
+      students,
+      societies,
+      partners,
+      admins,
     },
     systemHealth
   };
@@ -92,7 +93,7 @@ const useDashboardStats = (): UseDashboardStatsResult => {
     fetchData();
   }, []);
 
-  return { data, error, isLoading, refetch };
+  return { data, error, isLoading, isError: !!error, refetch };
 };
 
 export default useDashboardStats;
