@@ -9,6 +9,7 @@ import DevAccessDetector from "./components/DevAccessDetector";
 
 // Public Pages
 import Index from "./pages/Index";
+import EnhancedIndex from "./pages/enhanced/EnhancedIndex"; // Enhanced UI version
 import NotFound from "./pages/NotFound";
 import DealsPage from './pages/DealsPage';
 import MeetTheTeam from './pages/MeetTheTeam';
@@ -67,6 +68,7 @@ const App = () => (
       <Routes>
         {/* Public Routes - Available in Dev Mode */}
         <Route path="/" element={<Index />} />
+        <Route path="/enhanced" element={<EnhancedIndex />} /> {/* Enhanced UI version for testing */}
         <Route path="/platform" element={<Index />} />
         <Route path="/dev" element={<Index />} />
         <Route path="/deals" element={<DealsPage />} />

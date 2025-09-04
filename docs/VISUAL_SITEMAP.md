@@ -97,7 +97,7 @@
 │                │ Student │ Society │ Partner │ Admin │                  │
 ├────────────────┼─────────┼─────────┼─────────┼───────┤                  │
 │ Browse Events  │    ✅    │    ✅    │    ✅    │   ✅   │                  │
-│ RSVP Events    │    ✅    │    ❌    │    ❌    │   ✅   │                  │
+│ RSVP Events    │    ✅    │    ❌    │    ❌    │   ❌  │                  │
 │ Submit Events  │    ❌    │    ✅    │    ✅    │   ✅   │                  │
 │ Manage Events  │    ❌    │    ✅    │    ✅    │   ✅   │                  │
 │ Submit Deals   │    ❌    │    ❌    │    ✅    │   ✅   │                  │
