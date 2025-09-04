@@ -307,9 +307,42 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
     if (method === 'POST') {
       console.log('Handling create event');
+      const body = req.body;
+      const locationDetails = body.location_details;
+      if (!locationDetails) {
+        return res.status(400).json({ error: 'Missing location details' });
+      }
+      // Upsert location
+      const { data: locationRows, error: locationError } = await supabase
+        .from('locations')
+        .upsert([
+          {
+            provider: locationDetails.provider,
+            provider_place_id: locationDetails.provider_place_id,
+            name: locationDetails.name,
+            formatted_address: locationDetails.formatted_address,
+            latitude: locationDetails.latitude,
+            longitude: locationDetails.longitude,
+            city: locationDetails.city || null,
+            region: locationDetails.region || null,
+            country: locationDetails.country || null,
+          }
+        ], { onConflict: ['provider', 'provider_place_id'], ignoreDuplicates: false })
+        .select();
+      if (locationError || !locationRows || locationRows.length === 0) {
+        console.error('Location upsert error:', locationError);
+        return res.status(500).json({ error: locationError?.message || 'Failed to upsert location' });
+      }
+      const locationUuid = locationRows[0].id;
+      // Insert event, referencing location UUID
+      const eventPayload = {
+        ...body,
+        location: locationUuid,
+      };
+      delete eventPayload.location_details;
       const { data, error } = await supabase
         .from('event')
-        .insert([req.body])
+        .insert([eventPayload])
         .select();
       if (error) {
         console.error('Create event error:', error);
