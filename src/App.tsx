@@ -64,8 +64,8 @@ const App = () => (
         v7_relativeSplatPath: true,
       }}
     >
-      {/* Remove DevAccessDetector, render routes directly */}
-      <Routes>
+      <DevAccessDetector comingSoonPage={<ComingSoonPage />}>
+        <Routes>
         {/* Public Routes - Available in Dev Mode */}
         <Route path="/" element={<Index />} />
         <Route path="/enhanced" element={<EnhancedIndex />} /> {/* Enhanced UI version for testing */}
@@ -121,6 +121,7 @@ const App = () => (
 
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </DevAccessDetector>
     </BrowserRouter>
   </TooltipProvider>
 );
