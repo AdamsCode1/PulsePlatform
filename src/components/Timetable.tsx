@@ -41,7 +41,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     // Core state
     const [selectedTerm, setSelectedTerm] = useState<Term>('Term 1');
     const [selectedWeek, setSelectedWeek] = useState<number>(1);
-    const [selectedView, setSelectedView] = useState<ViewType>('week');
+    const [selectedView, setSelectedView] = useState<ViewType>('month');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [currentFilter, setCurrentFilter] = useState<string>('all');
 
@@ -117,101 +117,6 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                 <p className="text-gray-600">
                     Browse events and manage your timetable
                 </p>
-            </div>
-
-            {/* Controls Section */}
-            <div className="p-6 space-y-4">
-                {/* Term and Week Selectors */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="flex-1 space-y-2">
-                        <label className="text-sm font-medium bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                            Term
-                        </label>
-                        <Select value={selectedTerm} onValueChange={handleTermChange}>
-                            <SelectTrigger className={`
-              ${selectedTerm ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white border-pink-400' : 'bg-gradient-to-r from-pink-100 to-purple-100 border-pink-300 text-gray-700'}
-              transition-all duration-200
-            `}>
-                                <SelectValue placeholder="Select Term" />
-                                <ChevronDown className="h-4 w-4" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {TERMS.map(term => (
-                                    <SelectItem key={term} value={term} className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                                        {term}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    <div className="flex-1 space-y-2">
-                        <label className="text-sm font-medium bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                            Week
-                        </label>
-                        <Select value={selectedWeek.toString()} onValueChange={handleWeekChange}>
-                            <SelectTrigger className={`
-              ${selectedWeek ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white border-pink-400' : 'bg-gradient-to-r from-pink-100 to-purple-100 border-pink-300 text-gray-700'}
-              transition-all duration-200
-            `}>
-                                <SelectValue placeholder="Select Week" />
-                                <ChevronDown className="h-4 w-4" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {weekOptions.map(week => (
-                                    <SelectItem key={week} value={week.toString()} className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                                        Week {week}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                {/* View Switcher */}
-                <div className="space-y-2">
-                    <label className="text-sm font-medium bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                        View
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                        {VIEWS.map(view => (
-                            <Button
-                                key={view.id}
-                                onClick={() => handleViewChange(view.id)}
-                                variant={selectedView === view.id ? "default" : "outline"}
-                                className={`
-                ${selectedView === view.id
-                                        ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 border-pink-400 shadow-lg'
-                                        : 'bg-gradient-to-r from-pink-100 to-purple-100 text-gray-700 border-pink-300 hover:from-pink-200 hover:to-purple-200'
-                                    }
-                transition-all duration-200 font-medium
-              `}
-                            >
-                                {view.label}
-                            </Button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Additional Filters */}
-                <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Filter className="h-4 w-4" />
-                            <span>Additional filters</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <EventFilters
-                                currentFilter={currentFilter}
-                                onFilterChange={handleFilterChange}
-                            />
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent font-medium">
-                        <Calendar className="h-4 w-4" />
-                        <span>{filteredEvents.length} events</span>
-                    </div>
-                </div>
             </div>
 
             {/* Timetable Content */}
