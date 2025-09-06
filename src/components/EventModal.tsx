@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabaseClient';
 import { toast } from '../hooks/use-toast';
 
 interface EventModalProps {
-  event: Event;
+  event: Event & { locations?: { name: string; formatted_address: string } };
   onClose: () => void;
   isSocietyView?: boolean;
 }
@@ -230,7 +230,7 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
               <MapPin className="text-pink-500 mt-1 flex-shrink-0" size={20} />
               <div className="min-w-0">
                 <div className="font-semibold text-gray-900 text-sm sm:text-base">Location</div>
-                <div className="text-gray-600 text-sm sm:text-base break-words">{event.location}</div>
+                <div className="text-gray-600 text-sm sm:text-base break-words">{event.locations?.name || 'Location TBD'}</div>
               </div>
             </div>
 

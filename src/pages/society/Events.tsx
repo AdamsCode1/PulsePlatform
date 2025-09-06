@@ -18,7 +18,11 @@ interface Event {
   description: string;
   start_time: string;
   end_time: string;
-  location: string;
+  location: string; // UUID
+  locations?: {
+    name: string;
+    formatted_address: string;
+  };
   max_attendees: number;
   status: 'pending' | 'approved' | 'rejected';
   image_url?: string;
@@ -75,18 +79,21 @@ export default function SocietyEvents() {
 
       if (societyError) throw societyError;
 
-      // Then get events for this society
+      // Then get events for this society, join locations
       const { data, error } = await supabase
         .from('event')
-        .select(`
-          *,
-          rsvp(count)
-        `)
+        .select(`*, locations:location (id, name, formatted_address, latitude, longitude, city, region, country)`,)
         .eq('society_id', societyData.id)
         .order('created_at', { ascending: false });
 
+      console.log('[DEBUG] Raw eventsData from Supabase:', data);
+
       if (error) throw error;
-      setEvents(data || []);
+      // Robust mapping for locations
+      setEvents((data || []).map(event => ({
+        ...event,
+        locations: Array.isArray(event.locations) ? event.locations[0] : event.locations,
+      })));
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -276,7 +283,7 @@ export default function SocietyEvents() {
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="w-4 h-4 mr-2" />
-                      <span className="font-medium text-gray-800">{event.location}</span>
+                      <span className="font-medium text-gray-800">{event.locations?.name || 'Location TBD'}</span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-2" />

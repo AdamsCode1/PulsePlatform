@@ -65,21 +65,38 @@ function AdminDashboard() {
     isLoading: isLoadingActivity,
     error: errorActivity,
     refetch: refetchActivity
-  } = useApi<ActivityLog[]>(['activityLog'], 'admin/activity');
+  } = useApi<ActivityLog[]>(['activityLog'], 'unified?resource=admin&action=activity');
 
   const {
     data: rawChartData,
     isLoading: isLoadingChart,
     error: errorChart,
     refetch: refetchChart
-  } = useApi<ChartDataItem[]>(['chartData'], 'admin/dashboard');
+  } = useApi<ChartDataItem[]>(['chartData'], 'unified?resource=admin&action=dashboard');
 
+  // Defensive chart data mapping with debug logging
   const chartData = useMemo(() => {
     if (!rawChartData) return [];
-    return rawChartData.map(item => ({
-      date: new Date(item.submission_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      count: item.count,
-    }));
+    if (!Array.isArray(rawChartData)) {
+      console.error('Chart data is not an array:', rawChartData);
+      return [];
+    }
+    return rawChartData.map((item, idx) => {
+      if (!item || typeof item.submission_date !== 'string' || typeof item.count !== 'number') {
+        console.error('Malformed chart data at index', idx, item);
+        return { date: 'Invalid', count: 0 };
+      }
+      let dateStr = 'Invalid';
+      try {
+        dateStr = new Date(item.submission_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      } catch (e) {
+        console.error('Error parsing date for chart data at index', idx, item.submission_date, e);
+      }
+      return {
+        date: dateStr,
+        count: item.count,
+      };
+    });
   }, [rawChartData]);
 
 
@@ -345,29 +362,34 @@ function AdminDashboard() {
                   <ErrorDisplay message={errorActivity.message} onRetry={refetchActivity} />
                  ) : activityLog && activityLog.length > 0 ? (
                     <ul className="space-y-4">
-                        {activityLog.map((log) => (
-                            <li key={log.id} className="flex items-start space-x-4">
-                                <div className="flex-shrink-0">
-                                    <FileClock className="w-5 h-5 text-gray-400 mt-1" />
-                                </div>
-                                <div className="flex-grow">
-                                    <p className="text-sm font-medium text-gray-800">
-                                        {log.action.replace('event.', 'Event ')}
-                                        <span className="font-normal text-gray-600">
-                                            {log.details.eventName ? ` - "${log.details.eventName}"` : ''}
-                                        </span>
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        By {log.user_email} · {formatTimeAgo(log.created_at)}
-                                    </p>
-                                    {log.action === 'event.rejected' && log.details.rejection_reason && (
-                                        <p className="text-xs text-red-600 mt-1">
-                                            Reason: {log.details.rejection_reason}
+                        {activityLog.map((log, idx) => {
+                            // Defensive: handle missing action or details
+                            const action = log && typeof log.action === 'string' ? log.action : 'event.created';
+                            const details = log && typeof log.details === 'object' && log.details !== null ? log.details : {};
+                            return (
+                                <li key={log.id || idx} className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                        <FileClock className="w-5 h-5 text-gray-400 mt-1" />
+                                    </div>
+                                    <div className="flex-grow">
+                                        <p className="text-sm font-medium text-gray-800">
+                                            {action.replace('event.', 'Event ')}
+                                            <span className="font-normal text-gray-600">
+                                                {details.eventName ? ` - "${details.eventName}"` : ''}
+                                            </span>
                                         </p>
-                                    )}
-                                </div>
-                            </li>
-                        ))}
+                                        <p className="text-xs text-gray-500">
+                                            By {log.user_email || 'Unknown'} · {formatTimeAgo(log.created_at)}
+                                        </p>
+                                        {action === 'event.rejected' && details.rejection_reason && (
+                                            <p className="text-xs text-red-600 mt-1">
+                                                Reason: {details.rejection_reason}
+                                            </p>
+                                        )}
+                                    </div>
+                                </li>
+                            );
+                        })}
                     </ul>
                 ) : (
                     <div className="text-center py-8">

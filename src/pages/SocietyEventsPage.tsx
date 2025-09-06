@@ -19,7 +19,11 @@ interface Event {
   description?: string;
   start_time: string;
   end_time: string;
-  location: string;
+  location: string; // UUID
+  locations?: {
+    name: string;
+    formatted_address: string;
+  };
   category?: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
@@ -72,13 +76,17 @@ export default function SocietyEventsPage() {
       // Use direct Supabase call to fetch society events
       const { data, error } = await supabase
         .from('event')
-        .select('*')
+        .select(`*, locations:location (id, name, formatted_address, latitude, longitude, city, region, country)`)
         .eq('society_id', societyId)
-        .order('start_time', { ascending: false });
-      
-      if (error) throw new Error(error.message);
-      
-      setEvents(data || []);
+        .order('created_at', { ascending: false });
+
+      console.log('[DEBUG] Raw eventsData from Supabase:', data);
+
+      if (error) throw error;
+      setEvents((data || []).map(event => ({
+        ...event,
+        locations: Array.isArray(event.locations) ? event.locations[0] : event.locations,
+      })));
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -113,7 +121,7 @@ export default function SocietyEventsPage() {
       filtered = filtered.filter(event => 
         event.name.toLowerCase().includes(query) ||
         event.description?.toLowerCase().includes(query) ||
-        event.location.toLowerCase().includes(query)
+        event.locations?.name.toLowerCase().includes(query) // Updated to use location name
       );
     }
 
@@ -344,7 +352,7 @@ export default function SocietyEventsPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
-                            <span>{event.location}</span>
+                            <span>{event.locations?.name || 'Location TBD'}</span>
                           </div>
                         </div>
                       </div>
