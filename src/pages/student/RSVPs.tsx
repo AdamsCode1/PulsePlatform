@@ -123,7 +123,8 @@ export default function StudentRSVPs() {
           *,
           event:event(
             *,
-            society:society(name)
+            society:society(name),
+            locations:location ( id, name, formatted_address )
           )
         `)
         .eq('student_id', studentId)

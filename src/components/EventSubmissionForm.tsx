@@ -35,6 +35,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
+import { GooglePlacesAutocomplete, PlaceDetails } from "@/components/GooglePlacesAutocomplete";
 
 const eventCategories = [
   "academic",
@@ -80,9 +81,12 @@ interface EventSubmissionFormProps {
   onCancel?: () => void;
 }
 
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
 export function EventSubmissionForm({ editingEvent, onSuccess, onCancel }: EventSubmissionFormProps) {
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
+  const [selectedLocation, setSelectedLocation] = useState<PlaceDetails | null>(null);
   const isEditing = Boolean(editingEvent);
   
   const form = useForm({
@@ -136,7 +140,10 @@ export function EventSubmissionForm({ editingEvent, onSuccess, onCancel }: Event
       toast({ title: "Error", description: "Could not determine society ID.", variant: "destructive" });
       return;
     }
-    
+    if (!selectedLocation) {
+      toast({ title: "Error", description: "Please select a location from the dropdown.", variant: "destructive" });
+      return;
+    }
     const start = new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`);
     const end = new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`);
     const payload = {
@@ -144,7 +151,7 @@ export function EventSubmissionForm({ editingEvent, onSuccess, onCancel }: Event
       description: data.description,
       start_time: start.toISOString(),
       end_time: end.toISOString(),
-      location: data.location,
+      location: selectedLocation, // send location object
       category: data.category,
       society_id: societyId,
     };
@@ -229,7 +236,157 @@ export function EventSubmissionForm({ editingEvent, onSuccess, onCancel }: Event
                       </FormItem>
                     )}
                   />
-                  {/* ...rest of the form fields (copy from source) ... */}
+                  {/* Description */}
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel className="flex items-center gap-2 text-base font-semibold">
+                          <FileText className="h-4 w-4 text-event-primary" />
+                          Description
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Enter event description"
+                            {...field}
+                            className="resize-none h-32 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {/* Date and Time Fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Start Date
+                          </FormLabel>
+                          <FormControl>
+                            <Calendar
+                              placeholder="Select start date"
+                              {...field}
+                              className="bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="startTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            Start Time
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="time"
+                              {...field}
+                              className="h-12 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            End Date
+                          </FormLabel>
+                          <FormControl>
+                            <Calendar
+                              placeholder="Select end date"
+                              {...field}
+                              className="bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="endTime"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            End Time
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="time"
+                              {...field}
+                              className="h-12 bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  {/* Category */}
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Category
+                        </FormLabel>
+                        <FormControl>
+                          <Select
+                            {...field}
+                            className="bg-muted/50 border-border/50 focus:border-event-primary transition-colors"
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {eventCategories.map((category) => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {/* Location Autocomplete */}
+                  <FormItem className="md:col-span-2">
+                    <FormLabel className="flex items-center gap-2 text-base font-semibold">
+                      <MapPin className="h-4 w-4 text-event-primary" />
+                      Location
+                    </FormLabel>
+                    <FormControl>
+                      <GooglePlacesAutocomplete
+                        apiKey={GOOGLE_MAPS_API_KEY}
+                        onSelect={setSelectedLocation}
+                        placeholder="Search for a location..."
+                      />
+                    </FormControl>
+                    {selectedLocation && (
+                      <div className="mt-2 text-sm text-gray-600">
+                        <strong>{selectedLocation.name}</strong><br />
+                        {selectedLocation.formatted_address}
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
                 </div>
                 <div className="pt-6 flex gap-3">
                   {onCancel && (

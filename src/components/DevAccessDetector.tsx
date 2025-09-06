@@ -11,6 +11,13 @@ const DevAccessDetector: React.FC<DevAccessDetectorProps> = ({
 }) => {
   // Check various dev access methods
   const checkDevAccess = (): boolean => {
+    // Cookie-based bypass
+    const hasEarlyAccessCookie = document.cookie.split(';').some(c => c.trim().startsWith('pulseplatform_early_access='));
+    console.log('[DevAccessDetector] pulseplatform_early_access cookie present:', hasEarlyAccessCookie);
+    if (hasEarlyAccessCookie) {
+      return true;
+    }
+
     // Method 1: URL parameter dev=true
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('dev') === 'true') {

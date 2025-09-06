@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationLink, PaginationNext } from '@/components/ui/pagination';
 import { Users, Search, PlusCircle, Mail, UserCheck, CalendarIcon, Shield } from 'lucide-react';
 import NavBar from '@/components/NavBar';
 import Footer from '@/components/Footer';
@@ -13,7 +12,6 @@ import { API_BASE_URL } from '@/lib/apiConfig';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { useDebounce } from '@/hooks/useDebounce';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -32,68 +30,42 @@ export default function AdminUsers() {
   const { isAdmin, user } = useAdminAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalUsers, setTotalUsers] = useState(0);
-  const [usersPerPage] = useState(10);
-  const totalPages = Math.ceil(totalUsers / usersPerPage);
-
-  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
-
-      const params = new URLSearchParams({
-        role: roleFilter,
-        status: statusFilter,
-        search: debouncedSearchTerm,
-        page: String(currentPage),
-        limit: String(usersPerPage),
-      });
-
-      const response = await fetch(`${API_BASE_URL}/admin/users?${params.toString()}`, {
+      const response = await fetch(`/api/unified?resource=admin&action=users`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
         },
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Failed to fetch users.');
-
-      // Map backend user data to frontend User interface
-      const mappedUsers = (result.data || []).map((user: any) => ({
+      const mappedUsers = (result.users || []).map((user: any) => ({
         id: user.id,
-        name: user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : (user.first_name || user.name || user.email),
+        name: user.name,
         email: user.email,
         role: user.role,
-        status: user.status || 'active',
+        status: 'active', // No status in unified format, default to active
         created_at: user.created_at,
       }));
       setUsers(mappedUsers);
-      setTotalUsers(result.count);
     } catch (error: any) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [toast, roleFilter, statusFilter, debouncedSearchTerm, currentPage, usersPerPage]);
+  }, [toast]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-
-  useEffect(() => {
-    // Guard: If currentPage exceeds totalPages, reset to last valid page
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    }
-  }, [currentPage, totalPages]);
 
   const getStatusBadge = (status: User['status']) => {
     switch (status) {
@@ -153,9 +125,8 @@ export default function AdminUsers() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   placeholder="Search by email or name..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  disabled
+                  className="pl-10 bg-gray-100 cursor-not-allowed"
                 />
               </div>
             </div>
@@ -246,32 +217,6 @@ export default function AdminUsers() {
               </div>
             )}
         </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-            <div className="mt-6">
-                <Pagination>
-                    <PaginationContent>
-                        <PaginationItem>
-                            <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.max(1, p - 1)); }} className={currentPage === 1 ? 'pointer-events-none opacity-50' : ''} />
-                        </PaginationItem>
-                        <PaginationItem><span className="px-4 py-2 text-sm">Page {currentPage} of {totalPages}</span></PaginationItem>
-                        <PaginationItem>
-                            <PaginationNext
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              if (currentPage < totalPages) {
-                setCurrentPage(p => Math.min(totalPages, p + 1));
-              }
-            }}
-            className={currentPage === totalPages || users.length === 0 ? 'pointer-events-none opacity-50' : ''}
-          />
-                        </PaginationItem>
-                    </PaginationContent>
-                </Pagination>
-            </div>
-        )}
 
         {/* User Details Modal */}
         {selectedUser && (

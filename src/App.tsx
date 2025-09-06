@@ -54,6 +54,8 @@ import AdminDeals from './pages/admin/Deals';
 import AdminUsers from './pages/admin/Users';
 import AdminSettings from './pages/admin/Settings';
 
+console.log('[App] App component mounting');
+
 const App = () => (
   <TooltipProvider>
     <Toaster />

@@ -17,13 +17,23 @@ interface Event {
   description: string;
   start_time: string;
   end_time: string;
-  location: string;
+  location: string; // UUID
   category: string;
   status: 'pending' | 'approved' | 'rejected';
   image_url?: string;
   rsvp?: {
     count: number;
   }[];
+  locations?: {
+    id: string;
+    name: string;
+    formatted_address: string;
+    latitude: number;
+    longitude: number;
+    city?: string;
+    region?: string;
+    country?: string;
+  };
 }
 
 interface Society {
@@ -130,17 +140,22 @@ export default function SocietyDashboard() {
 
       if (societyError) throw societyError;
 
-      // Then get events for this society
+      // Then get events for this society, join locations
       const { data, error } = await supabase
         .from('event')
-        .select(`
-          id, name, description, start_time, end_time, location, category, status, created_at, society_id, signup_link, updated_at, attendee_count, image_url
-        `)
+        .select(`*, locations:location (id, name, formatted_address, latitude, longitude, city, region, country)`)
         .eq('society_id', societyData.id)
         .order('created_at', { ascending: false });
 
+      console.log('[DEBUG] Raw eventsData from Supabase:', data);
+
       if (error) throw error;
-      setEvents(data || []);
+      setEvents((data || []).map(event => ({
+        ...event,
+        locations: event.locations
+          ? (Array.isArray(event.locations) ? event.locations[0] : event.locations)
+          : undefined,
+      })));
     } catch (error) {
       console.error('Error fetching events:', error);
     }
@@ -360,6 +375,7 @@ export default function SocietyDashboard() {
                           organizerEmail: society?.contact_email || '',
                           signup_link: (ev as any).signup_link || '',
                           status: ev.status,
+                          locations: ev.locations,
                         }}
                         onClick={() => setSelectedEventId(ev.id)}
                         rightAction={getStatusBadge(ev.status)}

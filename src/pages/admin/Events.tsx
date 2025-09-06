@@ -26,7 +26,11 @@ interface Event {
   description: string;
   start_time: string;
   end_time: string;
-  location: string;
+  location: string; // UUID
+  locations?: {
+    name: string;
+    formatted_address: string;
+  };
   max_attendees: number;
   status: 'pending' | 'approved' | 'rejected';
   image_url?: string;
@@ -63,7 +67,8 @@ export default function AdminEvents() {
   // Event stats counters
   const [eventStats, setEventStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
 
-  const fetchEvents = useCallback(async (page: number) => {
+  // Fetch all pending events for approval
+  const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -71,35 +76,18 @@ export default function AdminEvents() {
         navigate('/admin/login');
         return;
       }
-
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: eventsPerPage.toString(),
-      });
-
-      if (statusFilter !== 'all') {
-        params.append('status', statusFilter);
-      }
-
-      if (debouncedSearchTerm) {
-        params.append('search', debouncedSearchTerm);
-      }
-
-  const response = await fetch(`${API_BASE_URL}/admin/events?${params.toString()}`, {
+      // Only fetch pending events
+      const response = await fetch(`/api/unified?resource=events&action=pending`, {
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
       });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const result = await response.json();
-      setEvents(result.events || []);
-      setTotalPages(Math.ceil((result.total || 0) / eventsPerPage));
-
+      setEvents(result || []);
     } catch (error) {
       console.error('Error fetching events:', error);
       toast({
@@ -110,7 +98,11 @@ export default function AdminEvents() {
     } finally {
       setLoading(false);
     }
-  }, [eventsPerPage, debouncedSearchTerm, statusFilter, toast, navigate]);
+  }, [toast, navigate]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   useEffect(() => {
     const status = searchParams.get('status');
@@ -122,9 +114,9 @@ export default function AdminEvents() {
   // This useEffect is to refetch data when filters change
   useEffect(() => {
     if (user) { // only fetch if user is authenticated
-      fetchEvents(currentPage);
+      fetchEvents();
     }
-  }, [debouncedSearchTerm, statusFilter, user, currentPage, fetchEvents]);
+  }, [debouncedSearchTerm, statusFilter, user, fetchEvents]);
 
   useEffect(() => {
     // Check if we need to open review dialog from URL params
@@ -181,7 +173,7 @@ export default function AdminEvents() {
         }
         if (!response.ok) throw new Error(result?.message || `Failed to ${status} event.`);
       }
-      fetchEvents(currentPage);
+      fetchEvents();
       fetchEventStats(); // Update counters after approval or rejection
       setReviewDialog(false); // Close the rejection reason window after rejecting
       setRejectionReason(''); // Clear the rejection reason textbox after rejecting
@@ -236,7 +228,7 @@ export default function AdminEvents() {
       }
 
       // Refetch current page to ensure data consistency
-      fetchEvents(currentPage);
+      fetchEvents();
 
       toast({
         title: "Event Deleted",
@@ -453,11 +445,11 @@ export default function AdminEvents() {
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <MapPin className="w-4 h-4 mr-2" />
-                      {event.location}
+                      {event.locations?.name || 'Location TBD'}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-2" />
-                      {event.society.name}
+                      {event.society?.name || 'Unknown'}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-2" />
@@ -596,15 +588,15 @@ export default function AdminEvents() {
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900">Location</h4>
-                    <p className="text-gray-600">{selectedEvent.location}</p>
+                    <p className="text-gray-600">{selectedEvent.locations?.name || 'Location TBD'}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-medium text-gray-900">Society</h4>
-                    <p className="text-gray-600">{selectedEvent.society.name}</p>
-                    <p className="text-sm text-gray-500">Organiser Email: {selectedEvent.society.contact_email || <span className="text-red-500">No email provided</span>}</p>
+                    <p className="text-gray-600">{selectedEvent.society?.name || 'Unknown'}</p>
+                    <p className="text-sm text-gray-500">Organiser Email: {selectedEvent.society?.contact_email || <span className="text-red-500">No email provided</span>}</p>
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900">Max Attendees</h4>

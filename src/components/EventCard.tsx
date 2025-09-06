@@ -8,7 +8,7 @@ import { Badge } from './ui/badge';
 import { toast } from '../hooks/use-toast';
 
 interface EventCardProps {
-  event: Event;
+  event: Event & { locations?: { name: string; formatted_address: string } };
   onClick: () => void;
   onRSVPChange?: () => void;
   rightAction?: React.ReactNode; // Optional override for right-side action (replaces RSVP/sign-up)
@@ -112,7 +112,7 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
 
   const handleLocationClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
-    const encodedLocation = encodeURIComponent(event.location);
+    const encodedLocation = encodeURIComponent(event.locations?.name || '');
     const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedLocation}`;
     window.open(googleMapsUrl, '_blank');
   };
@@ -225,7 +225,13 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
             title="Click to open in Google Maps"
           >
             <MapPin size={16} className="mr-2 sm:mr-3 text-pink-500 group-hover:text-pink-600 transition-all duration-300 group-hover:scale-110 flex-shrink-0" />
-            <span className="text-xs sm:text-sm group-hover:underline truncate">{event.location}</span>
+            <span className="text-xs sm:text-sm group-hover:underline truncate">
+              {event.locations?.name
+                ? event.locations.name
+                : event.locations?.formatted_address
+                  ? event.locations.formatted_address
+                  : 'Location TBD'}
+            </span>
           </div>
         </div>
         

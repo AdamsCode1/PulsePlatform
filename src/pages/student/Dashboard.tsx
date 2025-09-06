@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import EventCard from '@/components/EventCard';
 import StudentProfileSection from './StudentProfileSection';
 import EventModal from '@/components/EventModal';
+import { API_BASE_URL } from '@/lib/apiConfig';
 
 interface Event {
   id: string;
@@ -27,6 +28,11 @@ interface Event {
   rsvp?: {
     count: number;
   }[];
+  locations?: {
+    id: string;
+    name: string;
+    formatted_address: string;
+  };
 }
 
 interface RSVP {
@@ -147,44 +153,16 @@ export default function StudentDashboard() {
     }
   }, [userRSVPs]);
 
+  // Replace fetchUpcomingEvents to use backend API
   const fetchUpcomingEvents = async () => {
     try {
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('event')
-        .select('*')
-        .eq('status', 'approved')
-        .gte('start_time', new Date().toISOString())
-        .order('start_time', { ascending: true });
-
-      if (eventsError) throw eventsError;
-      if (!eventsData || eventsData.length === 0) {
-        setUpcomingEvents([]);
-        return;
-      }
-
-      // Get event IDs
-      const eventIds = eventsData.map((event: any) => event.id);
-      // Fetch RSVPs for these events (no status filter)
-      const { data: rsvpData, error: rsvpError } = await supabase
-        .from('rsvp')
-        .select('event_id')
-        .in('event_id', eventIds);
-      if (rsvpError) throw rsvpError;
-
-      // Count RSVPs per event
-      const rsvpCountMap: Record<string, number> = {};
-      rsvpData?.forEach((rsvp: any) => {
-        rsvpCountMap[rsvp.event_id] = (rsvpCountMap[rsvp.event_id] || 0) + 1;
-      });
-
-      // Map events with attendeeCount
-      const mappedEvents = eventsData.map((event: any) => ({
-        ...event,
-        attendeeCount: rsvpCountMap[event.id] || 0,
-      }));
-      setUpcomingEvents(mappedEvents);
+      const res = await fetch(`${API_BASE_URL}/unified?resource=events&action=studentFeed`);
+      if (!res.ok) throw new Error('Failed to fetch events');
+      const eventsData = await res.json();
+      setUpcomingEvents(eventsData || []);
     } catch (error) {
       console.error('Error fetching events:', error);
+      setUpcomingEvents([]);
     }
   };
 
@@ -197,7 +175,8 @@ export default function StudentDashboard() {
           *,
           event:event(
             *,
-            society:society(name)
+            society:society(name),
+            locations:location ( id, name, formatted_address )
           )
         `)
         .eq('student_id', userId)
@@ -373,14 +352,14 @@ export default function StudentDashboard() {
                           eventName: rsvp.event.name || rsvp.event.title || 'Untitled Event',
                           date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
                           endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
-                          location: rsvp.event.location,
                           description: rsvp.event.description,
-                          societyName: rsvp.event.society.name,
+                          societyName: rsvp.event.society?.name || '',
                           attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
                           organiserID: '',
                           requiresOrganizerSignup: false,
                           organizerEmail: '',
                           signup_link: '',
+                          locations: rsvp.event.locations,
                         }}
                         onClick={() => setSelectedEventId(rsvp.event.id)}
                         onRSVPChange={async () => {
@@ -573,14 +552,14 @@ export default function StudentDashboard() {
                                   eventName: rsvp.event.name || rsvp.event.title || 'Untitled Event',
                                   date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
                                   endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
-                                  location: rsvp.event.location,
                                   description: rsvp.event.description,
-                                  societyName: rsvp.event.society.name,
+                                  societyName: rsvp.event.society?.name || '',
                                   attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
                                   organiserID: '',
                                   requiresOrganizerSignup: false,
                                   organizerEmail: '',
                                   signup_link: '',
+                                  locations: rsvp.event.locations,
                                 }}
                                 onClick={() => setSelectedEventId(rsvp.event.id)}
                                 onRSVPChange={async () => {

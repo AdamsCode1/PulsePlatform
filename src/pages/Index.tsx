@@ -60,11 +60,13 @@ const Index = () => {
       // Fetch events for the specific date using direct Supabase call
       const { data: eventsData, error: eventsError } = await supabase
         .from('event')
-        .select('*')
+        .select(`*, locations:location (id, name, formatted_address, latitude, longitude, city, region, country)`)
         .eq('status', 'approved')
         .gte('start_time', `${formattedDate}T00:00:00`)
         .lte('start_time', `${formattedDate}T23:59:59`)
         .order('start_time', { ascending: true });
+
+      console.log('[DEBUG] Raw eventsData from Supabase:', eventsData);
 
       if (eventsError) {
         console.error('Error fetching events:', eventsError);
@@ -138,6 +140,7 @@ const Index = () => {
         organizerEmail: (societyDetailsMap.get(event.society_id) as any)?.email || event.organizer_email || 'No email provided',
         category: event.category || 'general',
         signup_link: event.signup_link || '',
+        locations: Array.isArray(event.locations) ? event.locations[0] : event.locations,
       }));
 
       // Filter out test events
@@ -264,7 +267,10 @@ const Index = () => {
                   displayEvents.map(event => (
                     <EventCard
                       key={event.id}
-                      event={event}
+                      event={{
+                        ...event,
+                        locations: event.locations,
+                      }}
                       onClick={() => handleEventClick(event.id)}
                     />
                   ))
