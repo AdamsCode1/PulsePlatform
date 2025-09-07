@@ -60,6 +60,10 @@ const ComingSoonPage: React.FC = () => {
         description: "You're on the list! Check your email for updates.",
         variant: 'default',
       });
+
+      // Set the early access cookie here
+      document.cookie = 'pulseplatform_early_access=true; path=/; max-age=31536000'; // 1 year
+      console.log('[ComingSoonPage] Set pulseplatform_early_access cookie:', document.cookie);
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({
@@ -78,8 +82,9 @@ const ComingSoonPage: React.FC = () => {
         description: "Welcome to DUPulse!",
         variant: "default"
       });
-      // Set cookie to remember access
-      document.cookie = "hasPlatformAccess=true; path=/; max-age=604800"; // 7 days
+      // Set cookie to remember access (1 year, matches signup)
+      document.cookie = 'pulseplatform_early_access=true; path=/; max-age=31536000';
+      console.log('[ComingSoonPage] Set pulseplatform_early_access cookie via password:', document.cookie);
       setTimeout(() => {
         window.location.href = '/platform';
       }, 1000);

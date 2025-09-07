@@ -39,8 +39,6 @@ export default function NavBar() {
 
   // Function to determine user type from database tables
   const determineUserTypeFromDatabase = async (userId: string) => {
-    console.log('Debug - Checking database for user type:', userId);
-
     try {
       // Check if user is an admin first
       const { data: adminData, error: adminError } = await supabase
@@ -49,10 +47,7 @@ export default function NavBar() {
         .eq('uid', userId)
         .maybeSingle();
 
-      console.log('Debug - Admin table query:', { data: adminData, error: adminError });
-
       if (adminData && !adminError) {
-        console.log('Debug - User found in admin table');
         setUserType('admin');
         return;
       }
@@ -64,10 +59,7 @@ export default function NavBar() {
         .eq('user_id', userId)
         .maybeSingle();
 
-      console.log('Debug - Student table query:', { data: studentData, error: studentError });
-
       if (studentData && !studentError) {
-        console.log('Debug - User found in student table');
         setUserType('student');
         return;
       }
@@ -79,10 +71,7 @@ export default function NavBar() {
         .eq('user_id', userId)
         .maybeSingle();
 
-      console.log('Debug - Society table query:', { data: societyData, error: societyError });
-
       if (societyData && !societyError) {
-        console.log('Debug - User found in society table');
         setUserType('society');
         return;
       }
@@ -95,12 +84,10 @@ export default function NavBar() {
       //   .maybeSingle();
       // 
       // if (partnerData) {
-      //   console.log('Debug - User found in partners table');
       //   setUserType('partner');
       //   return;
       // }
 
-      console.log('Debug - User type not found in any table');
       setUserType('');
 
     } catch (error) {
@@ -113,8 +100,8 @@ export default function NavBar() {
     async function fetchUser() {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
-      console.log('Debug - User logged in:', user?.email);
-      console.log('Debug - User metadata:', user?.user_metadata);
+      // console.log('Debug - User logged in:', user?.email);
+      // console.log('Debug - User metadata:', user?.user_metadata);
 
       if (user && user.user_metadata && user.user_metadata.full_name) {
         setFirstName(user.user_metadata.full_name.split(' ')[0]);
@@ -126,10 +113,10 @@ export default function NavBar() {
 
       // Set user type from metadata or determine from database
       if (user && user.user_metadata && user.user_metadata.user_type) {
-        console.log('Debug - Setting user type from metadata:', user.user_metadata.user_type);
+        // console.log('Debug - Setting user type from metadata:', user.user_metadata.user_type);
         setUserType(user.user_metadata.user_type);
       } else if (user) {
-        console.log('Debug - No user type in metadata, checking database tables...');
+        // console.log('Debug - No user type in metadata, checking database tables...');
         await determineUserTypeFromDatabase(user.id);
       } else {
         setUserType('');
@@ -236,9 +223,6 @@ export default function NavBar() {
         {user && (
           <>
             <button onClick={handleDashboardNavigation} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Dashboard</button>
-            {userType === 'society' && (
-              <button onClick={() => navigate('/events/manage')} className="text-gray-700 font-medium hover:text-pink-500 transition whitespace-nowrap text-sm">Manage</button>
-            )}
           </>
         )}
 
@@ -275,9 +259,6 @@ export default function NavBar() {
           {user && (
             <>
               <button onClick={() => { setMenuOpen(false); handleDashboardNavigation(); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Dashboard</button>
-              {userType === 'society' && (
-                <button onClick={() => { setMenuOpen(false); navigate('/events/manage'); }} className="text-gray-700 font-medium hover:text-pink-500 transition w-full text-center py-2">Manage Events</button>
-              )}
             </>
           )}
 
