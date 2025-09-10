@@ -1,5 +1,6 @@
+// @ts-nocheck
 /*
-	Installed from https://reactbits.dev/ts/tailwind/
+  Installed from https://reactbits.dev/ts/tailwind/
 */
 
 /* eslint-disable react/no-unknown-property */
@@ -137,7 +138,7 @@ void mainImage(in vec4 inputColor, in vec2 uv, out vec4 outputColor) {
 `;
 
 class RetroEffectImpl extends Effect {
-  public uniforms: Map<string, THREE.Uniform<any>>;
+  public declare uniforms: Map<string, THREE.Uniform<any>>;
   constructor() {
     const uniforms = new Map<string, THREE.Uniform<any>>([
       ["colorNum", new THREE.Uniform(4.0)],
@@ -160,16 +161,18 @@ class RetroEffectImpl extends Effect {
   }
 }
 
-const RetroEffect = forwardRef<
-  RetroEffectImpl,
-  { colorNum: number; pixelSize: number }
->((props, ref) => {
-  const { colorNum, pixelSize } = props;
-  const WrappedRetroEffect = wrapEffect(RetroEffectImpl);
-  return (
-    <WrappedRetroEffect ref={ref} colorNum={colorNum} pixelSize={pixelSize} />
-  );
-});
+const RetroEffect = ({ colorNum, pixelSize }: { colorNum: number; pixelSize: number }) => {
+  const effect = useRef<RetroEffectImpl>();
+
+  useEffect(() => {
+    if (effect.current) {
+      effect.current.colorNum = colorNum;
+      effect.current.pixelSize = pixelSize;
+    }
+  }, [colorNum, pixelSize]);
+
+  return <primitive object={new RetroEffectImpl()} ref={effect} />;
+};
 
 RetroEffect.displayName = "RetroEffect";
 

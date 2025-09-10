@@ -4,12 +4,14 @@ import { API_BASE_URL } from '@/lib/apiConfig';
 
 type ApiError = {
   message: string;
+  stack?: string;
 };
 
 interface UseApiResult<TData> {
   data: TData | undefined;
   error: ApiError | null;
   isLoading: boolean;
+  isError: boolean;
   refetch: () => void;
 }
 
@@ -26,7 +28,7 @@ const useApi = <TData = unknown>(
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('Not authenticated');
@@ -92,7 +94,10 @@ const useApi = <TData = unknown>(
       }
       setData(result);
     } catch (err: any) {
-      setError({ message: err.message || 'Unknown error occurred' });
+      setError({
+        message: err.message || 'Unknown error occurred',
+        stack: err.stack
+      });
     } finally {
       setIsLoading(false);
     }
@@ -108,7 +113,7 @@ const useApi = <TData = unknown>(
     }
   }, [endpoint, ...queryKey]);
 
-  return { data, error, isLoading, refetch };
+  return { data, error, isLoading, isError: !!error, refetch };
 };
 
 export default useApi;
