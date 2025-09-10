@@ -8,11 +8,12 @@ import { supabase } from '../lib/supabaseClient';
 import { toast } from '../hooks/use-toast';
 
 interface EventModalProps {
-  event: Event;
+  event: Event & { locations?: { name: string; formatted_address: string } };
   onClose: () => void;
+  isSocietyView?: boolean;
 }
 
-const EventModal = ({ event, onClose }: EventModalProps) => {
+const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
   const [showRSVPForm, setShowRSVPForm] = useState(false);
   const [hasRSVPed, setHasRSVPed] = useState(false);
   const [user, setUser] = useState(null);
@@ -229,7 +230,7 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
               <MapPin className="text-pink-500 mt-1 flex-shrink-0" size={20} />
               <div className="min-w-0">
                 <div className="font-semibold text-gray-900 text-sm sm:text-base">Location</div>
-                <div className="text-gray-600 text-sm sm:text-base break-words">{event.location}</div>
+                <div className="text-gray-600 text-sm sm:text-base break-words">{event.locations?.name || 'Location TBD'}</div>
               </div>
             </div>
 
@@ -389,6 +390,16 @@ const EventModal = ({ event, onClose }: EventModalProps) => {
                   className="bg-pink-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors text-sm sm:text-base"
                 >
                   {event.requiresOrganizerSignup ? "Register Interest" : "RSVP Now"}
+                </button>
+              </div>
+            )}
+            {isSocietyView && (
+              <div className="text-center mt-4">
+                <button
+                  onClick={() => navigate(`/viewRSVPlist/${event.id}`)}
+                  className="w-full bg-purple-600 text-white px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-sm sm:text-base"
+                >
+                  View RSVP List
                 </button>
               </div>
             )}

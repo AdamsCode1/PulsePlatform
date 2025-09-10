@@ -11,6 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Function to verify the user is an admin
 const requireAdmin = async (req: VercelRequest) => {
+  console.log('requireAdmin called');
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Authentication token not provided.');
 
@@ -106,6 +107,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       case 'early-access':
         console.log('Routing to handleEarlyAccess');
         return await handleEarlyAccess(req, res, supabase);
+      case 'admin':
+        console.log('Routing to handleAdmin');
+        return await handleAdmin(req, res, supabase, action as string, id as string);
+      case 'society':
+        console.log('Routing to handleSocietyActions');
+        return await handleSocietyActions(req, res, supabase, action as string, id as string);
+      case 'hello':
+        console.log('Routing to handleHello');
+        return await handleHello(req, res);
       default:
         console.log('Resource not found:', resource);
         return res.status(404).json({ error: 'Resource not found' });
@@ -136,7 +146,7 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
       console.log('Handling pending events query');
       const { data, error } = await supabase
         .from('event')
-        .select('*')
+        .select('* , society ( name, contact_email ), locations ( name, formatted_address )')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
@@ -298,9 +308,42 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
 
     if (method === 'POST') {
       console.log('Handling create event');
+      const body = req.body;
+      const locationDetails = body.location_details;
+      if (!locationDetails) {
+        return res.status(400).json({ error: 'Missing location details' });
+      }
+      // Upsert location
+      const { data: locationRows, error: locationError } = await supabase
+        .from('locations')
+        .upsert([
+          {
+            provider: locationDetails.provider,
+            provider_place_id: locationDetails.provider_place_id,
+            name: locationDetails.name,
+            formatted_address: locationDetails.formatted_address,
+            latitude: locationDetails.latitude,
+            longitude: locationDetails.longitude,
+            city: locationDetails.city || null,
+            region: locationDetails.region || null,
+            country: locationDetails.country || null,
+          }
+        ], { onConflict: ['provider', 'provider_place_id'], ignoreDuplicates: false })
+        .select();
+      if (locationError || !locationRows || locationRows.length === 0) {
+        console.error('Location upsert error:', locationError);
+        return res.status(500).json({ error: locationError?.message || 'Failed to upsert location' });
+      }
+      const locationUuid = locationRows[0].id;
+      // Insert event, referencing location UUID
+      const eventPayload = {
+        ...body,
+        location: locationUuid,
+      };
+      delete eventPayload.location_details;
       const { data, error } = await supabase
         .from('event')
-        .insert([req.body])
+        .insert([eventPayload])
         .select();
       if (error) {
         console.error('Create event error:', error);
@@ -844,4 +887,257 @@ async function handleEarlyAccess(req: VercelRequest, res: VercelResponse, supaba
   }
 
   return res.status(201).json({ message: 'Successfully registered for waitlist!' });
+}
+
+// Hello handler
+async function handleHello(req: VercelRequest, res: VercelResponse) {
+  return res.status(200).send('Hello from API!');
+}
+
+// Admin handler - consolidates all admin functionality
+async function handleAdmin(req: VercelRequest, res: VercelResponse, supabase: any, action?: string, id?: string) {
+  const { method } = req;
+
+  try {
+    // Verify admin access for all admin operations
+    await requireAdmin(req);
+
+    // Route based on action parameter
+    switch (action) {
+      case 'activity':
+        return await handleAdminActivity(req, res, supabase);
+      case 'dashboard':
+        return await handleAdminDashboard(req, res, supabase);
+      case 'deals':
+        return await handleAdminDeals(req, res, supabase, id);
+      case 'events':
+        return await handleAdminEvents(req, res, supabase, id);
+      case 'settings':
+        return await handleAdminSettings(req, res, supabase);
+      case 'system':
+        return await handleAdminSystem(req, res, supabase);
+      case 'users':
+        return await handleAdminUsers(req, res, supabase, id);
+      default:
+        return res.status(404).json({ error: 'Admin action not found' });
+    }
+  } catch (error: any) {
+    console.error('Admin handler error:', error);
+    return res.status(403).json({ message: error.message || 'Access denied' });
+  }
+}
+
+// Society actions handler
+async function handleSocietyActions(req: VercelRequest, res: VercelResponse, supabase: any, action?: string, id?: string) {
+  switch (action) {
+    case 'rsvpList':
+      return await handleSocietyRSVPList(req, res, supabase, id);
+    case 'emailRSVPList':
+      return await handleSocietyEmailRSVPList(req, res, supabase, id);
+    default:
+      return res.status(404).json({ error: 'Society action not found' });
+  }
+}
+
+// Admin Activity handler
+async function handleAdminActivity(req: VercelRequest, res: VercelResponse, supabase: any) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    // Fetch recent events as admin activity (last 50)
+    const { data, error } = await supabase
+      .from('event')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    return res.status(200).json(data || []);
+  } catch (error: any) {
+    console.error('Error fetching activity log:', error);
+    return res.status(500).json({ error: 'Failed to fetch activity log' });
+  }
+}
+
+// Admin Dashboard handler
+async function handleAdminDashboard(req: VercelRequest, res: VercelResponse, supabase: any) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    // Get event submissions over last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const { data, error } = await supabase
+      .from('event')
+      .select('created_at')
+      .gte('created_at', sevenDaysAgo.toISOString())
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    // Group by date and count
+    const chartData = (data || []).reduce((acc: any[], event: any) => {
+      const date = new Date(event.created_at).toISOString().split('T')[0];
+      const existing = acc.find(item => item.submission_date === date);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        acc.push({ submission_date: date, count: 1 });
+      }
+      return acc;
+    }, []);
+
+    return res.status(200).json(chartData);
+  } catch (error: any) {
+    console.error('Error fetching dashboard data:', error);
+    return res.status(500).json({ error: 'Failed to fetch dashboard data' });
+  }
+}
+
+// Placeholder handlers for other admin functions (to be implemented)
+async function handleAdminDeals(req: VercelRequest, res: VercelResponse, supabase: any, id?: string) {
+  return res.status(200).json({ message: 'Admin deals functionality' });
+}
+
+async function handleAdminEvents(req: VercelRequest, res: VercelResponse, supabase: any, id?: string) {
+  return res.status(200).json({ message: 'Admin events functionality' });
+}
+
+async function handleAdminSettings(req: VercelRequest, res: VercelResponse, supabase: any) {
+  return res.status(200).json({ message: 'Admin settings functionality' });
+}
+
+async function handleAdminSystem(req: VercelRequest, res: VercelResponse, supabase: any) {
+  return res.status(200).json({ message: 'Admin system functionality' });
+}
+
+async function handleAdminUsers(req: VercelRequest, res: VercelResponse, supabase: any, id?: string) {
+  console.log('handleAdminUsers called');
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  try {
+    // Query all societies
+    const { data: societies, error: societyError } = await supabase
+      .from('society')
+      .select('id, name, contact_email, created_at')
+      .order('created_at', { ascending: false });
+    if (societyError) {
+      console.error('Society query error:', societyError);
+      throw societyError;
+    }
+
+    // Query all students
+    const { data: students, error: studentError } = await supabase
+      .from('student')
+      .select('id, first_name, last_name, email, created_at')
+      .order('created_at', { ascending: false });
+    if (studentError) {
+      console.error('Student query error:', studentError);
+      throw studentError;
+    }
+
+    // Map all to a unified user format
+    const mappedSocieties = (societies || []).map(s => ({
+      id: s.id,
+      name: s.name,
+      email: s.contact_email,
+      role: 'society',
+      created_at: s.created_at,
+    }));
+    const mappedStudents = (students || []).map(s => ({
+      id: s.id,
+      name: (s.first_name && s.last_name) ? `${s.first_name} ${s.last_name}` : (s.first_name || s.last_name || s.email),
+      email: s.email,
+      role: 'student',
+      created_at: s.created_at,
+    }));
+
+    const allUsers = [...mappedSocieties, ...mappedStudents];
+    return res.status(200).json({ users: allUsers });
+  } catch (error: any) {
+    console.error('Error fetching admin users:', error);
+    return res.status(500).json({ error: 'Failed to fetch users' });
+  }
+}
+
+// Society RSVP List handler
+async function handleSocietyRSVPList(req: VercelRequest, res: VercelResponse, supabase: any, eventId?: string) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!eventId) {
+    return res.status(400).json({ error: 'Event ID is required' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('rsvp')
+      .select(`
+        *,
+        student (
+          first_name,
+          last_name,
+          email,
+          college,
+          year_of_study
+        )
+      `)
+      .eq('event_id', eventId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return res.status(200).json(data || []);
+  } catch (error: any) {
+    console.error('Error fetching RSVP list:', error);
+    return res.status(500).json({ error: 'Failed to fetch RSVP list' });
+  }
+}
+
+// Society Email RSVP List handler
+async function handleSocietyEmailRSVPList(req: VercelRequest, res: VercelResponse, supabase: any, eventId?: string) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!eventId) {
+    return res.status(400).json({ error: 'Event ID is required' });
+  }
+
+  try {
+    // Get RSVP list
+    const { data: rsvps, error } = await supabase
+      .from('rsvp')
+      .select(`
+        *,
+        student (
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .eq('event_id', eventId)
+      .eq('status', 'confirmed');
+
+    if (error) throw error;
+
+    const emailList = (rsvps || []).map((rsvp: any) => rsvp.student?.email).filter(Boolean);
+
+    return res.status(200).json({ 
+      message: 'Email list generated successfully',
+      emailList,
+      count: emailList.length
+    });
+  } catch (error: any) {
+    console.error('Error generating email list:', error);
+    return res.status(500).json({ error: 'Failed to generate email list' });
+  }
 }

@@ -9,6 +9,12 @@ const ComingSoonPage: React.FC = () => {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [isSneakPeakModalOpen, setIsSneakPeakModalOpen] = useState(false);
   const [sneakPeakPassword, setSneakPeakPassword] = useState('');
+  const [checkingAccess, setCheckingAccess] = useState(true);
+
+  // On mount, check cookie and redirect if access is granted
+  React.useEffect(() => {
+    setCheckingAccess(false);
+  }, []);
 
   // Add error boundary for countdown
   const [hasError, setHasError] = useState(false);
@@ -54,6 +60,10 @@ const ComingSoonPage: React.FC = () => {
         description: "You're on the list! Check your email for updates.",
         variant: 'default',
       });
+
+      // Set the early access cookie here
+      document.cookie = 'pulseplatform_early_access=true; path=/; max-age=31536000'; // 1 year
+      console.log('[ComingSoonPage] Set pulseplatform_early_access cookie:', document.cookie);
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({
@@ -72,7 +82,9 @@ const ComingSoonPage: React.FC = () => {
         description: "Welcome to DUPulse!",
         variant: "default"
       });
-      // Redirect to main DUPulse platform after a brief delay
+      // Set cookie to remember access (1 year, matches signup)
+      document.cookie = 'pulseplatform_early_access=true; path=/; max-age=31536000';
+      console.log('[ComingSoonPage] Set pulseplatform_early_access cookie via password:', document.cookie);
       setTimeout(() => {
         window.location.href = '/platform';
       }, 1000);
@@ -91,6 +103,8 @@ const ComingSoonPage: React.FC = () => {
       handleSneakPeakSubmit();
     }
   };
+
+  if (checkingAccess) return null;
 
   return (
     <div className="w-screen overflow-x-hidden bg-gradient-to-br from-black via-gray-900 to-purple-900" style={{ margin: 0, padding: 0 }}>

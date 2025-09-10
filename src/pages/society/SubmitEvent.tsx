@@ -35,6 +35,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { GooglePlacesAutocomplete, PlaceDetails } from '@/components/GooglePlacesAutocomplete';
 
 const eventCategories = [
   "academic",
@@ -109,6 +110,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function EventSubmissionPage() {
+  const [selectedLocation, setSelectedLocation] = useState<PlaceDetails | null>(null);
   const [societyId, setSocietyId] = useState<string | null>(null);
   const [loadingSocietyId, setLoadingSocietyId] = useState(true);
   const [loadingEvent, setLoadingEvent] = useState(false);
@@ -329,38 +331,42 @@ export default function EventSubmissionPage() {
       toast({ title: "Error", description: "Could not determine society ID. Please ensure you're logged in as a society member.", variant: "destructive" });
       return;
     }
+    if (!selectedLocation) {
+      toast({ title: "Error", description: "Please select a location from the dropdown.", variant: "destructive" });
+      return;
+    }
 
     console.log("Current societyId:", societyId);
+    console.log("Selected location details:", selectedLocation);
 
     const baseStart = new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`);
     const baseEnd = new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`);
 
+    // Helper to build event payload
     const makePayload = (s: Date, e: Date) => ({
       name: data.eventName,
       description: data.description,
       start_time: s.toISOString(),
       end_time: e.toISOString(),
-      location: data.location,
       category: data.category,
       society_id: societyId,
       status: 'pending',
       signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
+      location_details: selectedLocation,
     });
 
-  const payloads = [] as ReturnType<typeof makePayload>[];
-
-  if (!isEditing && data.isRecurring && data.recurrenceFrequency && data.recurrenceEndDate) {
+    // Build all occurrences
+    const payloads: any[] = [];
+    if (!isEditing && data.isRecurring && data.recurrenceFrequency && data.recurrenceEndDate) {
       const MAX_OCCURRENCES = 50;
       let count = 0;
       let s = baseStart;
       let e = baseEnd;
       const until = new Date(data.recurrenceEndDate);
-      // include end of day for inclusivity
       until.setHours(23, 59, 59, 999);
       while (s <= until && count < MAX_OCCURRENCES) {
         payloads.push(makePayload(s, e));
         count++;
-        // compute next occurrence
         switch (data.recurrenceFrequency) {
           case 'weekly':
             s = addWeeks(s, 1);
@@ -381,79 +387,24 @@ export default function EventSubmissionPage() {
     }
 
     try {
-      if (isEditing) {
-        console.log('Updating event:', editingEventId);
-        const updatePayload = makePayload(baseStart, baseEnd);
-        const { data: updated, error } = await supabase
-          .from('event')
-          .update(updatePayload)
-          .eq('id', editingEventId)
-          .select();
-        if (error) throw error;
-        toast({
-          title: 'Event Updated',
-          description: 'Your event changes have been saved.',
-          action: (
-            <div className="flex gap-2 mt-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/society/events')}>Manage Events</Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/society/dashboard')}>Dashboard</Button>
-            </div>
-          )
-        });
-        navigate('/society/events');
-        return;
+      // Submit all events in parallel
+      const responses = await Promise.all(payloads.map(payload =>
+        fetch('/api/unified?resource=events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      ));
+      const results = await Promise.all(responses.map(r => r.json()));
+      if (results.some((result, idx) => !responses[idx].ok)) {
+        throw new Error('One or more events failed to submit');
       }
-
-      console.log("Submitting event payloads:", payloads);
-      const { data: insertedEvent, error } = await supabase
-        .from('event')
-        .insert(payloads)
-        .select();
-
-      console.log("Supabase response:", { insertedEvent, error });
-
-      if (!error && insertedEvent) {
-        toast({
-          title: "Event Submitted Successfully!",
-          description: "Your event has been submitted for review.",
-          action: (
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/society/events')}
-              >
-                Manage Events
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/society/dashboard')}
-              >
-                Dashboard
-              </Button>
-            </div>
-          )
-        });
-        form.reset();
-        setCurrentStep(0); // Reset to first step
-        
-        // Auto-redirect to dashboard after 3 seconds
-        setTimeout(() => {
-          navigate('/society/dashboard');
-        }, 3000);
-      } else {
-        // Handle Supabase error
-        const errorMessage = error?.message || 'Could not submit event.';
-        console.error('Supabase error details:', error);
-        toast({
-          title: "Error",
-          description: `${errorMessage}. Check console for details.`,
-          variant: "destructive"
-        });
-      }
+      toast({ title: "Event(s) Submitted Successfully!", description: "Your event(s) have been submitted for review." });
+      form.reset();
+      setCurrentStep(0);
+      setTimeout(() => { navigate('/society/dashboard'); }, 3000);
     } catch (err) {
-      console.error('Network or other error:', err);
+      console.error('Event submission error:', err);
       toast({ title: "Error", description: err.message || 'Network error occurred.', variant: "destructive" });
     }
   }
@@ -759,12 +710,21 @@ export default function EventSubmissionPage() {
                     Location
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="Enter event location"
-                      {...field}
-                      className="form-input text-lg h-14 rounded-xl"
+                    <GooglePlacesAutocomplete
+                      apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                      placeholder="Search for a location..."
+                      onSelect={(place: PlaceDetails) => {
+                        setSelectedLocation(place);
+                        field.onChange(place.formatted_address);
+                      }}
                     />
                   </FormControl>
+                  {selectedLocation && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      <strong>{selectedLocation.name}</strong><br />
+                      {selectedLocation.formatted_address}
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
