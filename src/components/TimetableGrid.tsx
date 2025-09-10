@@ -5,6 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Event } from '@/types/Event';
 
+// Add custom styles for hiding scrollbar
+const scrollbarHideStyles = `
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
 type ViewType = 'day' | '4-day' | 'week' | 'month';
 
 interface TimetableGridProps {
@@ -56,7 +67,7 @@ const EVENT_CATEGORIES = [
 
 const TimetableGrid = ({ view, events, currentDate, onDateChange, onEventClick }: TimetableGridProps) => {
     const [activeTerms, setActiveTerms] = useState<string[]>(ACADEMIC_TERMS.map(term => term.id));
-    const [currentView, setCurrentView] = useState<ViewType>('month');
+    const [currentView, setCurrentView] = useState<ViewType>('day');
 
     const getEventsForDate = (date: Date) => {
         return events.filter(event => {
@@ -415,9 +426,7 @@ const TimetableGrid = ({ view, events, currentDate, onDateChange, onEventClick }
                             </button>
                         </div>
                     </div>
-                </div>
-
-                {/* Event Cards */}
+                </div>                {/* Event Cards */}
                 <div className="p-6">
                     {dayEvents.length === 0 ? (
                         <div className="text-center py-12 text-gray-500">
@@ -702,12 +711,15 @@ const TimetableGrid = ({ view, events, currentDate, onDateChange, onEventClick }
     };
 
     return (
-        <div className="flex space-x-6">
-            {renderSidebar()}
-            <div className="flex-1">
-                {renderView()}
+        <>
+            <style dangerouslySetInnerHTML={{ __html: scrollbarHideStyles }} />
+            <div className="flex space-x-6">
+                {renderSidebar()}
+                <div className="flex-1">
+                    {renderView()}
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
