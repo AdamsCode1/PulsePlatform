@@ -41,7 +41,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     // Core state
     const [selectedTerm, setSelectedTerm] = useState<Term>('Term 1');
     const [selectedWeek, setSelectedWeek] = useState<number>(1);
-    const [selectedView, setSelectedView] = useState<ViewType>('month');
+    const [selectedView, setSelectedView] = useState<ViewType>('day');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [currentFilter, setCurrentFilter] = useState<string>('all');
 
@@ -110,13 +110,10 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     return (
         <div className="w-full space-y-6">
             {/* Header */}
-            <div className="text-center space-y-2">
-                <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-pink-400 bg-clip-text text-transparent">
-                    Schedule
+            <div className="text-left space-y-2">
+                <h1 className="text-3xl lg:text-4xl font-bold">
+                    <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-400 bg-clip-text text-transparent">Don't Be Late</span> 😉
                 </h1>
-                <p className="text-gray-600">
-                    Browse events and manage your timetable
-                </p>
             </div>
 
             {/* Timetable Content */}

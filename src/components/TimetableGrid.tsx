@@ -392,39 +392,89 @@ const TimetableGrid = ({ view, events, currentDate, onDateChange, onEventClick }
             return true; // Show all events for now
         });
 
+        // Generate 7 days centered around current date (1 week)
+        const startDate = addDays(currentDate, -3); // 3 days before current
+        const allDays = Array.from({ length: 7 }, (_, i) => addDays(startDate, i));
+
+        const scrollToDay = (direction: 'left' | 'right') => {
+            const newDate = direction === 'left'
+                ? addDays(currentDate, -3)
+                : addDays(currentDate, 3);
+            onDateChange(newDate);
+        };
+
         return (
             <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b bg-gray-50">
-                    <div className="flex items-center space-x-4">
-                        <h2 className="text-lg font-semibold text-gray-800">Schedule</h2>
-                    </div>
-                    <Button className="bg-orange-500 hover:bg-orange-600 text-white">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Event
-                    </Button>
+                {/* Timetable Header */}
+                <div className="px-6 pt-6 pb-2">
+                    <h2 className="text-xl font-semibold text-gray-900">Timetable</h2>
                 </div>
 
-                {/* Centered Date Navigation */}
-                <div className="p-6 border-b">
-                    <div className="flex items-center justify-center space-x-4">
-                        <h3 className="text-xl font-semibold text-gray-800">
-                            {format(currentDate, 'MMMM d, EEEE')}
-                        </h3>
-                        <div className="flex space-x-2">
-                            <button
-                                onClick={() => onDateChange(addDays(currentDate, -1))}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                                <ChevronLeft className="h-5 w-5 text-gray-600" />
-                            </button>
-                            <button
-                                onClick={() => onDateChange(addDays(currentDate, 1))}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                                <ChevronRight className="h-5 w-5 text-gray-600" />
-                            </button>
+                {/* Horizontal Scrollable Day Navigation */}
+                <div className="px-6 pb-6 bg-white">
+                    <div className="relative">
+                        {/* Left scroll button */}
+                        <button
+                            onClick={() => scrollToDay('left')}
+                            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <ChevronLeft className="h-5 w-5" />
+                        </button>
+
+                        {/* Day container */}
+                        <div className="mx-8">
+                            <div className="flex justify-center space-x-6 px-2">
+                                {allDays.map((day, index) => {
+                                    const isSelected = isSameDay(day, currentDate);
+                                    const isToday = isSameDay(day, new Date());
+                                    const dayName = format(day, 'EEE'); // Mon, Tue, Wed format
+                                    const dayNumber = format(day, 'd');
+
+                                    return (
+                                        <button
+                                            key={index}
+                                            onClick={() => onDateChange(day)}
+                                            className={`flex flex-col items-center justify-center py-4 px-4 transition-all duration-200 ease-in-out flex-shrink-0 min-w-[80px] h-[90px] rounded-xl transform hover:scale-105 ${isSelected
+                                                    ? 'bg-white shadow-lg border border-gray-100 scale-105'
+                                                    : 'hover:bg-gray-50 hover:shadow-sm'
+                                                }`}
+                                        >
+                                            {/* "Now" indicator */}
+                                            <div className="h-7 flex items-center justify-center mb-1">
+                                                {isToday && (
+                                                    <span className={`text-sm font-medium transition-colors duration-200 ${isSelected ? 'text-gray-600' : 'text-gray-400'
+                                                        }`}>Now</span>
+                                                )}
+                                            </div>
+
+                                            {/* Day number */}
+                                            <div className={`text-3xl font-bold mb-2 transition-all duration-200 ${isSelected
+                                                    ? 'text-black scale-110'
+                                                    : 'text-gray-400 hover:text-gray-600'
+                                                }`}>
+                                                {dayNumber}
+                                            </div>
+
+                                            {/* Day name */}
+                                            <div className={`text-base font-medium transition-all duration-200 ${isSelected
+                                                    ? 'text-black'
+                                                    : 'text-gray-400 hover:text-gray-600'
+                                                }`}>
+                                                {dayName}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
+
+                        {/* Right scroll button */}
+                        <button
+                            onClick={() => scrollToDay('right')}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <ChevronRight className="h-5 w-5" />
+                        </button>
                     </div>
                 </div>                {/* Event Cards */}
                 <div className="p-6">
