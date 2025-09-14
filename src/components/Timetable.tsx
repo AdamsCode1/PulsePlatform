@@ -1,33 +1,46 @@
 import { useState, useEffect } from 'react';
-import { format, addDays, startOfWeek, endOfWeek, startOfDay, endOfDay, isSameDay, parseISO } from 'date-fns';
-import { Calendar, ChevronDown, Filter } from 'lucide-react';
+import { format, addDays, startOfWeek, endOfWeek, startOfDay, endOfDay, isSameDay, parseISO, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { Calendar, ChevronDown, Filter, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Event } from '@/types/Event';
-import TimetableGrid from './TimetableGrid';
 import TimetableLoadingSkeleton from './TimetableLoadingSkeleton';
-import EventCard from './EventCard';
-import EventFilters from './EventFilters';
 
-// Term definitions according to specifications
-const TERMS = [
-    'Term 1',
-    'Winter Break',
-    'Term 2',
-    'Spring Break',
-    'Term 3',
-    'Summer Break'
-] as const;
+// Academic Terms
+const ACADEMIC_TERMS = [
+    {
+        id: 'michaelmas',
+        label: 'Michaelmas Term',
+        startDate: new Date(2025, 9, 6), // October 6, 2025
+        endDate: new Date(2025, 11, 12), // December 12, 2025
+        color: 'bg-blue-500',
+        checked: true
+    },
+    {
+        id: 'epiphany',
+        label: 'Epiphany Term',
+        startDate: new Date(2026, 0, 12), // January 12, 2026
+        endDate: new Date(2026, 2, 20), // March 20, 2026
+        color: 'bg-green-500',
+        checked: false
+    },
+    {
+        id: 'easter',
+        label: 'Easter Term',
+        startDate: new Date(2026, 3, 27), // April 27, 2026
+        endDate: new Date(2026, 5, 26), // June 26, 2026
+        color: 'bg-purple-500',
+        checked: false
+    },
+];
 
 // View options
 const VIEWS = [
-    { id: 'day', label: 'Day' },
-    { id: '4-day', label: '4-Day' },
-    { id: 'week', label: 'Week' },
-    { id: 'month', label: 'Month' }
+    { id: 'daily', label: 'Daily' },
+    { id: 'weekly', label: 'Weekly' },
+    { id: 'monthly', label: 'Monthly' }
 ] as const;
 
-type Term = typeof TERMS[number];
 type ViewType = typeof VIEWS[number]['id'];
 
 interface TimetableProps {
@@ -39,48 +52,354 @@ interface TimetableProps {
 
 const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) => {
     // Core state
-    const [selectedTerm, setSelectedTerm] = useState<Term>('Term 1');
-    const [selectedWeek, setSelectedWeek] = useState<number>(1);
-    const [selectedView, setSelectedView] = useState<ViewType>('day');
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [currentFilter, setCurrentFilter] = useState<string>('all');
-
-    // Generate week options (1-20 for academic year)
-    const weekOptions = Array.from({ length: 20 }, (_, i) => i + 1);
-
-    // Filter events by selected term and week
-    const getFilteredEvents = () => {
-        // For MVP, return all events as we don't have term/week metadata in events yet
-        // In production, this would filter based on term and week
+    const [selectedView, setSelectedView] = useState<ViewType>('daily');
+    const [currentDate, setCurrentDate] = useState(new Date(2025, 8, 14)); // September 14, 2025 (current date)
+    const [activeTerms, setActiveTerms] = useState<string[]>(['michaelmas']);    // Get events for a specific date
+    const getEventsForDate = (date: Date) => {
         return events.filter(event => {
             const eventDate = new Date(event.date);
-            // Basic date filtering based on current view
-            if (selectedView === 'day') {
-                return isSameDay(eventDate, currentDate);
-            }
-            // Add more filtering logic here when term/week data is available
-            return true;
-        }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            return isSameDay(eventDate, date);
+        });
     };
 
-    const filteredEvents = getFilteredEvents();
+    // Check if date is in any active term
+    const isDateInActiveTerm = (date: Date) => {
+        if (activeTerms.length === 0) return true;
 
-    const handleTermChange = (term: string) => {
-        setSelectedTerm(term as Term);
-        // Reset to week 1 when term changes
-        setSelectedWeek(1);
+        return activeTerms.some(termId => {
+            const term = ACADEMIC_TERMS.find(t => t.id === termId);
+            if (!term) return false;
+            return date >= term.startDate && date <= term.endDate;
+        });
     };
 
-    const handleWeekChange = (week: string) => {
-        setSelectedWeek(parseInt(week));
+    // Toggle term selection
+    const toggleTerm = (termId: string) => {
+        setActiveTerms(prev =>
+            prev.includes(termId)
+                ? prev.filter(id => id !== termId)
+                : [...prev, termId]
+        );
     };
 
-    const handleViewChange = (view: ViewType) => {
-        setSelectedView(view);
+    // Handle month navigation
+    const handlePrevMonth = () => {
+        setCurrentDate(subMonths(currentDate, 1));
     };
 
-    const handleFilterChange = (filterType: string, value: string) => {
-        setCurrentFilter(value);
+    const handleNextMonth = () => {
+        setCurrentDate(addMonths(currentDate, 1));
+    };
+
+    // Render mini calendar
+    const renderMiniCalendar = () => {
+        const monthStart = startOfMonth(currentDate);
+        const monthEnd = endOfMonth(currentDate);
+        const calendarStart = startOfWeek(monthStart);
+        const calendarEnd = endOfWeek(monthEnd);
+        const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+        return (
+            <div className="bg-white rounded-lg border p-3">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                        {format(currentDate, 'MMM yyyy')}
+                    </span>
+                    <div className="flex gap-1">
+                        <button onClick={handlePrevMonth} className="p-1 hover:bg-gray-100 rounded">
+                            <ChevronLeft className="h-3 w-3" />
+                        </button>
+                        <button onClick={handleNextMonth} className="p-1 hover:bg-gray-100 rounded">
+                            <ChevronRight className="h-3 w-3" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-1 text-xs">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                        <div key={day} className="text-center text-gray-500 font-medium p-1">
+                            {day}
+                        </div>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-1 text-xs">
+                    {calendarDays.map(day => {
+                        const isCurrentMonth = day >= monthStart && day <= monthEnd;
+                        const isToday = isSameDay(day, new Date());
+                        const isSelected = isSameDay(day, currentDate);
+
+                        return (
+                            <button
+                                key={day.toISOString()}
+                                onClick={() => setCurrentDate(day)}
+                                className={`
+                                    p-1 rounded text-center hover:bg-gray-100
+                                    ${isCurrentMonth ? 'text-gray-800' : 'text-gray-300'}
+                                    ${isToday ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}
+                                    ${isSelected ? 'bg-blue-500 text-white' : ''}
+                                `}
+                            >
+                                {format(day, 'd')}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
+    // Render daily view (weekly layout with current day highlighted)
+    const renderDailyView = () => {
+        const weekStart = startOfWeek(currentDate);
+        const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+        const today = new Date();
+
+        return (
+            <div className="bg-white rounded-lg border overflow-hidden">
+                {/* Header with Timetable title */}
+                <div className="p-3 md:p-4 border-b bg-gray-50">
+                    <h3 className="text-base md:text-lg font-semibold text-gray-900">Timetable</h3>
+                </div>
+
+                {/* Week days header with navigation - individual boxes */}
+                <div className="relative p-3 md:p-6">
+                    {/* Navigation arrows */}
+                    <button
+                        onClick={() => setCurrentDate(addDays(currentDate, -7))}
+                        className="absolute left-1 md:left-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+                    >
+                        <ChevronLeft className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+                    </button>
+                    <button
+                        onClick={() => setCurrentDate(addDays(currentDate, 7))}
+                        className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+                    >
+                        <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+                    </button>
+
+                    {/* Individual day boxes */}
+                    <div className="flex justify-center gap-1 md:gap-3 px-8 md:px-0">
+                        {weekDays.map((day, index) => {
+                            const isToday = isSameDay(day, today);
+                            const isCurrentDay = isSameDay(day, currentDate);
+
+                            return (
+                                <div
+                                    key={day.toISOString()}
+                                    className={`
+                                        relative text-center cursor-pointer transition-all duration-200
+                                        ${isCurrentDay
+                                            ? 'bg-white rounded-lg shadow-md p-2 md:p-4 min-w-[50px] md:min-w-[90px]'
+                                            : 'p-1 md:p-3 min-w-[45px] md:min-w-[80px] hover:bg-gray-50 rounded-lg'
+                                        }
+                                    `}
+                                    onClick={() => setCurrentDate(day)}
+                                >
+                                    {/* "Now" indicator positioned above today's date */}
+                                    {isToday && (
+                                        <div className="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2">
+                                            <span className="text-xs text-gray-500 font-medium">Now</span>
+                                        </div>
+                                    )}
+
+                                    <div className={`text-xs font-medium mb-1 md:mb-2 ${isCurrentDay ? 'text-gray-600' : 'text-gray-400'
+                                        }`}>
+                                        {format(day, 'EEE')}
+                                    </div>
+                                    <div className={`
+                                        ${isCurrentDay
+                                            ? 'text-xl md:text-4xl font-black text-gray-900'
+                                            : 'text-lg md:text-2xl font-normal text-gray-400'
+                                        }
+                                    `}>
+                                        {format(day, 'd')}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>                {/* Events content area */}
+                <div className="p-4 md:p-8">
+                    {(() => {
+                        const dayEvents = getEventsForDate(currentDate);
+
+                        if (dayEvents.length === 0) {
+                            return (
+                                <div className="text-center">
+                                    <div className="flex flex-col items-center justify-center min-h-[150px] md:min-h-[200px]">
+                                        <Calendar className="h-12 w-12 md:h-16 md:w-16 text-gray-300 mb-4" />
+                                        <p className="text-gray-500 text-sm">
+                                            No events scheduled for {format(currentDate, 'MMMM d, yyyy')}
+                                        </p>
+                                    </div>
+                                </div>
+                            );
+                        }
+
+                        return (
+                            <div className="space-y-4">
+                                <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
+                                    Events for {format(currentDate, 'MMMM d, yyyy')}
+                                </h4>
+                                <div className="grid gap-3 md:gap-4">
+                                    {dayEvents.map(event => (
+                                        <div
+                                            key={event.id}
+                                            className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-4 md:p-6 relative"
+                                            onClick={() => onEventClick?.(event.id)}
+                                        >
+                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3 md:mb-4">
+                                                <div className="flex-1 mb-3 md:mb-0">
+                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                        <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
+                                                            {event.societyName || 'General'}
+                                                        </span>
+                                                        <span className="flex items-center text-gray-500 text-sm">
+                                                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                                                            </svg>
+                                                            {event.rsvpCount || 0}
+                                                        </span>
+                                                    </div>
+                                                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+                                                        {event.eventName}
+                                                    </h3>
+                                                    <p className="text-gray-600 mb-3 md:mb-4 text-sm md:text-base">
+                                                        {event.description || 'Visit to the city art gallery.'}
+                                                    </p>
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center text-gray-600 text-sm">
+                                                            <svg className="w-4 h-4 mr-3 text-pink-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                                            </svg>
+                                                            <span>
+                                                                {typeof event.time === 'string' ? event.time : format(new Date(event.time), 'HH:mm')} -
+                                                                {event.endTime || '01:31'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center text-gray-600 text-sm">
+                                                            <svg className="w-4 h-4 mr-3 text-pink-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                                            </svg>
+                                                            <span className="break-words">{event.location || 'Durham Students\' Union'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex md:flex-col items-center md:items-end gap-2 md:ml-6">
+                                                    <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 md:px-6 py-2 rounded-full font-medium transition-colors text-sm md:text-base">
+                                                        RSVP
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Check Detail button positioned at bottom right */}
+                                            <div className="flex justify-end">
+                                                <button className="text-gray-400 hover:text-gray-600 flex items-center text-sm">
+                                                    <span className="mr-1">Check Detail</span>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        );
+                    })()}
+                </div>
+            </div>
+        );
+    };
+
+    // Render main calendar
+    const renderMainCalendar = () => {
+        const monthStart = startOfMonth(currentDate);
+        const monthEnd = endOfMonth(currentDate);
+        const calendarStart = startOfWeek(monthStart);
+        const calendarEnd = endOfWeek(monthEnd);
+        const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+
+        return (
+            <div className="bg-white rounded-lg border overflow-hidden">
+                {/* Calendar Header */}
+                <div className="grid grid-cols-7 bg-gray-50 border-b">
+                    {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
+                        <div key={day} className="p-2 text-center text-xs font-medium text-gray-600 border-r last:border-r-0">
+                            {day}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7">
+                    {calendarDays.map(day => {
+                        const dayEvents = getEventsForDate(day);
+                        const isCurrentMonth = day >= monthStart && day <= monthEnd;
+                        const isToday = isSameDay(day, new Date());
+                        const isInActiveTerm = isDateInActiveTerm(day);
+
+                        return (
+                            <div
+                                key={day.toISOString()}
+                                className={`
+                                    relative min-h-[100px] p-2 border-r border-b last:border-r-0
+                                    ${isCurrentMonth ?
+                                        (isInActiveTerm ? 'bg-white' : 'bg-gray-100 opacity-50')
+                                        : 'bg-gray-50 opacity-30'
+                                    }
+                                    ${isInActiveTerm ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed'} 
+                                    transition-colors
+                                `}
+                                onClick={() => isInActiveTerm && setCurrentDate(day)}
+                            >
+                                <div className={`
+                                    text-xs font-medium mb-1
+                                    ${isToday && isInActiveTerm ? 'text-orange-600 font-bold' :
+                                        isCurrentMonth && isInActiveTerm ? 'text-gray-900' : 'text-gray-400'}
+                                `}>
+                                    {format(day, 'd')}
+                                </div>
+
+                                {/* Show "break" for dates not in any term */}
+                                {isCurrentMonth && !isInActiveTerm && (
+                                    <div className="flex items-center justify-center h-12">
+                                        <span className="text-xs text-gray-500 font-medium italic">
+                                            break
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Show events for dates in active terms */}
+                                {isCurrentMonth && isInActiveTerm && dayEvents.length > 0 && (
+                                    <div className="space-y-1">
+                                        {dayEvents.slice(0, 1).map(event => (
+                                            <div
+                                                key={event.id}
+                                                className="p-1 bg-pink-100 text-pink-800 text-xs rounded cursor-pointer hover:bg-pink-200"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onEventClick?.(event.id);
+                                                }}
+                                            >
+                                                <div className="font-medium truncate text-xs">{event.eventName}</div>
+                                                <div className="text-xs">{format(new Date(event.time), 'HH:mm')}</div>
+                                            </div>
+                                        ))}
+                                        {dayEvents.length > 1 && (
+                                            <div className="text-xs text-gray-500 text-center">
+                                                +{dayEvents.length - 1} more
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
     };
 
     if (isLoading) {
@@ -108,38 +427,142 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     }
 
     return (
-        <div className="w-full space-y-6">
+        <div className="w-full bg-gray-50 min-h-screen">
             {/* Header */}
-            <div className="text-left space-y-2">
-                <h1 className="text-3xl lg:text-4xl font-bold">
-                    <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-pink-400 bg-clip-text text-transparent">Don't Be Late</span> 😉
-                </h1>
+            <div className="bg-white border-b px-4 md:px-6 py-4">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-lg md:text-2xl font-semibold text-gray-900">
+                        Browse events and manage your timetable
+                    </h1>
+                    <Button
+                        className="bg-orange-500 hover:bg-orange-600 text-white px-3 md:px-4 py-2 rounded-lg text-sm"
+                        onClick={() => {
+                            // Check if user is logged in (you can replace this with your actual auth check)
+                            const isLoggedIn = localStorage.getItem('societyAuth') || sessionStorage.getItem('societyAuth');
+
+                            if (isLoggedIn) {
+                                // Redirect to society dashboard
+                                window.location.href = '/society/dashboard';
+                            } else {
+                                // Redirect to society login page
+                                window.location.href = '/login/society';
+                            }
+                        }}
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Add Event</span>
+                        <span className="sm:hidden">Add</span>
+                    </Button>
+                </div>
             </div>
 
-            {/* Timetable Content */}
-            <div className="min-h-[600px]">
-                <TimetableGrid
-                    view={selectedView}
-                    events={filteredEvents}
-                    currentDate={currentDate}
-                    onDateChange={setCurrentDate}
-                    onEventClick={onEventClick}
-                />
-            </div>
-
-            {/* Context Information */}
-            <div className="p-4">
-                <div className="text-center text-sm text-gray-600 space-y-1">
+            <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)]">
+                {/* Left Sidebar */}
+                <div className="w-full lg:w-72 bg-white border-b lg:border-r lg:border-b-0 p-4 lg:p-6 space-y-4 lg:space-y-6 overflow-y-auto">
+                    {/* Academic Terms */}
                     <div>
-                        <span className="font-medium bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">{selectedTerm}</span>
-                        {' • '}
-                        <span className="font-medium bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">Week {selectedWeek}</span>
-                        {' • '}
-                        <span className="font-medium bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">{VIEWS.find(v => v.id === selectedView)?.label} View</span>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Academic Terms</h3>
+                        <div className="space-y-3">
+                            {ACADEMIC_TERMS.map(term => (
+                                <label key={term.id} className="flex items-start space-x-3 cursor-pointer">
+                                    <div className="flex items-center h-5">
+                                        <input
+                                            type="checkbox"
+                                            checked={activeTerms.includes(term.id)}
+                                            onChange={() => toggleTerm(term.id)}
+                                            className="sr-only"
+                                        />
+                                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center
+                                            ${activeTerms.includes(term.id)
+                                                ? 'bg-gray-800 border-gray-800'
+                                                : 'border-gray-300'
+                                            }`}
+                                        >
+                                            {activeTerms.includes(term.id) && (
+                                                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start space-x-3">
+                                        <div className={`w-3 h-3 rounded-full ${term.color} mt-0.5`}></div>
+                                        <div className="flex-1">
+                                            <span className="text-sm text-gray-700 font-medium block">{term.label}</span>
+                                            <span className="text-xs text-gray-500">
+                                                {format(term.startDate, 'MMM d, yyyy')} - {format(term.endDate, 'MMM d, yyyy')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </label>
+                            ))}
+                        </div>
                     </div>
-                    <div className="text-xs">
-                        Times shown in 12-hour format • Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+
+                    {/* Mini Calendar */}
+                    <div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Calendar</h3>
+                        {renderMiniCalendar()}
                     </div>
+
+                    {/* View Toggle */}
+                    <div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">View</h3>
+                        <div className="space-y-2">
+                            {VIEWS.map(view => (
+                                <button
+                                    key={view.id}
+                                    onClick={() => setSelectedView(view.id)}
+                                    className={`w-full text-left text-sm p-2 rounded transition-colors ${selectedView === view.id
+                                        ? 'bg-gray-100 text-gray-900 font-medium'
+                                        : 'text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    {view.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="flex-1 p-4 lg:p-6">
+                    {selectedView === 'daily' ? (
+                        renderDailyView()
+                    ) : selectedView === 'weekly' ? (
+                        <div className="bg-white rounded-lg border p-8 text-center">
+                            <Calendar className="h-16 w-16 text-gray-300 mb-4 mx-auto" />
+                            <p className="text-gray-500">Weekly view coming soon...</p>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Month Navigation */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center space-x-4">
+                                    <h2 className="text-2xl md:text-3xl font-semibold text-gray-900">
+                                        {format(currentDate, 'MMMM yyyy')}
+                                    </h2>
+                                    <div className="flex space-x-1">
+                                        <button
+                                            onClick={handlePrevMonth}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <ChevronLeft className="h-5 w-5" />
+                                        </button>
+                                        <button
+                                            onClick={handleNextMonth}
+                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        >
+                                            <ChevronRight className="h-5 w-5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Calendar */}
+                            {renderMainCalendar()}
+                        </>
+                    )}
                 </div>
             </div>
         </div>
