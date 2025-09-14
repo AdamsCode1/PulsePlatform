@@ -141,6 +141,7 @@ const Index = () => {
         category: event.category || 'general',
         signup_link: event.signup_link || '',
         locations: Array.isArray(event.locations) ? event.locations[0] : event.locations,
+        rsvp_cutoff: event.rsvp_cutoff || null, // <-- Add this line
       }));
 
       // Filter out test events
@@ -264,16 +265,28 @@ const Index = () => {
                     <p className="text-sm sm:text-base text-gray-500 px-4">Try a different filter or check back later!</p>
                   </div>
                 ) : (
-                  displayEvents.map(event => (
-                    <EventCard
-                      key={event.id}
-                      event={{
-                        ...event,
-                        locations: event.locations,
-                      }}
-                      onClick={() => handleEventClick(event.id)}
-                    />
-                  ))
+                  displayEvents.map(event => {
+                    // Check RSVP cutoff
+                    const isRSVPCutoffPassed = event.rsvp_cutoff && new Date(event.rsvp_cutoff).getTime() <= Date.now();
+                    return (
+                      <EventCard
+                        key={event.id}
+                        event={{
+                          ...event,
+                          rsvp_cutoff: event.rsvp_cutoff || null,
+                        }}
+                        onClick={() => handleEventClick(event.id)}
+                        rightAction={isRSVPCutoffPassed ? (
+                          <button
+                            className="bg-gray-300 text-gray-500 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm cursor-not-allowed opacity-70"
+                            disabled
+                          >
+                            RSVP Closed
+                          </button>
+                        ) : undefined}
+                      />
+                    );
+                  })
                 )}
               </div>
             </div>

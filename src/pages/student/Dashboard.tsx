@@ -33,6 +33,7 @@ interface Event {
     name: string;
     formatted_address: string;
   };
+  rsvp_cutoff?: string | null; // Add RSVP cutoff to event type
 }
 
 interface RSVP {
@@ -360,6 +361,7 @@ export default function StudentDashboard() {
                           organizerEmail: '',
                           signup_link: '',
                           locations: rsvp.event.locations,
+                          rsvp_cutoff: rsvp.event.rsvp_cutoff || null, // Pass RSVP cutoff to EventCard
                         }}
                         onClick={() => setSelectedEventId(rsvp.event.id)}
                         onRSVPChange={async () => {
@@ -560,6 +562,7 @@ export default function StudentDashboard() {
                                   organizerEmail: '',
                                   signup_link: '',
                                   locations: rsvp.event.locations,
+                                  rsvp_cutoff: rsvp.event.rsvp_cutoff || null, // Pass RSVP cutoff to EventCard
                                 }}
                                 onClick={() => setSelectedEventId(rsvp.event.id)}
                                 onRSVPChange={async () => {
