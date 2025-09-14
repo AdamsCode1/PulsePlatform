@@ -133,7 +133,7 @@ const ComingSoonPage: React.FC = () => {
         {/* First Part - Countdown Timer */}
         <div className="h-screen relative pt-12">
           <CountdownTimer
-            launchDate="2025-09-15T09:00:00"
+            launchDate="2025-09-29T09:00:00"
             onJoinWaitlist={() => setIsSignupModalOpen(true)}
             onSneakPeak={() => setIsSneakPeakModalOpen(true)}
             onError={() => setHasError(true)}

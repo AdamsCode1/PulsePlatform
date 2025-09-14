@@ -182,6 +182,9 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
     return `${emailParts[0]}@durham.ac.uk`;
   };
 
+  // RSVP cutoff logic
+  const isRSVPCutoffPassed = event.rsvp_cutoff && new Date(event.rsvp_cutoff).getTime() <= Date.now();
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -306,6 +309,15 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
                 >
                   Sign Up
                 </a>
+              </div>
+            ) : isRSVPCutoffPassed ? (
+              <div className="text-center py-8">
+                <button
+                  className="bg-gray-300 text-gray-500 px-6 sm:px-8 py-2 sm:py-3 rounded-lg font-semibold cursor-not-allowed opacity-70 text-sm sm:text-base"
+                  disabled
+                >
+                  RSVP Closed
+                </button>
               </div>
             ) : hasRSVPed ? (
               <div className="text-center py-4 sm:py-6">

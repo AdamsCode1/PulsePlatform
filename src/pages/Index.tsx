@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { format, addDays, startOfDay, isSameDay } from 'date-fns';
-import DateNavigator from '../components/DateNavigator';
-import EventCard from '../components/EventCard';
+import { format, startOfDay } from 'date-fns';
 import EventModal from '../components/EventModal';
-import EventFilters from '../components/EventFilters';
 import LoadingSpinner from '../components/LoadingSpinner';
+import Timetable from '../components/Timetable';
 import { Event } from '../types/Event';
 import NavBar from '../components/NavBar';
 import HeroSection from '../components/HeroSection';
@@ -15,12 +13,9 @@ import DealsGrid from '../components/DealsGrid';
 import { supabase } from '../lib/supabaseClient';
 
 const Index = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [currentFilter, setCurrentFilter] = useState('all');
 
   // Helper function to filter out test events
   const filterTestEvents = (events: Event[]): Event[] => {
@@ -49,21 +44,17 @@ const Index = () => {
     });
   };
 
-  // Fetch events from the database directly
-  const fetchEventsForDate = async (date: Date) => {
+  // Fetch all events (not just for a specific date since the new timetable handles date filtering)
+  const fetchEvents = async () => {
     setIsLoading(true);
 
     try {
-      // Format date to YYYY-MM-DD for database query
-      const formattedDate = format(startOfDay(date), 'yyyy-MM-dd');
-
-      // Fetch events for the specific date using direct Supabase call
+      // Fetch all upcoming events
       const { data: eventsData, error: eventsError } = await supabase
         .from('event')
         .select(`*, locations:location (id, name, formatted_address, latitude, longitude, city, region, country)`)
         .eq('status', 'approved')
-        .gte('start_time', `${formattedDate}T00:00:00`)
-        .lte('start_time', `${formattedDate}T23:59:59`)
+        .gte('start_time', new Date().toISOString())
         .order('start_time', { ascending: true });
 
       console.log('[DEBUG] Raw eventsData from Supabase:', eventsData);
@@ -75,7 +66,6 @@ const Index = () => {
 
       if (!eventsData || eventsData.length === 0) {
         setEvents([]);
-        setFilteredEvents([]);
         setIsLoading(false);
         return;
       }
@@ -155,35 +145,9 @@ const Index = () => {
     }
   };
 
-  // Apply filters to event(s)
-  const applyFilters = (eventsToFilter: Event[], filterType: string, value: string) => {
-    let filtered = [...eventsToFilter];
-
-    if (filterType === 'sort' && value === 'attendees-desc') {
-      filtered.sort((a, b) => (b.attendeeCount || 0) - (a.attendeeCount || 0));
-    } else if (filterType === 'category' && value !== 'all') {
-      filtered = filtered.filter(event => event.category.toLowerCase() === value.toLowerCase());
-    }
-
-    return filtered;
-  };
-
   useEffect(() => {
-    fetchEventsForDate(currentDate);
-  }, [currentDate]);
-
-  useEffect(() => {
-    // Apply current filter whenever events change
-    const [filterType, value] = currentFilter.includes('-')
-      ? ['sort', currentFilter]
-      : ['category', currentFilter];
-    const filtered = applyFilters(events, filterType, value);
-    setFilteredEvents(filtered);
-  }, [events, currentFilter]);
-
-  const handleDateChange = (newDate: Date) => {
-    setCurrentDate(newDate);
-  };
+    fetchEvents();
+  }, []);
 
   const handleEventClick = (eventId: string) => {
     setSelectedEventId(eventId);
@@ -193,105 +157,21 @@ const Index = () => {
     setSelectedEventId(null);
   };
 
-  const handleFilterChange = (filterType: string, value: string) => {
-    const newFilter = filterType === 'sort' ? value : value;
-    setCurrentFilter(newFilter);
-  };
-
   const selectedEvent = selectedEventId
     ? events.find(event => event.id === selectedEventId)
     : null;
-
-  //const displayEvents = filteredEvents.length > 0 ? filteredEvents : events;
-  const displayEvents = filteredEvents;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <NavBar />
       <HeroSection />
       <div id="schedule" className="container mx-auto px-4 py-6 sm:py-8">
-        {/* Header */}
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-            Today's{' '}
-            <span className="bg-gradient-to-r from-blue-500 via-purple-500 via-pink-500 to-pink-300 bg-clip-text text-transparent animate-pulse">
-              Schedule
-            </span>
-          </h1>
-          <p className="text-base sm:text-lg text-gray-600 px-4">
-            Discover and join amazing events happening around you
-          </p>
-        </div>
-
-        {/* Date Navigator - Sticky on mobile */}
-        <div className="sticky top-16 z-40 bg-gradient-to-br from-blue-50 to-indigo-100 pb-4 md:static md:top-auto md:z-auto md:bg-transparent md:pb-0">
-          <DateNavigator
-            currentDate={currentDate}
-            onDateChange={handleDateChange}
-          />
-        </div>
-
-        {/* Events Section */}
-        <div className="mt-6 sm:mt-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-center sm:justify-end mb-4 sm:mb-6 gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 w-full sm:w-auto">
-              <EventFilters
-                onFilterChange={handleFilterChange}
-                currentFilter={currentFilter}
-              />
-              <div className="bg-gradient-to-r from-blue-100 to-purple-100 px-3 sm:px-4 py-2 rounded-full border border-blue-200 w-full sm:w-auto flex justify-center">
-                <span className="text-sm sm:text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {isLoading ? '...' : `${displayEvents.length} events`}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Loading State with Spinner */}
-          {isLoading && <LoadingSpinner variant="page" size="md" text="Finding amazing events for you..." />}
-
-          {/* Events Grid - Centered with responsive design */}
-          {!isLoading && (
-            <div className="flex justify-center">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl w-full">
-                {displayEvents.length === 0 ? (
-                  <div className="col-span-full text-center py-8 sm:py-12">
-                    <div className="text-gray-400 mb-4">
-                      <svg className="mx-auto h-12 w-12 sm:h-16 sm:w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No events found</h3>
-                    <p className="text-sm sm:text-base text-gray-500 px-4">Try a different filter or check back later!</p>
-                  </div>
-                ) : (
-                  displayEvents.map(event => {
-                    // Check RSVP cutoff
-                    const isRSVPCutoffPassed = event.rsvp_cutoff && new Date(event.rsvp_cutoff).getTime() <= Date.now();
-                    return (
-                      <EventCard
-                        key={event.id}
-                        event={{
-                          ...event,
-                          rsvp_cutoff: event.rsvp_cutoff || null,
-                        }}
-                        onClick={() => handleEventClick(event.id)}
-                        rightAction={isRSVPCutoffPassed ? (
-                          <button
-                            className="bg-gray-300 text-gray-500 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm cursor-not-allowed opacity-70"
-                            disabled
-                          >
-                            RSVP Closed
-                          </button>
-                        ) : undefined}
-                      />
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* New Timetable - Direct Integration */}
+        <Timetable
+          events={events}
+          onEventClick={setSelectedEventId}
+          isLoading={isLoading}
+        />
       </div>
 
       {/* Event Modal */}
