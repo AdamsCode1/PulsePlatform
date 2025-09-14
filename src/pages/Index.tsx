@@ -131,6 +131,7 @@ const Index = () => {
         category: event.category || 'general',
         signup_link: event.signup_link || '',
         locations: Array.isArray(event.locations) ? event.locations[0] : event.locations,
+        rsvp_cutoff: event.rsvp_cutoff || null, // <-- Add this line
       }));
 
       // Filter out test events

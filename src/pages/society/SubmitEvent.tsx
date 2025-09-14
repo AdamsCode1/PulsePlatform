@@ -68,6 +68,9 @@ const formSchema = z.object({
   isRecurring: z.boolean().optional(),
   recurrenceFrequency: z.enum(["weekly", "fortnightly", "monthly"]).optional(),
   recurrenceEndDate: z.date().optional(),
+  // RSVP Cutoff
+  rsvpCutoffDate: z.date({ required_error: "RSVP cutoff date is required" }),
+  rsvpCutoffTime: z.string().min(1, "RSVP cutoff time is required"),
 }).refine((data) => {
   if (data.requiresExternalSignup && (!data.externalSignupLink || data.externalSignupLink.trim() === '')) {
     return false;
@@ -175,6 +178,8 @@ export default function EventSubmissionPage() {
   isRecurring: false,
   recurrenceFrequency: undefined,
   recurrenceEndDate: undefined,
+  rsvpCutoffDate: undefined,
+  rsvpCutoffTime: "",
     },
   });
 
@@ -341,6 +346,8 @@ export default function EventSubmissionPage() {
 
     const baseStart = new Date(`${format(data.startDate, "yyyy-MM-dd")}T${data.startTime}`);
     const baseEnd = new Date(`${format(data.endDate, "yyyy-MM-dd")}T${data.endTime}`);
+    // RSVP cutoff as ISO string
+    const rsvpCutoff = new Date(`${format(data.rsvpCutoffDate, "yyyy-MM-dd")}T${data.rsvpCutoffTime}`);
 
     // Helper to build event payload
     const makePayload = (s: Date, e: Date) => ({
@@ -353,6 +360,7 @@ export default function EventSubmissionPage() {
       status: 'pending',
       signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
       location_details: selectedLocation,
+      rsvp_cutoff: rsvpCutoff.toISOString(),
     });
 
     // Build all occurrences
@@ -760,7 +768,7 @@ export default function EventSubmissionPage() {
         );
 
       case 3: {
-  const requiresExternalSignup = form.watch("requiresExternalSignup");
+        const requiresExternalSignup = form.watch("requiresExternalSignup");
         return (
           <div className={`${baseClasses} space-y-8`}>
             <FormField
@@ -790,44 +798,103 @@ export default function EventSubmissionPage() {
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="no">No - Sign-up through DUPulse only</SelectItem>
-                      <SelectItem value="yes">Yes - Sign-up through external site</SelectItem>
+                      <SelectItem value="yes">Yes - External registration required</SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormDescription className="text-muted-foreground">
-                    Choose whether your event requires participants to register through an external website or platform
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            {requiresExternalSignup && (
-              <div className="transition-all duration-300 ease-in-out">
+            {/* RSVP Cutoff fields, only if signup through DUPulse */}
+            {!requiresExternalSignup && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="externalSignupLink"
+                  name="rsvpCutoffDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col space-y-3">
+                      <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                        <CalendarIcon className="w-5 h-5 text-primary" />
+                        RSVP Cutoff Date
+                      </FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "form-input text-lg h-14 rounded-xl pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value ? (
+                                format(field.value, "PPP")
+                              ) : (
+                                <span>Pick RSVP cutoff date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-popover" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                            className="p-3 pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="rsvpCutoffTime"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
-                        <MapPin className="w-5 h-5 text-primary" />
-                        External Signup URL
+                        <ClockIcon className="w-5 h-5 text-primary" />
+                        RSVP Cutoff Time
                       </FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="https://example.com/signup"
+                          type="time"
                           {...field}
                           className="form-input text-lg h-14 rounded-xl"
-                          type="url"
                         />
                       </FormControl>
-                      <FormDescription className="text-sm text-muted-foreground">
-                        Enter the full URL where participants can register for your event
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+            )}
+            {requiresExternalSignup && (
+              <FormField
+                control={form.control}
+                name="externalSignupLink"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg font-medium text-foreground flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-primary" />
+                      External Signup Link
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="url"
+                        placeholder="https://..."
+                        {...field}
+                        className="form-input text-lg h-14 rounded-xl"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
           </div>
         );
@@ -923,6 +990,18 @@ export default function EventSubmissionPage() {
                     <span className="font-medium text-muted-foreground">Signup URL:</span>
                     <span className="font-semibold text-foreground text-right break-all">
                       {formValues.externalSignupLink}
+                    </span>
+                  </div>
+                )}
+
+                {/* RSVP Cutoff info if signup through DUPulse */}
+                {!formValues.requiresExternalSignup && (
+                  <div className="grid grid-cols-2 gap-4 items-start border-b border-border pb-3">
+                    <span className="font-medium text-muted-foreground">RSVP Cutoff:</span>
+                    <span className="font-semibold text-foreground text-right break-words">
+                      {formValues.rsvpCutoffDate && formValues.rsvpCutoffTime
+                        ? `${format(formValues.rsvpCutoffDate, "PPP")} at ${formValues.rsvpCutoffTime}`
+                        : 'Not specified'}
                     </span>
                   </div>
                 )}

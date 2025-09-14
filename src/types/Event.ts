@@ -15,6 +15,7 @@ export interface Event {
   organizerEmail?: string;
   signup_link?: string;
   status?: 'pending' | 'approved' | 'rejected';
+  rsvp_cutoff?: string | null; // Added RSVP cutoff property
 }
 
 export interface User {

@@ -358,29 +358,35 @@ export default function SocietyDashboard() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {events.slice(0, 6).map((ev) => (
-                      <EventCard
-                        key={ev.id}
-                        event={{
-                          ...ev,
-                          eventName: ev.name,
-                          date: ev.start_time && !isNaN(Date.parse(ev.start_time)) ? new Date(ev.start_time).toISOString() : new Date().toISOString(),
-                          endTime: ev.end_time && !isNaN(Date.parse(ev.end_time)) ? new Date(ev.end_time).toISOString() : new Date().toISOString(),
-                          location: ev.location,
-                          description: ev.description,
-                          societyName: society?.name || '',
-                          attendeeCount: (ev as any).attendee_count || ev.rsvp?.[0]?.count || 0,
-                          organiserID: '',
-                          requiresOrganizerSignup: false,
-                          organizerEmail: society?.contact_email || '',
-                          signup_link: (ev as any).signup_link || '',
-                          status: ev.status,
-                          locations: ev.locations,
-                        }}
-                        onClick={() => setSelectedEventId(ev.id)}
-                        rightAction={getStatusBadge(ev.status)}
-                      />
-                    ))}
+                    {events.slice(0, 6).map((ev) => {
+                      // Check RSVP cutoff
+                      const isRSVPCutoffPassed = ev.rsvp_cutoff && new Date(ev.rsvp_cutoff) < new Date();
+                      return (
+                        <EventCard
+                          key={ev.id}
+                          event={{
+                            ...ev,
+                            eventName: ev.name,
+                            date: ev.start_time && !isNaN(Date.parse(ev.start_time)) ? new Date(ev.start_time).toISOString() : new Date().toISOString(),
+                            endTime: ev.end_time && !isNaN(Date.parse(ev.end_time)) ? new Date(ev.end_time).toISOString() : new Date().toISOString(),
+                            location: ev.location,
+                            description: ev.description,
+                            societyName: society?.name || '',
+                            attendeeCount: (ev as any).attendee_count || ev.rsvp?.[0]?.count || 0,
+                            organiserID: '',
+                            requiresOrganizerSignup: false,
+                            organizerEmail: society?.contact_email || '',
+                            signup_link: (ev as any).signup_link || '',
+                            status: ev.status,
+                            locations: ev.locations,
+                            rsvp_cutoff: ev.rsvp_cutoff || null,
+                            isRSVPCutoffPassed, // Pass cutoff status to EventCard
+                          }}
+                          onClick={() => setSelectedEventId(ev.id)}
+                          rightAction={getStatusBadge(ev.status)}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

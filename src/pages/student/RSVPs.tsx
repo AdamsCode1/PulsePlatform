@@ -24,6 +24,20 @@ interface Event {
   society: {
     name: string;
   };
+  rsvp_cutoff?: string | null; // Add RSVP cutoff
+  organiserID: string;
+  societyName: string;
+  eventName: string;
+  endTime?: string;
+  attendeeCount?: number;
+  requiresOrganizerSignup?: boolean;
+  organizerEmail?: string;
+  signup_link?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  locations?: {
+    name: string;
+    formatted_address: string;
+  };
 }
 
 interface RSVP {
@@ -347,27 +361,31 @@ export default function StudentRSVPs() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {rsvps.map((rsvp) => (
-                  <EventCard
-                    key={`${rsvp.event.id}-${eventRSVPCounts[rsvp.event.id] || 0}`}
-                    event={{
-                      ...rsvp.event,
-                      eventName: rsvp.event.name,
-                      date: rsvp.event.date && !isNaN(Date.parse(rsvp.event.date)) ? new Date(rsvp.event.date).toISOString() : '',
-                      endTime: rsvp.event.time || '', // fallback to time string if no endTime field
-                      location: rsvp.event.location,
-                      description: rsvp.event.description,
-                      societyName: rsvp.event.society.name,
-                      attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
-                      organiserID: '',
-                      requiresOrganizerSignup: false,
-                      organizerEmail: '',
-                      signup_link: '',
-                    }}
-                    onClick={() => setSelectedEventId(rsvp.event.id)}
-                    onRSVPChange={refetchEventRSVPCounts}
-                  />
-                ))}
+                {rsvps.map((rsvp) => {
+                  // Check RSVP cutoff
+                  const isRSVPCutoffPassed = rsvp.event.rsvp_cutoff && new Date(rsvp.event.rsvp_cutoff) < new Date();
+                  return (
+                    <EventCard
+                      key={`${rsvp.event.id}-${eventRSVPCounts[rsvp.event.id] || 0}`}
+                      event={{
+                        ...rsvp.event,
+                        eventName: rsvp.event.name,
+                        date: rsvp.event.date && !isNaN(Date.parse(rsvp.event.date)) ? new Date(rsvp.event.date).toISOString() : '',
+                        endTime: rsvp.event.time || '',
+                        location: rsvp.event.location,
+                        description: rsvp.event.description,
+                        societyName: rsvp.event.society.name,
+                        rsvp_cutoff: rsvp.event.rsvp_cutoff || null,
+                        organiserID: '',
+                        attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
+                        requiresOrganizerSignup: false,
+                        organizerEmail: '',
+                        signup_link: '',
+                      }}
+                      onClick={() => setSelectedEventId(rsvp.event.id)}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Event } from '@/types/Event';
 import TimetableLoadingSkeleton from './TimetableLoadingSkeleton';
+import EventCard from './EventCard';
 
 // Academic Terms
 const ACADEMIC_TERMS = [
@@ -219,7 +220,8 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             );
                         })}
                     </div>
-                </div>                {/* Events content area */}
+                </div>
+                {/* Events content area */}
                 <div className="p-4 md:p-8">
                     {(() => {
                         const dayEvents = getEventsForDate(currentDate);
@@ -244,65 +246,11 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                 </h4>
                                 <div className="grid gap-3 md:gap-4">
                                     {dayEvents.map(event => (
-                                        <div
+                                        <EventCard
                                             key={event.id}
-                                            className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer p-4 md:p-6 relative"
+                                            event={event}
                                             onClick={() => onEventClick?.(event.id)}
-                                        >
-                                            <div className="flex flex-col md:flex-row md:items-start md:justify-between mb-3 md:mb-4">
-                                                <div className="flex-1 mb-3 md:mb-0">
-                                                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                        <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
-                                                            {event.societyName || 'General'}
-                                                        </span>
-                                                        <span className="flex items-center text-gray-500 text-sm">
-                                                            <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                                            </svg>
-                                                            {event.rsvpCount || 0}
-                                                        </span>
-                                                    </div>
-                                                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
-                                                        {event.eventName}
-                                                    </h3>
-                                                    <p className="text-gray-600 mb-3 md:mb-4 text-sm md:text-base">
-                                                        {event.description || 'Visit to the city art gallery.'}
-                                                    </p>
-                                                    <div className="space-y-2">
-                                                        <div className="flex items-center text-gray-600 text-sm">
-                                                            <svg className="w-4 h-4 mr-3 text-pink-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                                                            </svg>
-                                                            <span>
-                                                                {typeof event.time === 'string' ? event.time : format(new Date(event.time), 'HH:mm')} -
-                                                                {event.endTime || '01:31'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center text-gray-600 text-sm">
-                                                            <svg className="w-4 h-4 mr-3 text-pink-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                                            </svg>
-                                                            <span className="break-words">{event.location || 'Durham Students\' Union'}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex md:flex-col items-center md:items-end gap-2 md:ml-6">
-                                                    <button className="bg-pink-500 hover:bg-pink-600 text-white px-4 md:px-6 py-2 rounded-full font-medium transition-colors text-sm md:text-base">
-                                                        RSVP
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Check Detail button positioned at bottom right */}
-                                            <div className="flex justify-end">
-                                                <button className="text-gray-400 hover:text-gray-600 flex items-center text-sm">
-                                                    <span className="mr-1">Check Detail</span>
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
+                                        />
                                     ))}
                                 </div>
                             </div>

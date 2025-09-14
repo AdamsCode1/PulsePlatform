@@ -172,6 +172,9 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
     checkExistingRSVP();
   }, [event.id]);
 
+  // RSVP cutoff logic
+  const isRSVPCutoffPassed = event.rsvp_cutoff && new Date(event.rsvp_cutoff).getTime() <= Date.now();
+
   return (
     <div 
       onClick={handleCardClick}
@@ -271,10 +274,11 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
           ) : (
             <button
               onClick={handleQuickRSVP}
-              className="bg-[#FF1493] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#E6127F] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform flex-shrink-0"
+              className={`bg-[#FF1493] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl font-semibold text-xs sm:text-sm hover:bg-[#E6127F] hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-1 sm:gap-2 shadow-lg hover:shadow-xl transform flex-shrink-0 ${isRSVPCutoffPassed ? 'opacity-60 cursor-not-allowed pointer-events-none' : ''}`}
+              disabled={!!isRSVPCutoffPassed}
             >
-              {hasRSVPed ? 'Remove' : 'RSVP'}
-              {hasRSVPed && <Check size={12} className="animate-bounce" />}
+              {isRSVPCutoffPassed ? 'RSVP Closed' : hasRSVPed ? 'Remove' : 'RSVP'}
+              {hasRSVPed && !isRSVPCutoffPassed && <Check size={12} className="animate-bounce" />}
             </button>
           )}
         </div>
