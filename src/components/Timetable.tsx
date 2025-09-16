@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format, addDays, startOfWeek, endOfWeek, startOfDay, endOfDay, isSameDay, parseISO, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { Calendar, ChevronDown, Filter, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,7 +53,7 @@ interface TimetableProps {
 const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) => {
     // Core state
     const [selectedView, setSelectedView] = useState<ViewType>('daily');
-    const [currentDate, setCurrentDate] = useState(new Date(2025, 8, 14)); // September 14, 2025 (current date)
+    const [currentDate, setCurrentDate] = useState(new Date()); // Start with today's date
     const [activeTerms, setActiveTerms] = useState<string[]>(['michaelmas']);    // Get events for a specific date
     const getEventsForDate = (date: Date) => {
         return events.filter(event => {
@@ -313,7 +313,129 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         );
     };
 
-    // Render main calendar
+    // Render weekly view
+    const renderWeeklyView = () => {
+        const weekStart = startOfWeek(currentDate);
+        const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+        const timeSlots = Array.from({ length: 24 }, (_, i) => i); // 0-23 hours
+
+        return (
+            <div className="bg-white rounded-lg border overflow-hidden">
+                {/* Header */}
+                <div className="p-4 border-b bg-gray-50">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                            Week of {format(weekStart, 'MMM d')} - {format(addDays(weekStart, 6), 'MMM d, yyyy')}
+                        </h3>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentDate(addDays(currentDate, -7))}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <ChevronLeft className="h-5 w-5 text-gray-400" />
+                            </button>
+                            <button
+                                onClick={() => setCurrentDate(addDays(currentDate, 7))}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <ChevronRight className="h-5 w-5 text-gray-400" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="overflow-auto max-h-[600px]">
+                    <div className="grid grid-cols-8 min-w-[800px]">
+                        {/* Time column header */}
+                        <div className="bg-gray-50 border-r border-b p-2 text-xs font-medium text-gray-600 text-center">
+                            Time
+                        </div>
+
+                        {/* Day headers */}
+                        {weekDays.map((day) => {
+                            const isToday = isSameDay(day, new Date());
+                            const isSelected = isSameDay(day, currentDate);
+
+                            return (
+                                <div
+                                    key={day.toISOString()}
+                                    className={`bg-gray-50 border-r border-b p-2 text-center cursor-pointer hover:bg-gray-100 ${isSelected ? 'bg-blue-100' : ''
+                                        }`}
+                                    onClick={() => setCurrentDate(day)}
+                                >
+                                    <div className="text-xs font-medium text-gray-600 mb-1">
+                                        {format(day, 'EEE').toUpperCase()}
+                                    </div>
+                                    <div className={`text-lg font-bold ${isToday ? 'text-blue-600 bg-blue-100 rounded-full w-8 h-8 flex items-center justify-center mx-auto' :
+                                        isSelected ? 'text-blue-600' : 'text-gray-900'
+                                        }`}>
+                                        {format(day, 'd')}
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {/* Time slots and events */}
+                        {timeSlots.map((hour) => (
+                            <React.Fragment key={hour}>
+                                {/* Time label */}
+                                <div className="border-r border-b p-2 text-xs text-gray-500 text-center bg-gray-50">
+                                    {hour === 0 ? '12:00 AM' :
+                                        hour < 12 ? `${hour}:00 AM` :
+                                            hour === 12 ? '12:00 PM' :
+                                                `${hour - 12}:00 PM`}
+                                </div>
+
+                                {/* Day cells */}
+                                {weekDays.map((day) => {
+                                    const dayEvents = getEventsForDate(day);
+                                    const hourEvents = dayEvents.filter(event => {
+                                        const eventHour = new Date(event.time).getHours();
+                                        return eventHour === hour;
+                                    });
+
+                                    return (
+                                        <div
+                                            key={`${day.toISOString()}-${hour}`}
+                                            className="border-r border-b min-h-[80px] p-1 relative hover:bg-gray-50 cursor-pointer"
+                                            onClick={() => setCurrentDate(day)}
+                                        >
+                                            {hourEvents.map((event, index) => (
+                                                <div
+                                                    key={event.id}
+                                                    className="absolute inset-x-1 bg-gradient-to-r from-orange-100 to-yellow-100 border-l-4 border-orange-500 rounded p-2 text-xs cursor-pointer hover:shadow-md transition-shadow overflow-hidden"
+                                                    style={{
+                                                        top: `${index * 55}px`,
+                                                        height: '50px',
+                                                        zIndex: 10
+                                                    }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onEventClick?.(event.id);
+                                                    }}
+                                                >
+                                                    <div className="h-full flex flex-col justify-center">
+                                                        <div className="font-medium text-gray-900 truncate text-xs leading-tight mb-1">
+                                                            {event.eventName}
+                                                        </div>
+                                                        <div className="text-gray-600 text-xs truncate leading-tight">
+                                                            {format(new Date(event.time), 'HH:mm')}
+                                                            {event.location && ` • ${event.location}`}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
     const renderMainCalendar = () => {
         const monthStart = startOfMonth(currentDate);
         const monthEnd = endOfMonth(currentDate);
@@ -505,35 +627,70 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                         {renderMiniCalendar()}
                     </div>
 
-                    {/* View Toggle */}
+                    {/* Category Filter */}
                     <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">View</h3>
-                        <div className="space-y-2">
-                            {VIEWS.map(view => (
-                                <button
-                                    key={view.id}
-                                    onClick={() => setSelectedView(view.id)}
-                                    className={`w-full text-left text-sm p-2 rounded transition-colors ${selectedView === view.id
-                                        ? 'bg-gray-100 text-gray-900 font-medium'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    {view.label}
-                                </button>
-                            ))}
-                        </div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Filter by Category</h3>
+                        <Select>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                <SelectItem value="academic">Academic</SelectItem>
+                                <SelectItem value="social">Social</SelectItem>
+                                <SelectItem value="sports">Sports</SelectItem>
+                                <SelectItem value="cultural">Cultural</SelectItem>
+                                <SelectItem value="career">Career</SelectItem>
+                                <SelectItem value="volunteer">Volunteer</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
+
+                    {/* View Toggle */}
                 </div>
 
                 {/* Main Content */}
                 <div className="flex-1 p-4 lg:p-6">
+                    {/* Tab Navigation */}
+                    <div className="mb-6">
+                        <div className="flex space-x-8 border-b border-gray-200">
+                            <div className="text-lg font-medium text-gray-900 pb-2">
+                                Calendar
+                            </div>
+                            <button
+                                onClick={() => setSelectedView('monthly')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('weekly')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Weekly
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('daily')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Daily
+                            </button>
+                        </div>
+                    </div>
+
                     {selectedView === 'daily' ? (
                         renderDailyView()
                     ) : selectedView === 'weekly' ? (
-                        <div className="bg-white rounded-lg border p-8 text-center">
-                            <Calendar className="h-16 w-16 text-gray-300 mb-4 mx-auto" />
-                            <p className="text-gray-500">Weekly view coming soon...</p>
-                        </div>
+                        renderWeeklyView()
                     ) : (
                         <>
                             {/* Month Navigation */}
