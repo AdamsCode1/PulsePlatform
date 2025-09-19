@@ -168,7 +168,7 @@ const MonthlyCalendar = ({ events, onDateSelect, selectedDate, activeTerms = ['m
                   onMouseEnter={() => setHoveredDate(day)}
                   onMouseLeave={() => setHoveredDate(null)}
                   className={`
-                    relative min-h-12 sm:min-h-20 lg:min-h-28 p-1 sm:p-2 lg:p-3 border-r border-b border-white/30 cursor-pointer 
+                    relative min-h-16 sm:min-h-20 lg:min-h-28 p-2 sm:p-2 lg:p-3 border-r border-b border-white/30 cursor-pointer 
                     transition-all duration-300 sm:hover:scale-[1.02] hover:z-10 min-w-0
                     ${isCurrentMonth
                       ? isToday
@@ -182,7 +182,7 @@ const MonthlyCalendar = ({ events, onDateSelect, selectedDate, activeTerms = ['m
                 >
                   {/* Day number with DU Pulse gradient text */}
                   <div className={`
-                    text-xs sm:text-sm lg:text-lg font-bold mb-1 
+                    text-sm sm:text-sm lg:text-lg font-bold mb-2 text-center
                     ${isToday
                       ? 'text-transparent bg-clip-text bg-gradient-to-r from-dupulse-pink to-dupulse-purple'
                       : isCurrentMonth
@@ -191,7 +191,7 @@ const MonthlyCalendar = ({ events, onDateSelect, selectedDate, activeTerms = ['m
                     }
                   `}>
                     {format(day, 'd')}
-                    {isToday && <Star className="inline ml-0.5 h-2 w-2 sm:h-3 sm:w-3 lg:h-4 lg:w-4 text-dupulse-yellow animate-pulse" />}
+                    {isToday && <Star className="inline ml-1 h-3 w-3 sm:h-3 sm:w-3 lg:h-4 lg:w-4 text-dupulse-yellow animate-pulse" />}
                   </div>
 
                   {/* Event indicators with DU Pulse gradient badges */}
@@ -205,7 +205,7 @@ const MonthlyCalendar = ({ events, onDateSelect, selectedDate, activeTerms = ['m
                         return (
                           <Badge
                             variant="secondary"
-                            className={`absolute top-0.5 right-0.5 sm:top-1 sm:right-1 lg:top-2 lg:right-2 bg-gradient-to-r ${termColors} text-white border-none shadow-md text-xs px-1 py-0 sm:px-1.5 sm:py-0.5 lg:px-2 lg:py-1`}
+                            className={`absolute top-1 right-1 sm:top-1 sm:right-1 lg:top-2 lg:right-2 bg-gradient-to-r ${termColors} text-white border-none shadow-md text-xs px-1.5 py-0.5 sm:px-1.5 sm:py-0.5 lg:px-2 lg:py-1`}
                           >
                             {eventCount}
                           </Badge>
@@ -234,13 +234,13 @@ const MonthlyCalendar = ({ events, onDateSelect, selectedDate, activeTerms = ['m
                       </div>
 
                       {/* Mobile event indicator with term-specific color */}
-                      <div className="lg:hidden absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1">
+                      <div className="lg:hidden absolute bottom-1 left-1 sm:bottom-1 sm:left-1">
                         {(() => {
                           const firstEventDate = new Date(dayEvents[0].date);
                           const termColors = getEventTermColor(firstEventDate);
 
                           return (
-                            <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-gradient-to-r ${termColors} animate-pulse`} />
+                            <div className={`w-2 h-2 sm:w-2 sm:h-2 rounded-full bg-gradient-to-r ${termColors} animate-pulse`} />
                           );
                         })()}
                       </div>
