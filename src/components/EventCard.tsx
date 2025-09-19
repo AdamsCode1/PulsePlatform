@@ -7,6 +7,37 @@ import { supabase } from '../lib/supabaseClient';
 import { Badge } from './ui/badge';
 import { toast } from '../hooks/use-toast';
 
+// Academic Terms (matching Timetable and MonthlyCalendar components)
+const ACADEMIC_TERMS = [
+  {
+    id: 'michaelmas',
+    label: 'Michaelmas Term',
+    startDate: new Date(2025, 9, 6), // October 6, 2025
+    endDate: new Date(2025, 11, 12), // December 12, 2025
+    color: 'from-blue-400 to-blue-600',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+  },
+  {
+    id: 'epiphany',
+    label: 'Epiphany Term',
+    startDate: new Date(2026, 0, 12), // January 12, 2026
+    endDate: new Date(2026, 2, 20), // March 20, 2026
+    color: 'from-green-400 to-green-600',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200',
+  },
+  {
+    id: 'easter',
+    label: 'Easter Term',
+    startDate: new Date(2026, 3, 27), // April 27, 2026
+    endDate: new Date(2026, 5, 26), // June 26, 2026
+    color: 'from-purple-400 to-purple-600',
+    bgColor: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+  },
+];
+
 interface EventCardProps {
   event: Event & {
     locations?: { name: string; formatted_address: string };
@@ -22,6 +53,32 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
   const [isClicked, setIsClicked] = useState(false);
   const navigate = useNavigate();
+
+  // Get the term that an event falls into
+  const getEventTerm = (eventDate: Date) => {
+    return ACADEMIC_TERMS.find(term =>
+      eventDate >= term.startDate && eventDate <= term.endDate
+    );
+  };
+
+  // Get styling for event based on its term
+  const getEventTermStyling = (eventDate: Date) => {
+    const term = getEventTerm(eventDate);
+    if (!term) return {
+      color: 'from-gray-400 to-gray-500',
+      bgColor: 'bg-gray-50',
+      borderColor: 'border-gray-200',
+    };
+
+    return {
+      color: term.color,
+      bgColor: term.bgColor,
+      borderColor: term.borderColor,
+    };
+  };
+
+  const eventDate = new Date(event.date);
+  const termStyling = getEventTermStyling(eventDate);
 
   const handleQuickRSVP = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent opening the modal
@@ -181,11 +238,11 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
   return (
     <div
       onClick={handleCardClick}
-      className={`bg-gray-50 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01] active:scale-[0.99] overflow-hidden relative cursor-pointer flex flex-col h-full group ${isClicked ? 'animate-pulse' : ''
+      className={`${termStyling.bgColor} rounded-xl border ${termStyling.borderColor} hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.01] active:scale-[0.99] overflow-hidden relative cursor-pointer flex flex-col h-full group ${isClicked ? 'animate-pulse' : ''
         }`}
     >
-      {/* Colored line at the top with animation */}
-      <div className="h-1 bg-gradient-to-r from-pink-400 to-pink-500 group-hover:from-pink-500 group-hover:to-purple-500 transition-all duration-300"></div>
+      {/* Colored line at the top with term-specific animation */}
+      <div className={`h-1 bg-gradient-to-r ${termStyling.color} group-hover:from-pink-500 group-hover:to-purple-500 transition-all duration-300`}></div>
 
       <div className="p-3 sm:p-4 flex flex-col flex-1">
         {/* Attend Counter - Top Right with hover animation */}
@@ -194,11 +251,27 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
           <span>{attendeeCount}</span>
         </div>
 
-        {/* Society Name with enhanced hover effect */}
+        {/* Society Name and Term Badge with enhanced hover effect */}
         <div className="mb-2 flex items-center justify-between">
-          <span className="bg-gray-200 hover:bg-black hover:text-white transition-all duration-500 px-2 py-1 rounded-lg text-xs text-gray-700 cursor-pointer transform hover:scale-105 inline-block">
-            {event.societyName}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="bg-gray-200 hover:bg-black hover:text-white transition-all duration-500 px-2 py-1 rounded-lg text-xs text-gray-700 cursor-pointer transform hover:scale-105 inline-block">
+              {event.societyName}
+            </span>
+            {(() => {
+              const term = getEventTerm(eventDate);
+              if (term) {
+                return (
+                  <Badge
+                    variant="secondary"
+                    className={`bg-gradient-to-r ${termStyling.color} text-white text-xs px-2 py-0.5 border-none`}
+                  >
+                    {term.label.split(' ')[0]}
+                  </Badge>
+                );
+              }
+              return null;
+            })()}
+          </div>
         </div>
 
         {/* Event Name with hover effect - Responsive text size */}
