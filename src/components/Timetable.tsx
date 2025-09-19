@@ -244,14 +244,13 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                 <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
                                     Events for {format(currentDate, 'MMMM d, yyyy')}
                                 </h4>
-                                <div className="grid gap-3 md:gap-4">
-                                    {dayEvents.map(event => (
-                                        <EventCard
-                                            key={event.id}
-                                            event={event}
-                                            onClick={() => onEventClick?.(event.id)}
-                                        />
-                                    ))}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">{dayEvents.map(event => (
+                                    <EventCard
+                                        key={event.id}
+                                        event={event}
+                                        onClick={() => onEventClick?.(event.id)}
+                                    />
+                                ))}
                                 </div>
                             </div>
                         );
