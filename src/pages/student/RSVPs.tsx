@@ -57,24 +57,24 @@ export default function StudentRSVPs() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const selectedEvent = selectedEventId
     ? (() => {
-        const rsvp = rsvps.find(r => r.event.id === selectedEventId);
-        if (!rsvp) return null;
-        const e = rsvp.event;
-        return {
-          ...e,
-          eventName: e.name,
-          organiserID: '',
-          societyName: e.society?.name || '',
-          date: e.date && !isNaN(Date.parse(e.date)) ? new Date(e.date).toISOString() : new Date().toISOString(),
-          endTime: e.date && !isNaN(Date.parse(e.date)) ? new Date(e.date).toISOString() : new Date().toISOString(),
-          location: e.location,
-          description: e.description,
-          attendeeCount: e.max_attendees || 0,
-          requiresOrganizerSignup: false,
-          organizerEmail: '',
-          signup_link: '',
-        };
-      })()
+      const rsvp = rsvps.find(r => r.event.id === selectedEventId);
+      if (!rsvp) return null;
+      const e = rsvp.event;
+      return {
+        ...e,
+        eventName: e.name,
+        organiserID: '',
+        societyName: e.society?.name || '',
+        date: e.date && !isNaN(Date.parse(e.date)) ? new Date(e.date).toISOString() : new Date().toISOString(),
+        endTime: e.date && !isNaN(Date.parse(e.date)) ? new Date(e.date).toISOString() : new Date().toISOString(),
+        location: e.location,
+        description: e.description,
+        attendeeCount: e.max_attendees || 0,
+        requiresOrganizerSignup: false,
+        organizerEmail: '',
+        signup_link: '',
+      };
+    })()
     : null;
 
   // Calculate stats
@@ -203,7 +203,7 @@ export default function StudentRSVPs() {
 
       if (error) throw error;
 
-      setRSVPs(prev => prev.map(rsvp => 
+      setRSVPs(prev => prev.map(rsvp =>
         rsvp.id === rsvpId ? { ...rsvp, status: 'cancelled' } : rsvp
       ));
 
@@ -229,7 +229,7 @@ export default function StudentRSVPs() {
 
       if (error) throw error;
 
-      setRSVPs(prev => prev.map(rsvp => 
+      setRSVPs(prev => prev.map(rsvp =>
         rsvp.id === rsvpId ? { ...rsvp, status: 'confirmed' } : rsvp
       ));
 
@@ -279,11 +279,11 @@ export default function StudentRSVPs() {
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="mb-8">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={() => navigate('/student/dashboard')}
             className="mb-4"
           >
@@ -340,52 +340,51 @@ export default function StudentRSVPs() {
                     You haven't signed up for any events yet. Start exploring!
                   </p>
                   <Button onClick={() => {
-  if (window.location.pathname === '/') {
-    setTimeout(() => {
-      const element = document.getElementById('schedule');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 100);
-  } else {
-    navigate('/');
-    setTimeout(() => {
-      const element = document.getElementById('schedule');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 400);
-  }
-}} className="bg-pink-500 text-white">Browse Events</Button>
+                    if (window.location.pathname === '/') {
+                      setTimeout(() => {
+                        const element = document.getElementById('schedule');
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }, 100);
+                    } else {
+                      navigate('/');
+                      setTimeout(() => {
+                        const element = document.getElementById('schedule');
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }, 400);
+                    }
+                  }} className="bg-pink-500 text-white">Browse Events</Button>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {rsvps.map((rsvp) => {
-                  // Check RSVP cutoff
-                  const isRSVPCutoffPassed = rsvp.event.rsvp_cutoff && new Date(rsvp.event.rsvp_cutoff) < new Date();
-                  return (
-                    <EventCard
-                      key={`${rsvp.event.id}-${eventRSVPCounts[rsvp.event.id] || 0}`}
-                      event={{
-                        ...rsvp.event,
-                        eventName: rsvp.event.name,
-                        date: rsvp.event.date && !isNaN(Date.parse(rsvp.event.date)) ? new Date(rsvp.event.date).toISOString() : '',
-                        endTime: rsvp.event.time || '',
-                        location: rsvp.event.location,
-                        description: rsvp.event.description,
-                        societyName: rsvp.event.society.name,
-                        rsvp_cutoff: rsvp.event.rsvp_cutoff || null,
-                        organiserID: '',
-                        attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
-                        requiresOrganizerSignup: false,
-                        organizerEmail: '',
-                        signup_link: '',
-                      }}
-                      onClick={() => setSelectedEventId(rsvp.event.id)}
-                    />
-                  );
-                })}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{rsvps.map((rsvp) => {
+                // Check RSVP cutoff
+                const isRSVPCutoffPassed = rsvp.event.rsvp_cutoff && new Date(rsvp.event.rsvp_cutoff) < new Date();
+                return (
+                  <EventCard
+                    key={`${rsvp.event.id}-${eventRSVPCounts[rsvp.event.id] || 0}`}
+                    event={{
+                      ...rsvp.event,
+                      eventName: rsvp.event.name,
+                      date: rsvp.event.date && !isNaN(Date.parse(rsvp.event.date)) ? new Date(rsvp.event.date).toISOString() : '',
+                      endTime: rsvp.event.time || '',
+                      location: rsvp.event.location,
+                      description: rsvp.event.description,
+                      societyName: rsvp.event.society.name,
+                      rsvp_cutoff: rsvp.event.rsvp_cutoff || null,
+                      organiserID: '',
+                      attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
+                      requiresOrganizerSignup: false,
+                      organizerEmail: '',
+                      signup_link: '',
+                    }}
+                    onClick={() => setSelectedEventId(rsvp.event.id)}
+                  />
+                );
+              })}
               </div>
             )}
           </div>

@@ -8,9 +8,10 @@ interface MonthlyCalendarModalProps {
   events: Event[];
   onDateSelect?: (date: Date) => void;
   selectedDate?: Date;
+  activeTerms?: string[];
 }
 
-const MonthlyCalendarModal = ({ isOpen, onClose, events, onDateSelect, selectedDate }: MonthlyCalendarModalProps) => {
+const MonthlyCalendarModal = ({ isOpen, onClose, events, onDateSelect, selectedDate, activeTerms }: MonthlyCalendarModalProps) => {
   const handleDateSelect = (date: Date) => {
     onDateSelect?.(date);
     onClose(); // Close modal after selecting a date
@@ -29,6 +30,7 @@ const MonthlyCalendarModal = ({ isOpen, onClose, events, onDateSelect, selectedD
             events={events}
             onDateSelect={handleDateSelect}
             selectedDate={selectedDate}
+            activeTerms={activeTerms}
           />
         </div>
       </DialogContent>
