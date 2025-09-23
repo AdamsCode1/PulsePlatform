@@ -344,33 +344,32 @@ export default function StudentDashboard() {
                     }} className="bg-pink-500 text-white">Browse Events</Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {userRSVPs.map((rsvp) => (
-                      <EventCard
-                        key={rsvp.event.id}
-                        event={{
-                          ...rsvp.event,
-                          eventName: rsvp.event.name || rsvp.event.title || 'Untitled Event',
-                          date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
-                          endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
-                          description: rsvp.event.description,
-                          societyName: rsvp.event.society?.name || '',
-                          attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
-                          organiserID: '',
-                          requiresOrganizerSignup: false,
-                          organizerEmail: '',
-                          signup_link: '',
-                          locations: rsvp.event.locations,
-                          rsvp_cutoff: rsvp.event.rsvp_cutoff || null, // Pass RSVP cutoff to EventCard
-                        }}
-                        onClick={() => setSelectedEventId(rsvp.event.id)}
-                        onRSVPChange={async () => {
-                          // Refetch RSVP count for this event only
-                          const count = await fetchRSVPCountForEvent(rsvp.event.id);
-                          setYourEventsRSVPCounts(prev => ({ ...prev, [rsvp.event.id]: count }));
-                        }}
-                      />
-                    ))}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{userRSVPs.map((rsvp) => (
+                    <EventCard
+                      key={rsvp.event.id}
+                      event={{
+                        ...rsvp.event,
+                        eventName: rsvp.event.name || rsvp.event.title || 'Untitled Event',
+                        date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
+                        endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
+                        description: rsvp.event.description,
+                        societyName: rsvp.event.society?.name || '',
+                        attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
+                        organiserID: '',
+                        requiresOrganizerSignup: false,
+                        organizerEmail: '',
+                        signup_link: '',
+                        locations: rsvp.event.locations,
+                        rsvp_cutoff: rsvp.event.rsvp_cutoff || null, // Pass RSVP cutoff to EventCard
+                      }}
+                      onClick={() => setSelectedEventId(rsvp.event.id)}
+                      onRSVPChange={async () => {
+                        // Refetch RSVP count for this event only
+                        const count = await fetchRSVPCountForEvent(rsvp.event.id);
+                        setYourEventsRSVPCounts(prev => ({ ...prev, [rsvp.event.id]: count }));
+                      }}
+                    />
+                  ))}
                   </div>
                 )}
               </CardContent>
@@ -545,33 +544,32 @@ export default function StudentDashboard() {
                             </Button>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {userRSVPs.map((rsvp) => (
-                              <EventCard
-                                key={rsvp.event.id}
-                                event={{
-                                  ...rsvp.event,
-                                  eventName: rsvp.event.name || rsvp.event.title || 'Untitled Event',
-                                  date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
-                                  endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
-                                  description: rsvp.event.description,
-                                  societyName: rsvp.event.society?.name || '',
-                                  attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
-                                  organiserID: '',
-                                  requiresOrganizerSignup: false,
-                                  organizerEmail: '',
-                                  signup_link: '',
-                                  locations: rsvp.event.locations,
-                                  rsvp_cutoff: rsvp.event.rsvp_cutoff || null, // Pass RSVP cutoff to EventCard
-                                }}
-                                onClick={() => setSelectedEventId(rsvp.event.id)}
-                                onRSVPChange={async () => {
-                                  // Refetch RSVP count for this event only
-                                  const count = await fetchRSVPCountForEvent(rsvp.event.id);
-                                  setYourEventsRSVPCounts(prev => ({ ...prev, [rsvp.event.id]: count }));
-                                }}
-                              />
-                            ))}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{userRSVPs.map((rsvp) => (
+                            <EventCard
+                              key={rsvp.event.id}
+                              event={{
+                                ...rsvp.event,
+                                eventName: rsvp.event.name || rsvp.event.title || 'Untitled Event',
+                                date: rsvp.event.start_time && !isNaN(Date.parse(rsvp.event.start_time)) ? new Date(rsvp.event.start_time).toISOString() : new Date().toISOString(),
+                                endTime: rsvp.event.end_time && !isNaN(Date.parse(rsvp.event.end_time)) ? new Date(rsvp.event.end_time).toISOString() : new Date().toISOString(),
+                                description: rsvp.event.description,
+                                societyName: rsvp.event.society?.name || '',
+                                attendeeCount: eventRSVPCounts[rsvp.event.id] || 0,
+                                organiserID: '',
+                                requiresOrganizerSignup: false,
+                                organizerEmail: '',
+                                signup_link: '',
+                                locations: rsvp.event.locations,
+                                rsvp_cutoff: rsvp.event.rsvp_cutoff || null, // Pass RSVP cutoff to EventCard
+                              }}
+                              onClick={() => setSelectedEventId(rsvp.event.id)}
+                              onRSVPChange={async () => {
+                                // Refetch RSVP count for this event only
+                                const count = await fetchRSVPCountForEvent(rsvp.event.id);
+                                setYourEventsRSVPCounts(prev => ({ ...prev, [rsvp.event.id]: count }));
+                              }}
+                            />
+                          ))}
                           </div>
                         )}
                       </CardContent>
