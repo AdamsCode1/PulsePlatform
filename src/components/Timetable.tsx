@@ -59,7 +59,24 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     const [showMobileFilters, setShowMobileFilters] = useState(false); // New state for mobile filters
     const [selectedDayEvents, setSelectedDayEvents] = useState<Event[]>([]);
     const [showDayEventsModal, setShowDayEventsModal] = useState(false);
-    const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);    // Get events for a specific date
+    const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
+
+    // Cleanup: restore body scroll on component unmount
+    useEffect(() => {
+        return () => {
+            const scrollY = parseInt(document.body.dataset.scrollY || '0');
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            delete document.body.dataset.scrollY;
+            if (scrollY > 0) {
+                window.scrollTo(0, scrollY);
+            }
+        };
+    }, []);
+
+    // Get events for a specific date
     const getEventsForDate = (date: Date) => {
         return events.filter(event => {
             const eventDate = new Date(event.date);
@@ -128,6 +145,14 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         setSelectedDayDate(date);
         setSelectedDayEvents(dayEvents);
         setShowDayEventsModal(true);
+        // Store the current scroll position and prevent body scroll when modal is open
+        const scrollY = window.scrollY;
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = '100%';
+        // Store scroll position for later restoration
+        document.body.dataset.scrollY = scrollY.toString();
     };
 
     // Close day events modal
@@ -135,6 +160,15 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         setShowDayEventsModal(false);
         setSelectedDayEvents([]);
         setSelectedDayDate(null);
+        // Restore body scroll when modal is closed
+        const scrollY = parseInt(document.body.dataset.scrollY || '0');
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        delete document.body.dataset.scrollY;
+        // Restore the scroll position
+        window.scrollTo(0, scrollY);
     };
 
     // Handle month navigation
@@ -920,8 +954,21 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
             {/* Day Events Modal */}
             {showDayEventsModal && selectedDayEvents && selectedDayDate && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                    onWheel={(e) => e.preventDefault()}
+                    onTouchMove={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            closeDayEventsModal();
+                        }
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
+                        onWheel={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
+                    >
                         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                             <h3 className="text-lg font-semibold">
                                 Events for {format(selectedDayDate, 'MMMM d, yyyy')}
