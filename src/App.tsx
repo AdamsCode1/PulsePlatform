@@ -2,57 +2,58 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import LoadingSpinner from "./components/LoadingSpinner";
 
-// Coming Soon & Dev Access
+// Keep critical components non-lazy for faster initial load
 import ComingSoonPage from "./pages/ComingSoonPage";
 import DevAccessDetector from "./components/DevAccessDetector";
-
-// Public Pages
 import Index from "./pages/Index";
-import EnhancedIndex from "./pages/enhanced/EnhancedIndex"; // Enhanced UI version
-import NotFound from "./pages/NotFound";
-import DealsPage from './pages/DealsPage';
-import MeetTheTeam from './pages/MeetTheTeam';
-import EventSubmissionPage from './pages/EventSubmissionPage';
-import SocietyEventsPage from './pages/SocietyEventsPage';
-import ManageRedirect from './pages/ManageRedirect';
 
-// Authentication
-import UserTypeSelection from "./pages/UserTypeSelection";
-import StudentLogin from "./pages/StudentLogin";
-import StudentRegister from "./pages/StudentRegister";
-import SocietyLogin from "./pages/SocietyLogin";
-import SocietyRegister from "./pages/SocietyRegister";
-import PartnerLogin from './pages/PartnerLogin';
-import PartnerRegister from './pages/PartnerRegister';
+// Lazy load non-critical pages for better performance
+const EnhancedIndex = lazy(() => import("./pages/enhanced/EnhancedIndex"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const DealsPage = lazy(() => import('./pages/DealsPage'));
+const MeetTheTeam = lazy(() => import('./pages/MeetTheTeam'));
+const EventSubmissionPage = lazy(() => import('./pages/EventSubmissionPage'));
+const SocietyEventsPage = lazy(() => import('./pages/SocietyEventsPage'));
+const ManageRedirect = lazy(() => import('./pages/ManageRedirect'));
 
-// Student Dashboard Components
-import StudentDashboard from "./pages/student/Dashboard";
-import StudentRSVPs from "./pages/student/RSVPs";
-import ProfileEdit from "./pages/student/ProfileEdit";
+// Authentication pages - lazy load
+const UserTypeSelection = lazy(() => import("./pages/UserTypeSelection"));
+const StudentLogin = lazy(() => import("./pages/StudentLogin"));
+const StudentRegister = lazy(() => import("./pages/StudentRegister"));
+const SocietyLogin = lazy(() => import("./pages/SocietyLogin"));
+const SocietyRegister = lazy(() => import("./pages/SocietyRegister"));
+const PartnerLogin = lazy(() => import('./pages/PartnerLogin'));
+const PartnerRegister = lazy(() => import('./pages/PartnerRegister'));
 
-// Society Dashboard Components  
-import SocietyDashboard from "./pages/society/Dashboard";
-import SocietyEvents from "./pages/society/Events";
-import SocietySubmitEvent from "./pages/society/SubmitEvent";
-import ViewRSVPlist from './pages/society/ViewRSVPlist';
+// Dashboard components - lazy load since they're behind auth
+const StudentDashboard = lazy(() => import("./pages/student/Dashboard"));
+const StudentRSVPs = lazy(() => import("./pages/student/RSVPs"));
+const ProfileEdit = lazy(() => import("./pages/student/ProfileEdit"));
 
-// Partner Dashboard Components
-import PartnerDashboard from "./pages/partner/Dashboard";
-import PartnerEvents from "./pages/partner/Events";
-import PartnerDeals from "./pages/partner/Deals";
-import PartnerSubmitEvent from "./pages/partner/SubmitEvent";
-import SubmitDealPage from "./pages/SubmitDealPage";
+const SocietyDashboard = lazy(() => import("./pages/society/Dashboard"));
+const SocietyEvents = lazy(() => import("./pages/society/Events"));
+const SocietySubmitEvent = lazy(() => import("./pages/society/SubmitEvent"));
+const ViewRSVPlist = lazy(() => import('./pages/society/ViewRSVPlist'));
 
-// Admin Components
-import AdminLogin from './pages/AdminLogin';
-import AboutPage from './pages/AboutPage';
-import Schedule from './pages/Schedule';
-import AdminDashboard from './pages/admin/Dashboard';
-import AdminEvents from './pages/admin/Events';
-import AdminDeals from './pages/admin/Deals';
-import AdminUsers from './pages/admin/Users';
-import AdminSettings from './pages/admin/Settings';
+const PartnerDashboard = lazy(() => import("./pages/partner/Dashboard"));
+const PartnerEvents = lazy(() => import("./pages/partner/Events"));
+const PartnerDeals = lazy(() => import("./pages/partner/Deals"));
+const PartnerSubmitEvent = lazy(() => import("./pages/partner/SubmitEvent"));
+const SubmitDealPage = lazy(() => import("./pages/SubmitDealPage"));
+
+const AdminLogin = lazy(() => import('./pages/AdminLogin'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const Schedule = lazy(() => import('./pages/Schedule'));
+
+// Admin components - lazy load
+const AdminDashboard = lazy(() => import('./pages/admin/Dashboard'));
+const AdminEvents = lazy(() => import('./pages/admin/Events'));
+const AdminDeals = lazy(() => import('./pages/admin/Deals'));
+const AdminUsers = lazy(() => import('./pages/admin/Users'));
+const AdminSettings = lazy(() => import('./pages/admin/Settings'));
 
 console.log('[App] App component mounting');
 
@@ -67,62 +68,64 @@ const App = () => (
       }}
     >
       <DevAccessDetector comingSoonPage={<ComingSoonPage />}>
-        <Routes>
-        {/* Public Routes - Available in Dev Mode */}
-        <Route path="/" element={<Index />} />
-        <Route path="/enhanced" element={<EnhancedIndex />} /> {/* Enhanced UI version for testing */}
-        <Route path="/platform" element={<Index />} />
-        <Route path="/dev" element={<Index />} />
-        <Route path="/deals" element={<DealsPage />} />
-        <Route path="/about" element={<AboutPage />} />
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            {/* Public Routes - Available in Dev Mode */}
+            <Route path="/" element={<Index />} />
+            <Route path="/enhanced" element={<EnhancedIndex />} />
+            <Route path="/platform" element={<Index />} />
+            <Route path="/dev" element={<Index />} />
+            <Route path="/deals" element={<DealsPage />} />
+            <Route path="/about" element={<AboutPage />} />
 
-        {/* Authentication Routes */}
-        <Route path="/login" element={<UserTypeSelection />} />
-        <Route path="/register" element={<UserTypeSelection />} />
-        <Route path="/login/student" element={<StudentLogin />} />
-        <Route path="/login/society" element={<SocietyLogin />} />
-        <Route path="/login/partner" element={<PartnerLogin />} />
-        <Route path="/register/student" element={<StudentRegister />} />
-        <Route path="/register/society" element={<SocietyRegister />} />
-        <Route path="/register/organization" element={<PartnerRegister />} />
-        <Route path="/submit-event" element={<EventSubmissionPage />} />
-        <Route path="/events/manage" element={<ManageRedirect />} />
-        <Route path="/user-type" element={<UserTypeSelection />} />
-        <Route path="/schedule" element={<Schedule />} />
-        <Route path="/team" element={<MeetTheTeam />} />
-        <Route path="/register/partner" element={<PartnerRegister />} />
+            {/* Authentication Routes */}
+            <Route path="/login" element={<UserTypeSelection />} />
+            <Route path="/register" element={<UserTypeSelection />} />
+            <Route path="/login/student" element={<StudentLogin />} />
+            <Route path="/login/society" element={<SocietyLogin />} />
+            <Route path="/login/partner" element={<PartnerLogin />} />
+            <Route path="/register/student" element={<StudentRegister />} />
+            <Route path="/register/society" element={<SocietyRegister />} />
+            <Route path="/register/organization" element={<PartnerRegister />} />
+            <Route path="/submit-event" element={<EventSubmissionPage />} />
+            <Route path="/events/manage" element={<ManageRedirect />} />
+            <Route path="/user-type" element={<UserTypeSelection />} />
+            <Route path="/schedule" element={<Schedule />} />
+            <Route path="/team" element={<MeetTheTeam />} />
+            <Route path="/register/partner" element={<PartnerRegister />} />
 
-        {/* Student Dashboard Routes */}
-        <Route path="/student/dashboard" element={<StudentDashboard />} />
-        <Route path="/student/rsvps" element={<StudentRSVPs />} />
-        <Route path="/student/profile" element={<ProfileEdit />} />
+            {/* Student Dashboard Routes */}
+            <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/rsvps" element={<StudentRSVPs />} />
+            <Route path="/student/profile" element={<ProfileEdit />} />
 
-        {/* Society Dashboard Routes */}
-        <Route path="/society/dashboard" element={<SocietyDashboard />} />
-        <Route path="/society/events" element={<SocietyEvents />} />
-        <Route path="/society/submit-event" element={<SocietySubmitEvent />} />
-        <Route path="/viewRSVPlist/:eventId" element={<ViewRSVPlist />} />
+            {/* Society Dashboard Routes */}
+            <Route path="/society/dashboard" element={<SocietyDashboard />} />
+            <Route path="/society/events" element={<SocietyEvents />} />
+            <Route path="/society/submit-event" element={<SocietySubmitEvent />} />
+            <Route path="/viewRSVPlist/:eventId" element={<ViewRSVPlist />} />
 
-        {/* Partner Dashboard Routes */}
-        <Route path="/partner/dashboard" element={<PartnerDashboard />} />
-        <Route path="/partner/events" element={<PartnerEvents />} />
-        <Route path="/partner/deals" element={<PartnerDeals />} />
-        <Route path="/partner/submit-event" element={<PartnerSubmitEvent />} />
-        <Route path="/partner/submit-deal" element={<SubmitDealPage />} />
+            {/* Partner Dashboard Routes */}
+            <Route path="/partner/dashboard" element={<PartnerDashboard />} />
+            <Route path="/partner/events" element={<PartnerEvents />} />
+            <Route path="/partner/deals" element={<PartnerDeals />} />
+            <Route path="/partner/submit-event" element={<PartnerSubmitEvent />} />
+            <Route path="/partner/submit-deal" element={<SubmitDealPage />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/events" element={<AdminEvents />} />
-        <Route path="/admin/deals" element={<AdminDeals />} />
-        <Route path="/admin/users" element={<AdminUsers />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/events" element={<AdminEvents />} />
+            <Route path="/admin/deals" element={<AdminDeals />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
 
-        {/* Legacy redirects for backward compatibility */}
-        <Route path="/admin" element={<AdminLogin />} />
+            {/* Legacy redirects for backward compatibility */}
+            <Route path="/admin" element={<AdminLogin />} />
 
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </DevAccessDetector>
     </BrowserRouter>
   </TooltipProvider>

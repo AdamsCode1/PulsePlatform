@@ -20,6 +20,28 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
   const [attendeeCount, setAttendeeCount] = useState(event.attendeeCount || 0);
   const navigate = useNavigate();
 
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    // Store the current scroll position
+    const scrollY = window.scrollY;
+
+    // Lock body scroll when modal opens
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+
+    // Cleanup: restore body scroll and position when modal closes
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      // Restore the scroll position instantly without animation
+      window.scrollTo({ top: scrollY, behavior: 'instant' });
+    };
+  }, []);
+
   useEffect(() => {
     async function fetchUser() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -186,8 +208,21 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
   const isRSVPCutoffPassed = event.rsvp_cutoff && new Date(event.rsvp_cutoff).getTime() <= Date.now();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onWheel={(e) => e.preventDefault()}
+      onTouchMove={(e) => e.preventDefault()}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+        onWheel={(e) => e.stopPropagation()}
+        onTouchMove={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="relative">
           <div className="h-48 sm:h-64 bg-gradient-to-br from-pink-400 to-pink-500 relative">
@@ -254,7 +289,7 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
               <div className="min-w-0">
                 <div className="font-semibold text-gray-900 text-sm sm:text-base">Society Contact</div>
                 <div className="text-gray-600 text-sm sm:text-base">
-                  <a 
+                  <a
                     href={`mailto:${formatEmail(event.organizerEmail)}`}
                     className="text-pink-600 hover:text-pink-700 hover:underline transition-colors break-all"
                   >
@@ -269,7 +304,7 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
               <div className="flex items-start space-x-3 md:col-span-2">
                 <div className="text-pink-500 mt-1 flex-shrink-0">
                   <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                   </svg>
                 </div>
                 <div className="min-w-0">
@@ -287,7 +322,7 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
           <div className="mb-6 sm:mb-8">
             <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">About This Event</h3>
             <div className="text-gray-600 leading-relaxed text-sm sm:text-base">
-               {event.description || ''}
+              {event.description || ''}
             </div>
           </div>
 
@@ -330,7 +365,7 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
                   {event.requiresOrganizerSignup ? "Interest Registered!" : "You're all set!"}
                 </h3>
                 <p className="text-gray-600 text-sm sm:text-base px-4">
-                  {event.requiresOrganizerSignup 
+                  {event.requiresOrganizerSignup
                     ? "We've recorded your interest. Please contact the organizer to complete your registration."
                     : "Thanks for RSVPing. We'll see you at the event!"
                   }
@@ -379,7 +414,7 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
                   {event.requiresOrganizerSignup ? "Show Your Interest" : "Join This Event"}
                 </h3>
                 <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base px-4">
-                  {event.requiresOrganizerSignup 
+                  {event.requiresOrganizerSignup
                     ? "Let us know you're interested and we'll help you connect with the organizer."
                     : "Reserve your spot and we'll send you event updates."
                   }

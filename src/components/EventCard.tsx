@@ -167,6 +167,7 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
 
   const handleCheckDetailClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
+    e.preventDefault(); // Prevent any default behavior
     onClick();
   };
 
@@ -180,7 +181,8 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
   const handleCardClick = () => {
     setIsClicked(true);
     setTimeout(() => setIsClicked(false), 200);
-    onClick();
+    // Don't call onClick on card click - only on Details button
+    // onClick();
   };
 
   // Check if user has already RSVP'd on component mount
