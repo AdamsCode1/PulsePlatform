@@ -1,11 +1,55 @@
 
+import React, { useState, useEffect } from 'react';
+
 export default function HeroSection() {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [logoLoaded, setLogoLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Preload both critical images
+    const backgroundImg = new Image();
+    const logoImg = new Image();
+    let loadedCount = 0;
+
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount === 2) {
+        setIsLoading(false);
+      }
+    };
+
+    backgroundImg.onload = () => {
+      setImageLoaded(true);
+      checkAllLoaded();
+    };
+    backgroundImg.onerror = () => {
+      setImageLoaded(false);
+      checkAllLoaded();
+    };
+    backgroundImg.src = '/image-uploads/background_cathedral.png';
+
+    logoImg.onload = () => {
+      setLogoLoaded(true);
+      checkAllLoaded();
+    };
+    logoImg.onerror = () => {
+      setLogoLoaded(false);
+      checkAllLoaded();
+    };
+    logoImg.src = '/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png';
+  }, []);
+
   return (
     <section
       id="hero"
-      className="relative flex flex-col items-center justify-center pt-32 pb-16 bg-cover bg-center bg-no-repeat min-h-screen"
+      className={`relative flex flex-col items-center justify-center pt-32 pb-16 bg-cover bg-center bg-no-repeat min-h-screen transition-opacity duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-90'
+        }`}
       style={{
-        backgroundImage: `url('/image-uploads/background_cathedral.png')`
+        backgroundImage: imageLoaded
+          ? `url('/image-uploads/background_cathedral.png')`
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Fallback gradient
+        backgroundColor: '#667eea' // Fallback color
       }}
     >
       {/* Background overlay for better text readability */}
@@ -18,7 +62,19 @@ export default function HeroSection() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center transition-transform duration-700 ease-in-out hover:rotate-360 overflow-hidden">
-              <img src="/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png" alt="DUPulse Logo" width={160} height={160} className="w-full h-full object-cover" />
+              {logoLoaded ? (
+                <img
+                  src="/image-uploads/f80b99b9-ff76-4acc-912c-49d8bd435a7b.png"
+                  alt="DUPulse Logo"
+                  width={160}
+                  height={160}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">DU</span>
+                </div>
+              )}
             </div>
           </div>
 
