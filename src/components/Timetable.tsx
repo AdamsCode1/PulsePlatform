@@ -71,7 +71,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
             document.body.style.width = '';
             delete document.body.dataset.scrollY;
             if (scrollY > 0) {
-                window.scrollTo(0, scrollY);
+                window.scrollTo({ top: scrollY, behavior: 'instant' });
             }
         };
     }, []);
@@ -167,8 +167,8 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         document.body.style.top = '';
         document.body.style.width = '';
         delete document.body.dataset.scrollY;
-        // Restore the scroll position
-        window.scrollTo(0, scrollY);
+        // Restore the scroll position instantly without animation
+        window.scrollTo({ top: scrollY, behavior: 'instant' });
     };
 
     // Handle month navigation

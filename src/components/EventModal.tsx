@@ -37,8 +37,8 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
-      // Restore the scroll position
-      window.scrollTo(0, scrollY);
+      // Restore the scroll position instantly without animation
+      window.scrollTo({ top: scrollY, behavior: 'instant' });
     };
   }, []);
 
