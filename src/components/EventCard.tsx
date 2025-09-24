@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { MapPin, Clock, Users, Check, ArrowRight, Calendar } from 'lucide-react';
+import { MapPin, Clock, Users, Check, ArrowRight } from 'lucide-react';
 import { Event } from '../types/Event';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { Badge } from './ui/badge';
 import { toast } from '../hooks/use-toast';
 
 interface EventCardProps {
@@ -64,13 +63,21 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
 
       if (!hasRSVPed) {
         // Add RSVP to database
+        const isRecurring = event.isRecurring && event.parentEventId && event.time;
         const { data, error } = await supabase
           .from('rsvp')
           .insert([
-            {
-              student_id: studentId,
-              event_id: event.id,
-            }
+            isRecurring
+              ? {
+                  student_id: studentId,
+                  event_id: event.parentEventId, // Use parent event UUID
+                  occurrence_start_time: event.time, // Use occurrence start time
+                }
+              : {
+                  student_id: studentId,
+                  event_id: event.id,
+                  occurrence_start_time: event.time, // For single events, still set for consistency
+                }
           ]);
 
         if (error) {
@@ -84,11 +91,13 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
         if (onRSVPChange) onRSVPChange();
       } else {
         // Remove RSVP from database
+        const isRecurring = event.isRecurring && event.parentEventId && event.time;
         const { error } = await supabase
           .from('rsvp')
           .delete()
           .eq('student_id', studentId)
-          .eq('event_id', event.id);
+          .eq('event_id', isRecurring ? event.parentEventId : event.id)
+          .eq('occurrence_start_time', event.time);
 
         if (error) {
           console.error('Error removing RSVP:', error);
@@ -150,12 +159,14 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
 
         const studentId = studentData.id;
 
-        // Now check if this student has RSVP'd for this event
+        // Now check if this student has RSVP'd for this event occurrence
+        const isRecurring = event.isRecurring && event.parentEventId && event.time;
         const { data, error } = await supabase
           .from('rsvp')
           .select('id')
           .eq('student_id', studentId)
-          .eq('event_id', event.id)
+          .eq('event_id', isRecurring ? event.parentEventId : event.id)
+          .eq('occurrence_start_time', event.time)
           .maybeSingle();
 
         if (error) {
@@ -185,9 +196,12 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
       {/* Colored line at the top with animation */}
       <div className="h-1 bg-gradient-to-r from-pink-400 to-pink-500 group-hover:from-pink-500 group-hover:to-purple-500 transition-all duration-300"></div>
       
+      {/* Top right: No badges */}
+      {/* (Removed Recurring and Status badges from top right) */}
+
       <div className="p-4 sm:p-6 flex flex-col flex-1">
         {/* Attend Counter - Top Right with hover animation */}
-        <div className="absolute top-4 sm:top-6 right-3 sm:right-4 bg-white rounded-full px-2 sm:px-3 py-1 flex items-center space-x-1 text-xs sm:text-sm font-medium text-gray-700 shadow-sm group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
+        <div className="absolute top-4 sm:top-6 right-4 sm:right-4 bg-white rounded-full px-2 sm:px-3 py-1 flex items-center space-x-1 text-xs sm:text-sm font-medium text-gray-700 shadow-sm group-hover:shadow-lg transition-all duration-300 group-hover:scale-105">
           <Users size={12} />
           <span>{attendeeCount}</span>
         </div>
@@ -200,9 +214,9 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
         </div>
 
         {/* Event Name with hover effect - Responsive text size */}
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 group-hover:text-pink-600 transition-colors duration-300 leading-tight">
-          {event.eventName}
-        </h3>
+        <div className="flex items-center gap-3 mb-2">
+          <h3 className="text-lg font-semibold truncate max-w-xs sm:max-w-md" title={event.eventName}>{event.eventName}</h3>
+        </div>
 
         {/* Event Description */}
         <p className="text-gray-600 text-xs sm:text-sm mb-2 line-clamp-2 flex-1 group-hover:text-gray-800 transition-colors duration-300 leading-relaxed">

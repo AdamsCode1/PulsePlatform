@@ -47,23 +47,11 @@ const Index = () => {
   // Fetch all events (not just for a specific date since the new timetable handles date filtering)
   const fetchEvents = async () => {
     setIsLoading(true);
-
     try {
-      // Fetch all upcoming events
-      const { data: eventsData, error: eventsError } = await supabase
-        .from('event')
-        .select(`*, locations:location (id, name, formatted_address, latitude, longitude, city, region, country)`)
-        .eq('status', 'approved')
-        .gte('start_time', new Date().toISOString())
-        .order('start_time', { ascending: true });
-
-      console.log('[DEBUG] Raw eventsData from Supabase:', eventsData);
-
-      if (eventsError) {
-        console.error('Error fetching events:', eventsError);
-        throw new Error(`Failed to fetch events: ${eventsError.message}`);
-      }
-
+      // Fetch all events from the unified API (with RRULE expansion)
+      const response = await fetch('/api/unified?resource=events');
+      if (!response.ok) throw new Error('Failed to fetch events');
+      const eventsData = await response.json();
       if (!eventsData || eventsData.length === 0) {
         setEvents([]);
         setIsLoading(false);
@@ -96,12 +84,12 @@ const Index = () => {
         rsvpCounts = allRsvps.filter((rsvp: any) => eventIds.includes(rsvp.event_id));
       }
 
-      // Count RSVPs per event
+      // Count RSVPs per event occurrence
       const rsvpCountMap = new Map();
       if (rsvpCounts) {
         rsvpCounts.forEach((rsvp: any) => {
-          const eventId = rsvp.event_id;
-          rsvpCountMap.set(eventId, (rsvpCountMap.get(eventId) || 0) + 1);
+          const key = rsvp.event_id + '___' + (rsvp.occurrence_start_time || '');
+          rsvpCountMap.set(key, (rsvpCountMap.get(key) || 0) + 1);
         });
       }
 
@@ -114,25 +102,61 @@ const Index = () => {
       );
 
       // Remap event data to match the Event type
-      const mappedEvents: Event[] = eventsData.map((event: any) => ({
-        id: event.id,
-        eventName: event.name,
-        date: event.start_time,
-        location: event.location,
-        description: event.description,
-        organiserID: event.society_id,
-        societyName: (societyDetailsMap.get(event.society_id) as any)?.name || 'Miscellaneous',
-        time: event.start_time,
-        endTime: event.end_time,
-        attendeeCount: Number(rsvpCountMap.get(event.id)) || 0,
-        imageUrl: event.imageUrl || '/placeholder.svg',
-        requiresOrganizerSignup: event.requires_organizer_signup || false,
-        organizerEmail: (societyDetailsMap.get(event.society_id) as any)?.email || event.organizer_email || 'No email provided',
-        category: event.category || 'general',
-        signup_link: event.signup_link || '',
-        locations: Array.isArray(event.locations) ? event.locations[0] : event.locations,
-        rsvp_cutoff: event.rsvp_cutoff || null, // <-- Add this line
-      }));
+      const mappedEvents: Event[] = eventsData.flatMap((event: any) => {
+        if (Array.isArray(event.occurrences) && event.occurrences.length > 0) {
+          // Recurring event: create an event for each occurrence
+          return event.occurrences.map((occ: any, idx: number) => {
+            const key = event.id + '___' + occ.start_time;
+            return {
+              id: `${event.id}__occ${idx}`,
+              eventName: event.name,
+              date: occ.start_time,
+              location: event.location,
+              description: event.description,
+              organiserID: event.society_id,
+              societyName: (societyDetailsMap.get(event.society_id) as any)?.name || 'Miscellaneous',
+              time: occ.start_time,
+              endTime: occ.end_time,
+              attendeeCount: Number(rsvpCountMap.get(key)) || 0,
+              imageUrl: event.imageUrl || '/placeholder.svg',
+              requiresOrganizerSignup: event.requires_organizer_signup || false,
+              organizerEmail: (societyDetailsMap.get(event.society_id) as any)?.email || event.organizer_email || 'No email provided',
+              category: event.category || 'general',
+              signup_link: event.signup_link || '',
+              locations: Array.isArray(event.locations) ? event.locations[0] : event.locations,
+              rsvp_cutoff: event.rsvp_cutoff || null,
+              parentEventId: event.id, // for reference
+              isRecurring: true,
+              recurrenceRule: event.rrule || null,
+            };
+          });
+        } else {
+          // Single event
+          const key = event.id + '___' + event.start_time;
+          return [{
+            id: event.id,
+            eventName: event.name,
+            date: event.start_time,
+            location: event.location,
+            description: event.description,
+            organiserID: event.society_id,
+            societyName: (societyDetailsMap.get(event.society_id) as any)?.name || 'Miscellaneous',
+            time: event.start_time,
+            endTime: event.end_time,
+            attendeeCount: Number(rsvpCountMap.get(key)) || 0,
+            imageUrl: event.imageUrl || '/placeholder.svg',
+            requiresOrganizerSignup: event.requires_organizer_signup || false,
+            organizerEmail: (societyDetailsMap.get(event.society_id) as any)?.email || event.organizer_email || 'No email provided',
+            category: event.category || 'general',
+            signup_link: event.signup_link || '',
+            locations: Array.isArray(event.locations) ? event.locations[0] : event.locations,
+            rsvp_cutoff: event.rsvp_cutoff || null,
+            parentEventId: null,
+            isRecurring: false,
+            recurrenceRule: null,
+          }];
+        }
+      });
 
       // Filter out test events
       const filteredMappedEvents = filterTestEvents(mappedEvents);

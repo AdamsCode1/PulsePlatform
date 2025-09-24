@@ -34,6 +34,10 @@ interface Event {
     region?: string;
     country?: string;
   };
+  rsvp_cutoff?: string | null;
+  attendeeCount?: number;
+  isRSVPCutoffPassed?: boolean;
+  isRecurring?: boolean;
 }
 
 interface Society {
@@ -52,13 +56,49 @@ interface User {
   };
 }
 
+// Utility to summarize RRULE (simple version)
+function getRecurrenceSummary(rrule: string | null): string {
+  if (!rrule) return '';
+  // Example: FREQ=WEEKLY;UNTIL=20251231
+  const freqMatch = rrule.match(/FREQ=([^;]+)/);
+  const untilMatch = rrule.match(/UNTIL=([^;]+)/);
+  let summary = '';
+  if (freqMatch) {
+    summary += `Repeats ${freqMatch[1].toLowerCase()}`;
+  }
+  if (untilMatch) {
+    const untilDate = untilMatch[1];
+    // Format YYYYMMDD to readable date
+    if (/^\d{8}$/.test(untilDate)) {
+      const y = untilDate.slice(0,4), m = untilDate.slice(4,6), d = untilDate.slice(6,8);
+      summary += ` until ${d}/${m}/${y}`;
+    } else {
+      summary += ` until ${untilDate}`;
+    }
+  }
+  return summary || 'Recurring';
+}
+
+// Extend Event type locally to include recurrenceRule and upcomingOccurrences
+interface DashboardEvent extends Event {
+  recurrenceRule?: string | null;
+  upcomingOccurrences: Array<{
+    start_time: string;
+    end_time?: string;
+    attendeeCount: number;
+  }>;
+}
+
 export default function SocietyDashboard() {
   const navigate = useNavigate();
   const [society, setSociety] = useState<Society | null>(null);
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<DashboardEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+  // Track expanded occurrences for each event
+  const [expandedOccurrences, setExpandedOccurrences] = useState<{[eventId: string]: boolean}>({});
 
   const checkAuth = useCallback(async () => {
     try {
@@ -131,31 +171,87 @@ export default function SocietyDashboard() {
 
   const fetchSocietyEvents = async (email: string) => {
     try {
-      // First get society ID
+      // Get society ID
       const { data: societyData, error: societyError } = await supabase
         .from('society')
         .select('id')
         .eq('contact_email', email)
         .single();
-
       if (societyError) throw societyError;
 
-      // Then get events for this society, join locations
-      const { data, error } = await supabase
-        .from('event')
-        .select(`*, locations:location (id, name, formatted_address, latitude, longitude, city, region, country)`)
-        .eq('society_id', societyData.id)
-        .order('created_at', { ascending: false });
+      // Fetch events from unified API (with RRULE expansion)
+      const response = await fetch(`/api/unified?resource=events&action=society&societyId=${societyData.id}`);
+      if (!response.ok) throw new Error('Failed to fetch events');
+      const eventsData = await response.json();
 
-      console.log('[DEBUG] Raw eventsData from Supabase:', data);
+      // Fetch RSVPs for these events
+      const eventIds = eventsData.map((event: any) => event.id);
+      const { data: allRsvps, error: rsvpsError } = await supabase
+        .from('rsvp')
+        .select('*')
+        .in('event_id', eventIds);
+      let rsvpCounts: any[] = [];
+      if (!rsvpsError && allRsvps) {
+        rsvpCounts = allRsvps;
+      }
 
-      if (error) throw error;
-      setEvents((data || []).map(event => ({
-        ...event,
-        locations: event.locations
-          ? (Array.isArray(event.locations) ? event.locations[0] : event.locations)
-          : undefined,
-      })));
+      // Count RSVPs per event occurrence
+      const rsvpCountMap = new Map();
+      if (rsvpCounts) {
+        rsvpCounts.forEach((rsvp: any) => {
+          const key = rsvp.event_id + '___' + (rsvp.occurrence_start_time || '');
+          rsvpCountMap.set(key, (rsvpCountMap.get(key) || 0) + 1);
+        });
+      }
+
+      // Only show parent events for recurring events, with attached upcoming occurrences
+      const dashboardEvents = eventsData.map((event: any) => {
+        // Only mark as recurring if RRULE is present AND there is more than one occurrence
+        const isRecurring = !!event.rrule && Array.isArray(event.occurrences) && event.occurrences.length > 1;
+        if (Array.isArray(event.occurrences) && event.occurrences.length > 0) {
+          // Get next 3 upcoming occurrences
+          const upcomingOccurrences = event.occurrences
+            .filter((occ: any) => new Date(occ.start_time) >= new Date())
+            .slice(0, 3)
+            .map((occ: any) => {
+              const key = event.id + '___' + occ.start_time;
+              return {
+                start_time: occ.start_time,
+                end_time: occ.end_time,
+                attendeeCount: Number(rsvpCountMap.get(key)) || 0,
+              };
+            });
+          return {
+            ...event,
+            eventName: event.name,
+            date: event.start_time,
+            attendeeCount: Number(rsvpCountMap.get(event.id + '___' + event.start_time)) || 0,
+            rsvp_cutoff: event.rsvp_cutoff || null,
+            isRSVPCutoffPassed: event.rsvp_cutoff ? new Date(event.rsvp_cutoff) < new Date() : false,
+            parentEventId: null,
+            isRecurring,
+            recurrenceRule: event.rrule || null,
+            upcomingOccurrences,
+          };
+        } else {
+          const key = event.id + '___' + event.start_time;
+          return {
+            ...event,
+            eventName: event.name,
+            date: event.start_time,
+            attendeeCount: Number(rsvpCountMap.get(key)) || 0,
+            rsvp_cutoff: event.rsvp_cutoff || null,
+            isRSVPCutoffPassed: event.rsvp_cutoff ? new Date(event.rsvp_cutoff) < new Date() : false,
+            parentEventId: null,
+            isRecurring: false,
+            recurrenceRule: event.rrule || null,
+            upcomingOccurrences: [],
+          };
+        }
+      });
+
+      setEvents(dashboardEvents);
+      console.log('Dashboard events:', dashboardEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
@@ -361,30 +457,70 @@ export default function SocietyDashboard() {
                     {events.slice(0, 6).map((ev) => {
                       // Check RSVP cutoff
                       const isRSVPCutoffPassed = ev.rsvp_cutoff && new Date(ev.rsvp_cutoff) < new Date();
+                      const isExpanded = expandedOccurrences[ev.id] || false;
+                      // For recurring events, use next upcoming occurrence for RSVP count and location
+                      let attendeeCount = ev.attendeeCount || 0;
+                      let locations = ev.locations;
+                      if (ev.isRecurring && ev.upcomingOccurrences && ev.upcomingOccurrences.length > 0) {
+                        attendeeCount = ev.upcomingOccurrences[0].attendeeCount;
+                        // If location is per occurrence, set here (otherwise keep event.locations)
+                        // locations = ev.upcomingOccurrences[0].locations || ev.locations;
+                      }
                       return (
-                        <EventCard
-                          key={ev.id}
-                          event={{
-                            ...ev,
-                            eventName: ev.name,
-                            date: ev.start_time && !isNaN(Date.parse(ev.start_time)) ? new Date(ev.start_time).toISOString() : new Date().toISOString(),
-                            endTime: ev.end_time && !isNaN(Date.parse(ev.end_time)) ? new Date(ev.end_time).toISOString() : new Date().toISOString(),
-                            location: ev.location,
-                            description: ev.description,
-                            societyName: society?.name || '',
-                            attendeeCount: (ev as any).attendee_count || ev.rsvp?.[0]?.count || 0,
-                            organiserID: '',
-                            requiresOrganizerSignup: false,
-                            organizerEmail: society?.contact_email || '',
-                            signup_link: (ev as any).signup_link || '',
-                            status: ev.status,
-                            locations: ev.locations,
-                            rsvp_cutoff: ev.rsvp_cutoff || null,
-                            isRSVPCutoffPassed, // Pass cutoff status to EventCard
-                          }}
-                          onClick={() => setSelectedEventId(ev.id)}
-                          rightAction={getStatusBadge(ev.status)}
-                        />
+                        <div key={ev.id} className="relative">
+                          <EventCard
+                            event={{
+                              ...ev,
+                              eventName: ev.name,
+                              date: ev.start_time && !isNaN(Date.parse(ev.start_time)) ? new Date(ev.start_time).toISOString() : new Date().toISOString(),
+                              endTime: ev.end_time && !isNaN(Date.parse(ev.end_time)) ? new Date(ev.end_time).toISOString() : new Date().toISOString(),
+                              location: ev.location,
+                              description: ev.description,
+                              societyName: society?.name || '',
+                              attendeeCount,
+                              organiserID: '',
+                              requiresOrganizerSignup: false,
+                              organizerEmail: society?.contact_email || '',
+                              signup_link: (ev as any).signup_link || '',
+                              status: ev.status,
+                              locations,
+                              rsvp_cutoff: ev.rsvp_cutoff || null,
+                            }}
+                            onClick={() => setSelectedEventId(ev.id)}
+                            rightAction={
+                              <>
+                                {ev.isRecurring && (
+                                  <div className="flex flex-col items-start mt-1">
+                                    <Badge className="bg-blue-100 text-blue-800 mb-1">Recurring</Badge>
+                                  </div>
+                                )}
+                                {getStatusBadge(ev.status)}
+                              </>
+                            }
+                          />
+                          {ev.isRecurring && isExpanded && (
+                            <div className="bg-gray-50 border rounded p-2 mt-2">
+                              <div className="font-semibold text-sm mb-1">Upcoming Occurrences:</div>
+                              {ev.upcomingOccurrences.length === 0 ? (
+                                <div className="text-xs text-gray-400">No upcoming occurrences</div>
+                              ) : (
+                                <ul className="text-xs">
+                                  {ev.upcomingOccurrences.map((occ, idx) => (
+                                    <li key={idx} className="mb-1">
+                                      <span className="font-medium">{new Date(occ.start_time).toLocaleString()}</span>
+                                      {occ.end_time && ` - ${new Date(occ.end_time).toLocaleString()}`}
+                                      <span className="ml-2">RSVPs: {occ.attendeeCount}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                              {/* Recurrence summary under details */}
+                              {ev.isRecurring && (
+                                <span className="block text-xs text-gray-500 mt-2 whitespace-normal break-words max-w-[220px]">{getRecurrenceSummary(ev.recurrenceRule)}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
