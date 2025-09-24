@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format, addDays, startOfWeek, endOfWeek, startOfDay, endOfDay, isSameDay, parseISO, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { Calendar, ChevronDown, Filter, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -54,13 +54,70 @@ interface TimetableProps {
 const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) => {
     // Core state
     const [selectedView, setSelectedView] = useState<ViewType>('daily');
-    const [currentDate, setCurrentDate] = useState(new Date(2025, 8, 14)); // September 14, 2025 (current date)
-    const [activeTerms, setActiveTerms] = useState<string[]>(['michaelmas']);    // Get events for a specific date
+    const [currentDate, setCurrentDate] = useState(new Date()); // Start with today's date
+    const [activeTerms, setActiveTerms] = useState<string[]>(['michaelmas']);
+    const [showMobileFilters, setShowMobileFilters] = useState(false); // New state for mobile filters
+    const [selectedDayEvents, setSelectedDayEvents] = useState<Event[]>([]);
+    const [showDayEventsModal, setShowDayEventsModal] = useState(false);
+    const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
+
+    // Cleanup: restore body scroll on component unmount
+    useEffect(() => {
+        return () => {
+            const scrollY = parseInt(document.body.dataset.scrollY || '0');
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            delete document.body.dataset.scrollY;
+            if (scrollY > 0) {
+                window.scrollTo({ top: scrollY, behavior: 'instant' });
+            }
+        };
+    }, []);
+
+    // Get events for a specific date
     const getEventsForDate = (date: Date) => {
         return events.filter(event => {
             const eventDate = new Date(event.date);
-            return isSameDay(eventDate, date);
+            const isSameDate = isSameDay(eventDate, date);
+
+            // Apply term filtering
+            if (activeTerms.length > 0) {
+                const isInActiveTerm = activeTerms.some(termId => {
+                    const term = ACADEMIC_TERMS.find(t => t.id === termId);
+                    if (!term) return false;
+                    return eventDate >= term.startDate && eventDate <= term.endDate;
+                });
+                return isSameDate && isInActiveTerm;
+            }
+
+            return isSameDate;
         });
+    };
+
+    // Get the term that an event falls into
+    const getEventTerm = (eventDate: Date) => {
+        return ACADEMIC_TERMS.find(term =>
+            eventDate >= term.startDate && eventDate <= term.endDate
+        );
+    };
+
+    // Get color for event based on its term
+    const getEventTermColor = (eventDate: Date) => {
+        const term = getEventTerm(eventDate);
+        if (!term) return 'from-gray-400 to-gray-500'; // Default color for events outside terms
+
+        switch (term.id) {
+            case 'michaelmas':
+                return 'from-blue-400 to-blue-600';
+            case 'epiphany':
+                return 'from-green-400 to-green-600';
+            case 'easter':
+                return 'from-purple-400 to-purple-600';
+            default:
+                return 'from-gray-400 to-gray-500';
+        }
     };
 
     // Check if date is in any active term
@@ -81,6 +138,37 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                 ? prev.filter(id => id !== termId)
                 : [...prev, termId]
         );
+    };
+
+    // Handle showing all events for a specific day
+    const showAllEventsForDay = (date: Date, dayEvents: Event[]) => {
+        setSelectedDayDate(date);
+        setSelectedDayEvents(dayEvents);
+        setShowDayEventsModal(true);
+        // Store the current scroll position and prevent body scroll when modal is open
+        const scrollY = window.scrollY;
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = '100%';
+        // Store scroll position for later restoration
+        document.body.dataset.scrollY = scrollY.toString();
+    };
+
+    // Close day events modal
+    const closeDayEventsModal = () => {
+        setShowDayEventsModal(false);
+        setSelectedDayEvents([]);
+        setSelectedDayDate(null);
+        // Restore body scroll when modal is closed
+        const scrollY = parseInt(document.body.dataset.scrollY || '0');
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        delete document.body.dataset.scrollY;
+        // Restore the scroll position instantly without animation
+        window.scrollTo({ top: scrollY, behavior: 'instant' });
     };
 
     // Handle month navigation
@@ -244,14 +332,13 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                 <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
                                     Events for {format(currentDate, 'MMMM d, yyyy')}
                                 </h4>
-                                <div className="grid gap-3 md:gap-4">
-                                    {dayEvents.map(event => (
-                                        <EventCard
-                                            key={event.id}
-                                            event={event}
-                                            onClick={() => onEventClick?.(event.id)}
-                                        />
-                                    ))}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">{dayEvents.map(event => (
+                                    <EventCard
+                                        key={event.id}
+                                        event={event}
+                                        onClick={() => onEventClick?.(event.id)}
+                                    />
+                                ))}
                                 </div>
                             </div>
                         );
@@ -261,27 +348,168 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         );
     };
 
-    // Render main calendar
+    // Render weekly view
+    const renderWeeklyView = () => {
+        const weekStart = startOfWeek(currentDate);
+        const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+        const timeSlots = Array.from({ length: 24 }, (_, i) => i); // 0-23 hours
+
+        return (
+            <div className="bg-white rounded-lg border overflow-hidden relative">
+                {/* Header */}
+                <div className="p-2 sm:p-4 border-b bg-gray-50">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-sm sm:text-lg font-semibold text-gray-900">
+                            Week of {format(weekStart, 'MMM d')} - {format(addDays(weekStart, 6), 'MMM d, yyyy')}
+                        </h3>
+                        <div className="flex gap-1 sm:gap-2">
+                            <button
+                                onClick={() => setCurrentDate(addDays(currentDate, -7))}
+                                className="p-1 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                            </button>
+                            <button
+                                onClick={() => setCurrentDate(addDays(currentDate, 7))}
+                                className="p-1 sm:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                                <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="overflow-auto max-h-[60vh] sm:max-h-[calc(100vh-300px)] min-h-[400px]">
+                    <div className="grid grid-cols-8 w-full">
+                        {/* Time column header */}
+                        <div className="bg-gray-50 border-r border-b p-1 sm:p-2 text-xs font-medium text-gray-600 text-center">
+                            <span className="hidden sm:inline">Time</span>
+                            <span className="sm:hidden">T</span>
+                        </div>
+
+                        {/* Day headers */}
+                        {weekDays.map((day) => {
+                            const isToday = isSameDay(day, new Date());
+                            const isSelected = isSameDay(day, currentDate);
+
+                            return (
+                                <div
+                                    key={day.toISOString()}
+                                    className={`bg-gray-50 border-r border-b p-1 sm:p-2 text-center cursor-pointer hover:bg-gray-100 ${isSelected ? 'bg-blue-100' : ''
+                                        }`}
+                                    onClick={() => setCurrentDate(day)}
+                                >
+                                    <div className="text-xs font-medium text-gray-600 mb-1">
+                                        <span className="hidden sm:inline">{format(day, 'EEE').toUpperCase()}</span>
+                                        <span className="sm:hidden">{format(day, 'EE')}</span>
+                                    </div>
+                                    <div className={`text-sm sm:text-lg font-bold ${isToday ? 'text-blue-600 bg-blue-100 rounded-full w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center mx-auto text-xs sm:text-base' :
+                                        isSelected ? 'text-blue-600' : 'text-gray-900'
+                                        }`}>
+                                        {format(day, 'd')}
+                                    </div>
+                                </div>
+                            );
+                        })}
+
+                        {/* Time slots and events */}
+                        {timeSlots.map((hour) => (
+                            <React.Fragment key={hour}>
+                                {/* Time label */}
+                                <div className="border-r border-b p-1 sm:p-2 text-xs text-gray-500 text-center bg-gray-50">
+                                    <span className="hidden sm:inline">
+                                        {hour === 0 ? '12:00 AM' :
+                                            hour < 12 ? `${hour}:00 AM` :
+                                                hour === 12 ? '12:00 PM' :
+                                                    `${hour - 12}:00 PM`}
+                                    </span>
+                                    <span className="sm:hidden">
+                                        {hour === 0 ? '12A' :
+                                            hour < 12 ? `${hour}A` :
+                                                hour === 12 ? '12P' :
+                                                    `${hour - 12}P`}
+                                    </span>
+                                </div>
+
+                                {/* Day cells */}
+                                {weekDays.map((day) => {
+                                    const dayEvents = getEventsForDate(day);
+                                    const hourEvents = dayEvents.filter(event => {
+                                        const eventHour = new Date(event.time).getHours();
+                                        return eventHour === hour;
+                                    });
+
+                                    return (
+                                        <div
+                                            key={`${day.toISOString()}-${hour}`}
+                                            className="border-r border-b min-h-[40px] sm:min-h-[80px] p-0.5 sm:p-1 relative hover:bg-gray-50 cursor-pointer"
+                                            onClick={() => setCurrentDate(day)}
+                                        >
+                                            {hourEvents.map((event, index) => {
+                                                const eventDate = new Date(event.date);
+                                                const termColors = getEventTermColor(eventDate);
+
+                                                return (
+                                                    <div
+                                                        key={event.id}
+                                                        className={`absolute inset-x-0.5 sm:inset-x-1 bg-gradient-to-r ${termColors} text-white border-l-2 sm:border-l-4 border-white rounded p-1 sm:p-2 text-xs cursor-pointer hover:shadow-md transition-shadow overflow-hidden h-5 sm:h-12`}
+                                                        style={{
+                                                            top: `${index * 25}px`,
+                                                            zIndex: 1
+                                                        }}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onEventClick?.(event.id);
+                                                        }}
+                                                    >
+                                                        <div className="h-full flex flex-col justify-center">
+                                                            <div className="font-medium text-white truncate text-xs leading-tight mb-0 sm:mb-1">
+                                                                <span className="hidden sm:inline">{event.eventName}</span>
+                                                                <span className="sm:hidden">{event.eventName.substring(0, 8)}...</span>
+                                                            </div>
+                                                            <div className="hidden sm:block text-white/90 text-xs truncate leading-tight">
+                                                                {format(new Date(event.time), 'HH:mm')}
+                                                                {event.location && ` • ${event.location}`}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })}
+                            </React.Fragment>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
     const renderMainCalendar = () => {
         const monthStart = startOfMonth(currentDate);
         const monthEnd = endOfMonth(currentDate);
         const calendarStart = startOfWeek(monthStart);
         const calendarEnd = endOfWeek(monthEnd);
         const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+        const numRows = Math.ceil(calendarDays.length / 7);
 
         return (
-            <div className="bg-white rounded-lg border overflow-hidden">
+            <div className="bg-white rounded-lg border overflow-hidden flex flex-col" style={{ height: '700px' }}>
                 {/* Calendar Header */}
-                <div className="grid grid-cols-7 bg-gray-50 border-b">
+                <div className="grid grid-cols-7 bg-gray-50 border-b flex-shrink-0">
                     {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
-                        <div key={day} className="p-2 text-center text-xs font-medium text-gray-600 border-r last:border-r-0">
-                            {day}
+                        <div key={day} className="p-3 lg:p-4 text-center text-sm font-semibold text-gray-700 border-r last:border-r-0">
+                            <span className="hidden sm:inline">{day}</span>
+                            <span className="sm:hidden">{day.slice(0, 3)}</span>
                         </div>
                     ))}
                 </div>
 
                 {/* Calendar Grid */}
-                <div className="grid grid-cols-7">
+                <div className="grid grid-cols-7 flex-1 overflow-hidden" style={{
+                    gridTemplateRows: `repeat(${numRows}, minmax(120px, 1fr))`
+                }}>
                     {calendarDays.map(day => {
                         const dayEvents = getEventsForDate(day);
                         const isCurrentMonth = day >= monthStart && day <= monthEnd;
@@ -292,18 +520,18 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             <div
                                 key={day.toISOString()}
                                 className={`
-                                    relative min-h-[100px] p-2 border-r border-b last:border-r-0
+                                    relative p-2 border-r border-b last:border-r-0 flex flex-col min-h-[120px] overflow-hidden
                                     ${isCurrentMonth ?
-                                        (isInActiveTerm ? 'bg-white' : 'bg-gray-100 opacity-50')
+                                        (isInActiveTerm ? 'bg-white hover:bg-gray-50' : 'bg-gray-100 opacity-50')
                                         : 'bg-gray-50 opacity-30'
                                     }
-                                    ${isInActiveTerm ? 'hover:bg-gray-50 cursor-pointer' : 'cursor-not-allowed'} 
+                                    ${isInActiveTerm ? 'cursor-pointer' : 'cursor-not-allowed'} 
                                     transition-colors
                                 `}
                                 onClick={() => isInActiveTerm && setCurrentDate(day)}
                             >
                                 <div className={`
-                                    text-xs font-medium mb-1
+                                    text-sm lg:text-base font-semibold mb-2 flex-shrink-0 text-left
                                     ${isToday && isInActiveTerm ? 'text-orange-600 font-bold' :
                                         isCurrentMonth && isInActiveTerm ? 'text-gray-900' : 'text-gray-400'}
                                 `}>
@@ -312,7 +540,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                                 {/* Show "break" for dates not in any term */}
                                 {isCurrentMonth && !isInActiveTerm && (
-                                    <div className="flex items-center justify-center h-12">
+                                    <div className="flex items-center justify-center flex-1">
                                         <span className="text-xs text-gray-500 font-medium italic">
                                             break
                                         </span>
@@ -321,24 +549,37 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                                 {/* Show events for dates in active terms */}
                                 {isCurrentMonth && isInActiveTerm && dayEvents.length > 0 && (
-                                    <div className="space-y-1">
-                                        {dayEvents.slice(0, 1).map(event => (
-                                            <div
-                                                key={event.id}
-                                                className="p-1 bg-pink-100 text-pink-800 text-xs rounded cursor-pointer hover:bg-pink-200"
+                                    <div className="flex flex-col gap-1 flex-1 overflow-hidden">
+                                        {/* Show first event as a card */}
+                                        <div
+                                            key={dayEvents[0].id}
+                                            className={`p-1.5 rounded text-xs cursor-pointer transition-all hover:shadow-sm bg-gradient-to-r ${getEventTermColor(new Date(dayEvents[0].date))} text-white shadow-sm`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEventClick?.(dayEvents[0].id);
+                                            }}
+                                            title={dayEvents[0].eventName}
+                                        >
+                                            <div className="font-medium truncate leading-tight">
+                                                {dayEvents[0].eventName}
+                                            </div>
+                                            <div className="text-xs opacity-90 truncate leading-tight">
+                                                {format(new Date(dayEvents[0].time), 'HH:mm')}
+                                            </div>
+                                        </div>
+
+                                        {/* Show "+X more" button if there are additional events */}
+                                        {dayEvents.length > 1 && (
+                                            <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    onEventClick?.(event.id);
+                                                    showAllEventsForDay(day, dayEvents);
                                                 }}
+                                                className="text-xs text-blue-600 hover:text-blue-800 font-medium py-1 px-2 rounded hover:bg-blue-50 transition-colors text-left"
+                                                title={`View all ${dayEvents.length} events`}
                                             >
-                                                <div className="font-medium truncate text-xs">{event.eventName}</div>
-                                                <div className="text-xs">{format(new Date(event.time), 'HH:mm')}</div>
-                                            </div>
-                                        ))}
-                                        {dayEvents.length > 1 && (
-                                            <div className="text-xs text-gray-500 text-center">
                                                 +{dayEvents.length - 1} more
-                                            </div>
+                                            </button>
                                         )}
                                     </div>
                                 )}
@@ -404,9 +645,172 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                 </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)]">
+            {/* Mobile Layout */}
+            <div className="lg:hidden h-[calc(100vh-80px)] flex flex-col">
+                {/* Mobile Filters Dropdown Button */}
+                <div className="bg-white border-b px-4 py-2">
+                    <button
+                        onClick={() => setShowMobileFilters(!showMobileFilters)}
+                        className="flex items-center justify-center w-full py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                    >
+                        <span className="mr-2">Filters</span>
+                        <ChevronDown
+                            className={`h-4 w-4 transition-transform duration-200 ${showMobileFilters ? 'rotate-180' : ''
+                                }`}
+                        />
+                    </button>
+                </div>
+
+                {/* Mobile Filters Panel - Collapsible */}
+                {showMobileFilters && (
+                    <div className="bg-white border-b p-4 space-y-4 max-h-[50vh] overflow-y-auto">
+                        {/* Academic Terms */}
+                        <div>
+                            <h3 className="text-sm font-medium text-gray-700 mb-2">Academic Terms</h3>
+                            <div className="space-y-2">
+                                {ACADEMIC_TERMS.map(term => (
+                                    <label key={term.id} className="flex items-start space-x-2 cursor-pointer">
+                                        <div className="flex items-center h-5">
+                                            <input
+                                                type="checkbox"
+                                                checked={activeTerms.includes(term.id)}
+                                                onChange={() => toggleTerm(term.id)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center
+                                                ${activeTerms.includes(term.id)
+                                                    ? 'bg-gray-800 border-gray-800'
+                                                    : 'border-gray-300'
+                                                }`}
+                                            >
+                                                {activeTerms.includes(term.id) && (
+                                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-start space-x-2">
+                                            <div className={`w-3 h-3 rounded-full ${term.color} mt-0.5`}></div>
+                                            <div className="flex-1">
+                                                <span className="text-sm text-gray-700 font-medium block">{term.label}</span>
+                                                <span className="text-xs text-gray-500">
+                                                    {format(term.startDate, 'MMM d, yyyy')} - {format(term.endDate, 'MMM d, yyyy')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Category Filter */}
+                        <div>
+                            <h3 className="text-sm font-medium text-gray-700 mb-2">Filter by Category</h3>
+                            <Select>
+                                <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="All Categories" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Categories</SelectItem>
+                                    <SelectItem value="academic">Academic</SelectItem>
+                                    <SelectItem value="social">Social</SelectItem>
+                                    <SelectItem value="sports">Sports</SelectItem>
+                                    <SelectItem value="cultural">Cultural</SelectItem>
+                                    <SelectItem value="career">Career</SelectItem>
+                                    <SelectItem value="volunteer">Volunteer</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                )}
+
+                {/* Mobile Calendar Content */}
+                <div className="flex-1 p-2 overflow-hidden">
+                    {/* Tab Navigation */}
+                    <div className="mb-3">
+                        <div className="flex space-x-4 border-b border-gray-200">
+                            <button
+                                onClick={() => setSelectedView('monthly')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('weekly')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Weekly
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('daily')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Daily
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Mobile Calendar Views Container */}
+                    <div className={`
+                        ${showMobileFilters
+                            ? 'h-[calc(100vh-300px)]'
+                            : 'h-[calc(100vh-160px)]'
+                        } 
+                        overflow-hidden flex flex-col
+                    `}>
+                        {selectedView === 'daily' ? (
+                            renderDailyView()
+                        ) : selectedView === 'weekly' ? (
+                            renderWeeklyView()
+                        ) : (
+                            <div className="h-full flex flex-col">
+                                {/* Month Navigation */}
+                                <div className="flex items-center justify-between mb-3 flex-shrink-0 bg-white p-2 sticky top-0 z-10 border-b">
+                                    <div className="flex items-center space-x-2">
+                                        <h2 className="text-lg font-semibold text-gray-900">
+                                            {format(currentDate, 'MMMM yyyy')}
+                                        </h2>
+                                        <div className="flex space-x-1">
+                                            <button
+                                                onClick={handlePrevMonth}
+                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                            >
+                                                <ChevronLeft className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={handleNextMonth}
+                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                            >
+                                                <ChevronRight className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Calendar */}
+                                <div className="flex-1 min-h-0 pb-4 overflow-auto">
+                                    {renderMainCalendar()}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden lg:flex lg:flex-row h-[calc(100vh-80px)]">
                 {/* Left Sidebar */}
-                <div className="w-full lg:w-72 bg-white border-b lg:border-r lg:border-b-0 p-4 lg:p-6 space-y-4 lg:space-y-6 overflow-y-auto">
+                <div className="w-72 bg-white border-r p-4 xl:p-6 space-y-4 xl:space-y-6 overflow-y-auto">
                     {/* Academic Terms */}
                     <div>
                         <h3 className="text-sm font-medium text-gray-700 mb-3">Academic Terms</h3>
@@ -453,66 +857,148 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                         {renderMiniCalendar()}
                     </div>
 
-                    {/* View Toggle */}
+                    {/* Category Filter */}
                     <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">View</h3>
-                        <div className="space-y-2">
-                            {VIEWS.map(view => (
-                                <button
-                                    key={view.id}
-                                    onClick={() => setSelectedView(view.id)}
-                                    className={`w-full text-left text-sm p-2 rounded transition-colors ${selectedView === view.id
-                                        ? 'bg-gray-100 text-gray-900 font-medium'
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    {view.label}
-                                </button>
-                            ))}
-                        </div>
+                        <h3 className="text-sm font-medium text-gray-700 mb-3">Filter by Category</h3>
+                        <Select>
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                <SelectItem value="academic">Academic</SelectItem>
+                                <SelectItem value="social">Social</SelectItem>
+                                <SelectItem value="sports">Sports</SelectItem>
+                                <SelectItem value="cultural">Cultural</SelectItem>
+                                <SelectItem value="career">Career</SelectItem>
+                                <SelectItem value="volunteer">Volunteer</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 p-4 lg:p-6">
-                    {selectedView === 'daily' ? (
-                        renderDailyView()
-                    ) : selectedView === 'weekly' ? (
-                        <div className="bg-white rounded-lg border p-8 text-center">
-                            <Calendar className="h-16 w-16 text-gray-300 mb-4 mx-auto" />
-                            <p className="text-gray-500">Weekly view coming soon...</p>
+                <div className="flex-1 p-4 xl:p-6 overflow-hidden">
+                    {/* Tab Navigation */}
+                    <div className="mb-6">
+                        <div className="flex space-x-8 border-b border-gray-200">
+                            <div className="text-lg font-medium text-gray-900 pb-2">
+                                Calendar
+                            </div>
+                            <button
+                                onClick={() => setSelectedView('monthly')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Monthly
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('weekly')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Weekly
+                            </button>
+                            <button
+                                onClick={() => setSelectedView('daily')}
+                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
+                                    ? 'border-gray-900 text-gray-900'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Daily
+                            </button>
                         </div>
-                    ) : (
-                        <>
-                            {/* Month Navigation */}
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="flex items-center space-x-4">
-                                    <h2 className="text-2xl md:text-3xl font-semibold text-gray-900">
-                                        {format(currentDate, 'MMMM yyyy')}
-                                    </h2>
-                                    <div className="flex space-x-1">
-                                        <button
-                                            onClick={handlePrevMonth}
-                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                        >
-                                            <ChevronLeft className="h-5 w-5" />
-                                        </button>
-                                        <button
-                                            onClick={handleNextMonth}
-                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                        >
-                                            <ChevronRight className="h-5 w-5" />
-                                        </button>
+                    </div>
+
+                    {/* Desktop Calendar Views Container */}
+                    <div className="h-[calc(100vh-200px)] overflow-hidden flex flex-col">
+                        {selectedView === 'daily' ? (
+                            renderDailyView()
+                        ) : selectedView === 'weekly' ? (
+                            renderWeeklyView()
+                        ) : (
+                            <div className="h-full flex flex-col">
+                                {/* Month Navigation */}
+                                <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                                    <div className="flex items-center space-x-4">
+                                        <h2 className="text-2xl xl:text-3xl font-semibold text-gray-900">
+                                            {format(currentDate, 'MMMM yyyy')}
+                                        </h2>
+                                        <div className="flex space-x-1">
+                                            <button
+                                                onClick={handlePrevMonth}
+                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            >
+                                                <ChevronLeft className="h-5 w-5" />
+                                            </button>
+                                            <button
+                                                onClick={handleNextMonth}
+                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                            >
+                                                <ChevronRight className="h-5 w-5" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Calendar */}
-                            {renderMainCalendar()}
-                        </>
-                    )}
+                                {/* Calendar */}
+                                <div className="flex-1 min-h-0 overflow-auto">
+                                    {renderMainCalendar()}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Day Events Modal */}
+            {showDayEventsModal && selectedDayEvents && selectedDayDate && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                    onWheel={(e) => e.preventDefault()}
+                    onTouchMove={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            closeDayEventsModal();
+                        }
+                    }}
+                >
+                    <div
+                        className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
+                        onWheel={(e) => e.stopPropagation()}
+                        onTouchMove={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                            <h3 className="text-lg font-semibold">
+                                Events for {format(selectedDayDate, 'MMMM d, yyyy')}
+                            </h3>
+                            <button
+                                onClick={closeDayEventsModal}
+                                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
+                            {selectedDayEvents.map(event => (
+                                <EventCard
+                                    key={event.id}
+                                    event={event}
+                                    onClick={() => {
+                                        closeDayEventsModal();
+                                        onEventClick?.(event.id);
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

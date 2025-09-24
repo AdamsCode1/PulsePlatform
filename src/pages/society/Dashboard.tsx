@@ -21,6 +21,7 @@ interface Event {
   category: string;
   status: 'pending' | 'approved' | 'rejected';
   image_url?: string;
+  rsvp_cutoff?: string | null;
   rsvp?: {
     count: number;
   }[];
@@ -145,12 +146,12 @@ export default function SocietyDashboard() {
         if (createError) {
           console.error('Error creating society:', createError);
           // Still continue with a default society object
-        setSociety({
-          id: 'temp',
-          name: user?.user_metadata?.full_name || 'Your Society',
-          description: 'Welcome to your society dashboard. Please update your information.',
-          contact_email: email
-        });
+          setSociety({
+            id: 'temp',
+            name: user?.user_metadata?.full_name || 'Your Society',
+            description: 'Welcome to your society dashboard. Please update your information.',
+            contact_email: email
+          });
         } else {
           setSociety(newSociety);
         }
@@ -273,10 +274,10 @@ export default function SocietyDashboard() {
   const getEventStats = () => {
     const approved = events.filter(e => e.status === 'approved').length;
     const pending = events.filter(e => e.status === 'pending').length;
-    const totalRSVPs = events.reduce((sum, event) => 
+    const totalRSVPs = events.reduce((sum, event) =>
       sum + (event.rsvp?.[0]?.count || 0), 0
     );
-    
+
     return { approved, pending, totalRSVPs, total: events.length };
   };
 
@@ -293,30 +294,30 @@ export default function SocietyDashboard() {
 
   const selectedEvent = selectedEventId
     ? (() => {
-        const e = events.find(ev => ev.id === selectedEventId);
-        if (!e) return null;
-        return {
-          ...e,
-          eventName: e.name,
-          organiserID: '',
-          societyName: society?.name || '',
-          date: e.start_time && !isNaN(Date.parse(e.start_time)) ? new Date(e.start_time).toISOString() : new Date().toISOString(),
-          endTime: e.end_time && !isNaN(Date.parse(e.end_time)) ? new Date(e.end_time).toISOString() : new Date().toISOString(),
-          location: e.location,
-          description: e.description,
-          attendeeCount: (e as any).attendee_count || 0,
-          requiresOrganizerSignup: false,
-          organizerEmail: society?.contact_email || '',
-          signup_link: (e as any).signup_link || '',
-          status: e.status,
-        };
-      })()
+      const e = events.find(ev => ev.id === selectedEventId);
+      if (!e) return null;
+      return {
+        ...e,
+        eventName: e.name,
+        organiserID: '',
+        societyName: society?.name || '',
+        date: e.start_time && !isNaN(Date.parse(e.start_time)) ? new Date(e.start_time).toISOString() : new Date().toISOString(),
+        endTime: e.end_time && !isNaN(Date.parse(e.end_time)) ? new Date(e.end_time).toISOString() : new Date().toISOString(),
+        location: e.location,
+        description: e.description,
+        attendeeCount: (e as any).attendee_count || 0,
+        requiresOrganizerSignup: false,
+        organizerEmail: society?.contact_email || '',
+        signup_link: (e as any).signup_link || '',
+        status: e.status,
+      };
+    })()
     : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <NavBar />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
@@ -371,7 +372,7 @@ export default function SocietyDashboard() {
                 <CardTitle className="text-pink-600">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button 
+                <Button
                   onClick={() => navigate('/society/submit-event')}
                   className="w-full justify-start text-pink-600 border-pink-300"
                   variant="outline"
@@ -379,7 +380,7 @@ export default function SocietyDashboard() {
                   <Plus className="w-4 h-4 mr-2 text-pink-500" />
                   Submit New Event
                 </Button>
-                <Button 
+                <Button
                   onClick={() => navigate('/society/events')}
                   className="w-full justify-start"
                   variant="outline"
@@ -387,7 +388,7 @@ export default function SocietyDashboard() {
                   <Calendar className="w-4 h-4 mr-2 text-blue-500" />
                   Manage Events
                 </Button>
-                <Button 
+                <Button
                   onClick={() => navigate('/')}
                   className="w-full justify-start"
                   variant="outline"
@@ -433,7 +434,7 @@ export default function SocietyDashboard() {
                     <CardTitle className="text-pink-600">Recent Events</CardTitle>
                     <CardDescription>Your latest event submissions</CardDescription>
                   </div>
-                  <Button 
+                  <Button
                     size="sm"
                     onClick={() => navigate('/society/events')}
                     variant="outline"

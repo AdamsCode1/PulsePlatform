@@ -164,7 +164,7 @@ const EnhancedIndex = () => {
             <HeroSection />
 
             {/* New Timetable Section */}
-            <div id="schedule" className="container mx-auto px-4 py-6 sm:py-8">
+            <div id="schedule" className="container mx-auto px-4 py-6 sm:py-8 min-h-[900px]">
                 <Timetable
                     events={events}
                     onEventClick={setSelectedEventId}

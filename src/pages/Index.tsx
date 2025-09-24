@@ -189,7 +189,7 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <NavBar />
       <HeroSection />
-      <div id="schedule" className="container mx-auto px-4 py-6 sm:py-8">
+      <div id="schedule" className="container mx-auto px-4 py-6 sm:py-8 min-h-[900px]">
         {/* New Timetable - Direct Integration */}
         <Timetable
           events={events}
