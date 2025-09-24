@@ -495,7 +495,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         const numRows = Math.ceil(calendarDays.length / 7);
 
         return (
-            <div className="bg-white rounded-lg border overflow-hidden h-full flex flex-col">
+            <div className="bg-white rounded-lg border overflow-hidden flex flex-col" style={{ height: '700px' }}>
                 {/* Calendar Header */}
                 <div className="grid grid-cols-7 bg-gray-50 border-b flex-shrink-0">
                     {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
@@ -507,9 +507,8 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                 </div>
 
                 {/* Calendar Grid */}
-                <div className="grid grid-cols-7 flex-1" style={{
-                    gridTemplateRows: `repeat(${numRows}, 1fr)`,
-                    height: 'calc(100% - 60px)'
+                <div className="grid grid-cols-7 flex-1 overflow-hidden" style={{
+                    gridTemplateRows: `repeat(${numRows}, minmax(120px, 1fr))`
                 }}>
                     {calendarDays.map(day => {
                         const dayEvents = getEventsForDate(day);
@@ -521,7 +520,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             <div
                                 key={day.toISOString()}
                                 className={`
-                                    relative p-2 lg:p-3 border-r border-b last:border-r-0 flex flex-col
+                                    relative p-2 border-r border-b last:border-r-0 flex flex-col min-h-[120px] overflow-hidden
                                     ${isCurrentMonth ?
                                         (isInActiveTerm ? 'bg-white hover:bg-gray-50' : 'bg-gray-100 opacity-50')
                                         : 'bg-gray-50 opacity-30'
@@ -550,34 +549,36 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                                 {/* Show events for dates in active terms */}
                                 {isCurrentMonth && isInActiveTerm && dayEvents.length > 0 && (
-                                    <div className="space-y-1 flex-1 overflow-hidden">
-                                        {dayEvents.slice(0, 2).map(event => {
-                                            const eventDate = new Date(event.date);
-                                            const termColors = getEventTermColor(eventDate);
+                                    <div className="flex flex-col gap-1 flex-1 overflow-hidden">
+                                        {/* Show first event as a card */}
+                                        <div
+                                            key={dayEvents[0].id}
+                                            className={`p-1.5 rounded text-xs cursor-pointer transition-all hover:shadow-sm bg-gradient-to-r ${getEventTermColor(new Date(dayEvents[0].date))} text-white shadow-sm`}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onEventClick?.(dayEvents[0].id);
+                                            }}
+                                            title={dayEvents[0].eventName}
+                                        >
+                                            <div className="font-medium truncate leading-tight">
+                                                {dayEvents[0].eventName}
+                                            </div>
+                                            <div className="text-xs opacity-90 truncate leading-tight">
+                                                {format(new Date(dayEvents[0].time), 'HH:mm')}
+                                            </div>
+                                        </div>
 
-                                            return (
-                                                <div
-                                                    key={event.id}
-                                                    className={`p-2 bg-gradient-to-r ${termColors} text-white text-sm rounded-md cursor-pointer hover:opacity-90 transition-opacity shadow-sm`}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onEventClick?.(event.id);
-                                                    }}
-                                                >
-                                                    <div className="font-medium truncate text-sm leading-tight mb-1">{event.eventName}</div>
-                                                    <div className="text-xs leading-tight opacity-90">{format(new Date(event.time), 'HH:mm')}</div>
-                                                </div>
-                                            );
-                                        })}
-                                        {dayEvents.length > 2 && (
+                                        {/* Show "+X more" button if there are additional events */}
+                                        {dayEvents.length > 1 && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     showAllEventsForDay(day, dayEvents);
                                                 }}
-                                                className="w-full text-sm text-blue-600 hover:text-blue-800 font-medium text-center py-1 hover:bg-blue-50 rounded-md transition-colors"
+                                                className="text-xs text-blue-600 hover:text-blue-800 font-medium py-1 px-2 rounded hover:bg-blue-50 transition-colors text-left"
+                                                title={`View all ${dayEvents.length} events`}
                                             >
-                                                +{dayEvents.length - 2} more
+                                                +{dayEvents.length - 1} more
                                             </button>
                                         )}
                                     </div>
@@ -988,7 +989,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                 <EventCard
                                     key={event.id}
                                     event={event}
-                                    onEventClick={() => {
+                                    onClick={() => {
                                         closeDayEventsModal();
                                         onEventClick?.(event.id);
                                     }}
