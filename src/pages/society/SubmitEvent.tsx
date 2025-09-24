@@ -36,8 +36,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { getSocietyIdByEmail } from "@/lib/getSocietyIdByEmail";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { GooglePlacesAutocomplete, PlaceDetails } from '@/components/GooglePlacesAutocomplete';
-import * as rrulePkg from 'rrule';
-const { RRule } = rrulePkg;
+import { RRule } from 'rrule';
 
 const eventCategories = [
   "academic",
@@ -76,7 +75,7 @@ const formSchema = z.object({
   interval: z.number().min(1).optional(),
   customDaysOfWeek: z.array(z.enum(["MO","TU","WE","TH","FR","SA","SU"])).optional(),
   endCondition: z.enum(["never","onDate","afterN"]).optional(),
-  endDate: z.date().optional(),
+  recurringEndDate: z.date().optional(),
   endAfter: z.number().min(1).optional(),
 }).refine((data) => {
   if (data.requiresExternalSignup && (!data.externalSignupLink || data.externalSignupLink.trim() === '')) {
@@ -169,7 +168,7 @@ export default function EventSubmissionPage() {
       interval: 1,
       customDaysOfWeek: [], // always an array
       endCondition: "never",
-      endDate: undefined,
+      recurringEndDate: undefined,
       endAfter: 1, // always a number
     },
   });
