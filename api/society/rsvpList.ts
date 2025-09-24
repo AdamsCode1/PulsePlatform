@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
   const { data, error } = await supabase
     .from('rsvp')
-    .select('created_at, student:student_id(first_name, last_name, email)')
+    .select('created_at, occurrence_start_time, student:student_id(first_name, last_name, email)')
     .eq('event_id', eventId);
   if (error) {
     return res.status(500).json({ message: error.message });

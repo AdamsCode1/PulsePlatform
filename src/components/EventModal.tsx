@@ -207,6 +207,27 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
   // RSVP cutoff logic
   const isRSVPCutoffPassed = event.rsvp_cutoff && new Date(event.rsvp_cutoff).getTime() <= Date.now();
 
+  // Utility to summarize RRULE (simple version)
+  function getRecurrenceSummary(rrule: string | null): string {
+    if (!rrule) return '';
+    const freqMatch = rrule.match(/FREQ=([^;]+)/);
+    const untilMatch = rrule.match(/UNTIL=([^;]+)/);
+    let summary = '';
+    if (freqMatch) {
+      summary += `Repeats ${freqMatch[1].toLowerCase()}`;
+    }
+    if (untilMatch) {
+      const untilDate = untilMatch[1];
+      if (/^\d{8}$/.test(untilDate)) {
+        const y = untilDate.slice(0,4), m = untilDate.slice(4,6), d = untilDate.slice(6,8);
+        summary += ` until ${d}/${m}/${y}`;
+      } else {
+        summary += ` until ${untilDate}`;
+      }
+    }
+    return summary || 'Recurring';
+  }
+
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
@@ -325,6 +346,19 @@ const EventModal = ({ event, onClose, isSocietyView }: EventModalProps) => {
               {event.description || ''}
             </div>
           </div>
+
+          {/* Recurrence Explanation - styled info box */}
+          {event.isRecurring && event.recurrenceRule && (
+            <div className="col-span-1 md:col-span-2 mt-2">
+              <div className="flex items-center bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+                <Calendar className="text-blue-500 mr-3 flex-shrink-0" size={20} />
+                <div>
+                  <div className="font-semibold text-blue-800 text-sm mb-1">This event is recurring</div>
+                  <div className="text-blue-700 text-sm break-words">{getRecurrenceSummary(event.recurrenceRule)}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* RSVP Section */}
           <div className="border-t pt-4 sm:pt-6">

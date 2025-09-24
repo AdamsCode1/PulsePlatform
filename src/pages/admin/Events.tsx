@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDebounce } from '@/hooks/useDebounce';
+import { RRule } from 'rrule';
 
 // Using shared HMR-safe Supabase client from lib/supabaseClient
 
@@ -42,6 +43,7 @@ interface Event {
   rsvp?: {
     count: number;
   }[];
+  rrule?: string; // Recurrence rule
 }
 
 export default function AdminEvents() {
@@ -66,6 +68,40 @@ export default function AdminEvents() {
 
   // Event stats counters
   const [eventStats, setEventStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 });
+
+  // Helper to summarize RRULE
+  function getRecurrenceSummary(rruleString?: string): string | null {
+    if (!rruleString) return null;
+    try {
+      const rule = RRule.fromString(rruleString);
+      // Frequency
+      const freqMap: Record<number, string> = {
+        [RRule.DAILY]: 'Daily',
+        [RRule.WEEKLY]: 'Weekly',
+        [RRule.MONTHLY]: 'Monthly',
+        [RRule.YEARLY]: 'Yearly',
+      };
+      let summary = freqMap[rule.options.freq] || 'Custom';
+      // Byweekday (show names)
+      if (rule.options.byweekday && rule.options.byweekday.length) {
+        const weekdayNames = rule.options.byweekday.map((d: any) =>
+          typeof d === 'number'
+            ? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][d]
+            : d.toString()
+        );
+        summary += ' on ' + weekdayNames.join(', ');
+      }
+      // Until or count
+      if (rule.options.until) {
+        summary += ` until ${rule.options.until.toLocaleDateString()}`;
+      } else if (rule.options.count) {
+        summary += ` (${rule.options.count} times)`;
+      }
+      return summary;
+    } catch {
+      return 'Invalid recurrence rule';
+    }
+  }
 
   // Fetch all pending events for approval
   const fetchEvents = useCallback(async () => {
@@ -433,8 +469,16 @@ export default function AdminEvents() {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-semibold">{event.name}</h3>
                         {getStatusBadge(event.status)}
+                        {event.rrule && (
+                          <Badge className="bg-blue-100 text-blue-800 ml-2">Recurring</Badge>
+                        )}
                       </div>
                       <p className="text-gray-600 mb-3">{event.description}</p>
+                      {event.rrule && (
+                        <div className="text-xs text-blue-700 mb-2">
+                          <strong>Recurs:</strong> {getRecurrenceSummary(event.rrule)}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -572,7 +616,6 @@ export default function AdminEvents() {
                   Review the event details and approve or reject the submission.
                 </DialogDescription>
               </DialogHeader>
-
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium text-gray-900">Description</h4>
@@ -616,8 +659,15 @@ export default function AdminEvents() {
                     />
                   </div>
                 )}
-              </div>
 
+                {selectedEvent.rrule && (
+                  <div>
+                    <h4 className="font-medium text-blue-900">Recurrence</h4>
+                    <p className="text-blue-700 text-sm">{getRecurrenceSummary(selectedEvent.rrule)}</p>
+                    <p className="text-xs text-blue-500 mt-1">Approving this event will approve all its occurrences.</p>
+                  </div>
+                )}
+              </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setReviewDialog(false)} disabled={isUpdating}>
                   Close
@@ -632,7 +682,9 @@ export default function AdminEvents() {
                       {isUpdating ? 'Rejecting...' : <><XCircle className="w-4 h-4 mr-2" />Reject</>}
                     </Button>
                     <Button onClick={() => approveEvent(selectedEvent.id)} disabled={isUpdating}>
-                      {isUpdating ? 'Approving...' : <><CheckCircle className="w-4 h-4 mr-2" />Approve</>}
+                      {isUpdating
+                        ? 'Approving...'
+                        : <><CheckCircle className="w-4 h-4 mr-2" />Approve{selectedEvent.rrule ? ' All Occurrences' : ''}</>}
                     </Button>
                   </>
                 )}

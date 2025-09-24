@@ -1,6 +1,8 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail } from './lib/sendEmail.js';
+import pkg from 'rrule';
+const { RRule } = pkg;
 
 // Create Supabase client
 const supabaseUrl = process.env.SUPABASE_URL!;
@@ -161,12 +163,10 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
     if (action === 'society' && method === 'GET') {
       console.log('Handling society events query');
       const { societyId, status } = req.query;
-      
       let query = supabase
         .from('event')
-        .select('*')
+        .select('*, locations ( name, formatted_address, latitude, longitude, city, region, country )')
         .eq('society_id', societyId);
-      
       // Filter by status if not 'all'
       if (status !== 'all') {
         if (status === 'approved') {
@@ -175,14 +175,33 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
           query = query.eq('status', 'pending');
         }
       }
-      
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) {
         console.error('Society events error:', error);
         return res.status(500).json({ error: error.message });
       }
       console.log('Society events success:', data?.length || 0, 'events');
-      return res.status(200).json(data);
+      // RRULE expansion: for each event, if rrule exists, expand occurrences and attach location info
+      const expanded = (data || []).map(event => {
+        if (event.rrule) {
+          try {
+            const rule = RRule.fromString(event.rrule);
+            // Expand for the next 1 year (customize as needed)
+            const occurrences = rule.between(new Date(), new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)).map(dt => ({
+              start_time: dt.toISOString(),
+              end_time: new Date(dt.getTime() + (new Date(event.end_time).getTime() - new Date(event.start_time).getTime())).toISOString(),
+              location: event.location,
+              locations: event.locations
+            }));
+            return { ...event, occurrences };
+          } catch (e) {
+            return { ...event, occurrences: [], rrule_error: e.message };
+          }
+        } else {
+          return { ...event, occurrences: [{ start_time: event.start_time, end_time: event.end_time, location: event.location, locations: event.locations }] };
+        }
+      });
+      return res.status(200).json(expanded);
     }
 
     if (action === 'by-date' && method === 'GET') {
@@ -279,7 +298,7 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
     if (method === 'GET') {
       if (id) {
         console.log('Handling get single event');
-        const { data, error } = await supabase
+        const { data: event, error } = await supabase
           .from('event')
           .select('*')
           .eq('id', id)
@@ -288,8 +307,23 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
           console.error('Get single event error:', error);
           return res.status(500).json({ error: error.message });
         }
-        console.log('Get single event success');
-        return res.status(200).json(data);
+        let occurrences: { start_time: string; end_time: string; location?: string; locations?: any }[] = [];
+        if (event.rrule) {
+          try {
+            const rule = RRule.fromString(event.rrule);
+            occurrences = rule.all().slice(0, 20).map(dt => ({
+              start_time: dt.toISOString(),
+              end_time: new Date(dt.getTime() + (new Date(event.end_time).getTime() - new Date(event.start_time).getTime())).toISOString(),
+              location: event.location,
+              locations: event.locations
+            }));
+          } catch (e) {
+            occurrences = [];
+          }
+        } else {
+          occurrences = [{ start_time: event.start_time, end_time: event.end_time, location: event.location, locations: event.locations }];
+        }
+        return res.status(200).json({ ...event, occurrences });
       } else {
         console.log('Handling get all events');
         const { data, error } = await supabase
@@ -302,7 +336,26 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
           return res.status(500).json({ error: error.message });
         }
         console.log('Get all events success:', data?.length || 0, 'events');
-        return res.status(200).json(data);
+
+        // RRULE expansion: for each event, if rrule exists, expand occurrences
+        const expanded = (data || []).map(event => {
+          if (event.rrule) {
+            try {
+              const rule = RRule.fromString(event.rrule);
+              // Expand for the next 1 year (customize as needed)
+              const occurrences = rule.between(new Date(), new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)).map(dt => ({
+                start_time: dt.toISOString(),
+                end_time: new Date(dt.getTime() + (new Date(event.end_time).getTime() - new Date(event.start_time).getTime())).toISOString()
+              }));
+              return { ...event, occurrences };
+            } catch (e) {
+              return { ...event, occurrences: [], rrule_error: e.message };
+            }
+          } else {
+            return { ...event, occurrences: [{ start_time: event.start_time, end_time: event.end_time }] };
+          }
+        });
+        return res.status(200).json(expanded);
       }
     }
 
@@ -546,9 +599,30 @@ async function handleRSVPs(req: VercelRequest, res: VercelResponse, supabase: an
   }
 
   if (method === 'POST') {
+    // Require occurrence_start_time for recurring events
+    const { event_id, user_id, occurrence_start_time } = req.body;
+    if (!event_id || !user_id) {
+      return res.status(400).json({ error: 'Missing event_id or user_id' });
+    }
+    // For recurring events, occurrence_start_time is required
+    if (occurrence_start_time === undefined || occurrence_start_time === null) {
+      return res.status(400).json({ error: 'Missing occurrence_start_time for RSVP' });
+    }
+    // Prevent duplicate RSVP for same user, event, and occurrence
+    const { data: existing, error: dupError } = await supabase
+      .from('rsvp')
+      .select('id')
+      .eq('event_id', event_id)
+      .eq('user_id', user_id)
+      .eq('occurrence_start_time', occurrence_start_time)
+      .maybeSingle();
+    if (dupError) return res.status(500).json({ error: dupError.message });
+    if (existing) {
+      return res.status(409).json({ error: 'RSVP already exists for this occurrence' });
+    }
     const { data, error } = await supabase
       .from('rsvp')
-      .insert([req.body])
+      .insert([{ event_id, user_id, occurrence_start_time }])
       .select();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(201).json(data[0]);
