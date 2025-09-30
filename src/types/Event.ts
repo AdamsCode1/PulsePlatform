@@ -16,6 +16,9 @@ export interface Event {
   signup_link?: string;
   status?: 'pending' | 'approved' | 'rejected';
   rsvp_cutoff?: string | null; // Added RSVP cutoff property
+  parentEventId?: string | null; // For recurring occurrences
+  isRecurring?: boolean; // True if this is an occurrence of a recurring event
+  recurrenceRule?: string | null; // RRULE string for display
 }
 
 export interface User {

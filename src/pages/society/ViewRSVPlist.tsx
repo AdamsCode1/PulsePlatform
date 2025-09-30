@@ -27,20 +27,95 @@ const ViewRSVPlist = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const { toast } = useToast();
 
+  // Example: occurrences and RSVPs grouped by occurrence
+  // Replace with your actual data structure if needed
+  const [occurrences, setOccurrences] = useState<any[]>([]); // [{start_time, rsvps: [...]}, ...]
+  const [currentIdx, setCurrentIdx] = useState(0);
+
+  // Fetch all occurrences and RSVPs, then merge for pagination
+  const [allOccurrences, setAllOccurrences] = useState<any[]>([]); // [{start_time, end_time, ...}]
+
   useEffect(() => {
-    async function fetchRSVPs() {
+    async function fetchData() {
       setLoading(true);
-      const response = await fetch(`/api/society/rsvpList?eventId=${eventId}`);
-      const result = await response.json();
-      setRsvps(result.rsvps || []);
-      setLoading(false);
+      setErrorMsg('');
+      try {
+        // Fetch RSVPs
+        const rsvpRes = await fetch(`/api/society/rsvpList?eventId=${eventId}`);
+        if (!rsvpRes.ok) throw new Error('Failed to fetch RSVP list');
+        const rsvpResult = await rsvpRes.json();
+        // Fetch event occurrences
+        const occRes = await fetch(`/api/unified?resource=events&action=single&id=${eventId}`);
+        if (!occRes.ok) throw new Error('Failed to fetch event occurrences');
+        const occResult = await occRes.json();
+        let occurrences = [];
+        if (occResult && occResult.occurrences) {
+          occurrences = occResult.occurrences;
+        } else if (occResult && occResult.rrule) {
+          occurrences = [{ start_time: occResult.start_time, end_time: occResult.end_time }];
+        }
+        setAllOccurrences(occurrences);
+        console.log('All occurrences:', occurrences);
+        console.log('All RSVPs:', rsvpResult.rsvps);
+        // Merge: for each occurrence, attach its RSVP list by matching occurrence_start_time
+        const merged = occurrences.map((occ, occIdx) => ({
+          ...occ,
+          rsvps: (rsvpResult.rsvps || []).filter((rsvp, rsvpIdx) => {
+            if (!rsvp.occurrence_start_time || !occ.start_time) {
+              console.log(`SKIP: occIdx=${occIdx}, rsvpIdx=${rsvpIdx}, occ.start_time=${occ.start_time}, rsvp.occurrence_start_time=${rsvp.occurrence_start_time}`);
+              return false;
+            }
+            const occDate = new Date(occ.start_time);
+            const rsvpDate = new Date(rsvp.occurrence_start_time);
+            console.log(`COMPARE: occIdx=${occIdx}, rsvpIdx=${rsvpIdx}, occ.start_time=${occ.start_time}, rsvp.occurrence_start_time=${rsvp.occurrence_start_time}, occDate=${occDate.toISOString()}, rsvpDate=${rsvpDate.toISOString()}`);
+            const match = occDate.getUTCFullYear() === rsvpDate.getUTCFullYear() &&
+              occDate.getUTCMonth() === rsvpDate.getUTCMonth() &&
+              occDate.getUTCDate() === rsvpDate.getUTCDate() &&
+              occDate.getUTCHours() === rsvpDate.getUTCHours() &&
+              occDate.getUTCMinutes() === rsvpDate.getUTCMinutes();
+            if (match) {
+              console.log(`MATCH: occIdx=${occIdx}, rsvpIdx=${rsvpIdx}`);
+            } else {
+              console.log(`NOMATCH: occIdx=${occIdx}, rsvpIdx=${rsvpIdx}`);
+            }
+            return match;
+          })
+        }));
+        console.log('Merged occurrences:', merged);
+        setOccurrences(merged);
+      } catch (err: any) {
+        setErrorMsg(err.message || 'Failed to load RSVP or occurrence data');
+      } finally {
+        setLoading(false);
+      }
     }
-    fetchRSVPs();
+    fetchData();
   }, [eventId]);
+
+  // Reset currentIdx to first occurrence that is today or in the future
+  useEffect(() => {
+    if (occurrences.length === 0) {
+      setCurrentIdx(0);
+      return;
+    }
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+    console.log('Today ISO:', todayStr);
+    occurrences.forEach((occ, i) => {
+      const occDateStr = new Date(occ.start_time).toISOString().slice(0, 10);
+      console.log(`Occurrence ${i}:`, occ.start_time, 'ISO:', occDateStr);
+    });
+    const idx = occurrences.findIndex(occ => {
+      const occDateStr = new Date(occ.start_time).toISOString().slice(0, 10);
+      return occDateStr >= todayStr;
+    });
+    console.log('Selected idx:', idx);
+    setCurrentIdx(idx === -1 ? 0 : idx);
+  }, [occurrences.length]);
 
   const handleDownloadCSV = () => {
     try {
-      const csv = rsvpsToCSV(rsvps);
+      const csv = rsvpsToCSV(occurrences[currentIdx]?.rsvps || []);
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -70,7 +145,7 @@ const ViewRSVPlist = () => {
     setEmailing(true);
     setErrorMsg('');
     try {
-      const csv = rsvpsToCSV(rsvps);
+      const csv = rsvpsToCSV(occurrences[currentIdx]?.rsvps || []);
       const response = await fetch('/api/society/emailRSVPList', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -123,6 +198,49 @@ const ViewRSVPlist = () => {
           {errorMsg && <div className="text-red-500 mb-2">{errorMsg}</div>}
           {loading ? (
             <Skeleton className="h-8 w-full mb-2" />
+          ) : occurrences.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={currentIdx === 0}
+                  onClick={() => setCurrentIdx(idx => Math.max(0, idx - 1))}
+                >
+                  ← Prev
+                </Button>
+                <div className="text-sm font-medium text-purple-700">
+                  {occurrences[currentIdx].start_time && !isNaN(Date.parse(occurrences[currentIdx].start_time))
+                    ? format(new Date(occurrences[currentIdx].start_time), 'PPpp')
+                    : (occurrences[currentIdx].start_time === 'single' ? 'Single Event' : 'Unknown Date')}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={currentIdx === occurrences.length - 1}
+                  onClick={() => setCurrentIdx(idx => Math.min(occurrences.length - 1, idx + 1))}
+                >
+                  Next →
+                </Button>
+              </div>
+              <div className="grid gap-4 mt-4">
+                {occurrences[currentIdx].rsvps.map((rsvp, idx) => (
+                  <Card key={idx} className="border border-purple-200 shadow-sm">
+                    <CardContent className="py-4">
+                      <div className="font-bold text-lg text-purple-700">
+                        {rsvp.student?.first_name} {rsvp.student?.last_name}
+                      </div>
+                      <div className="text-gray-600 text-sm">{rsvp.student?.email}</div>
+                      {rsvp.created_at && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          RSVP Time: {format(new Date(rsvp.created_at), 'PPpp')}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </>
           ) : rsvps.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <svg width="64" height="64" fill="none" viewBox="0 0 64 64" className="mb-4 text-purple-300">
