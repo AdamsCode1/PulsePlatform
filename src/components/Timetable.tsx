@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Event } from '@/types/Event';
 import TimetableLoadingSkeleton from './TimetableLoadingSkeleton';
 import EventCard from './EventCard';
+import EventModal from './EventModal';
 
 // Academic Terms
 const ACADEMIC_TERMS = [
@@ -60,6 +61,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     const [selectedDayEvents, setSelectedDayEvents] = useState<Event[]>([]);
     const [showDayEventsModal, setShowDayEventsModal] = useState(false);
     const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
+    const [selectedEventInModal, setSelectedEventInModal] = useState<Event | null>(null);
 
     // Cleanup: restore body scroll on component unmount
     useEffect(() => {
@@ -160,6 +162,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         setShowDayEventsModal(false);
         setSelectedDayEvents([]);
         setSelectedDayDate(null);
+        setSelectedEventInModal(null); // Also close event details
         // Restore body scroll when modal is closed
         const scrollY = parseInt(document.body.dataset.scrollY || '0');
         document.body.style.overflow = '';
@@ -169,6 +172,16 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         delete document.body.dataset.scrollY;
         // Restore the scroll position instantly without animation
         window.scrollTo({ top: scrollY, behavior: 'instant' });
+    };
+
+    // Handle showing event details within the day events modal
+    const showEventDetails = (event: Event) => {
+        setSelectedEventInModal(event);
+    };
+
+    // Handle closing event details within the day events modal
+    const closeEventDetails = () => {
+        setSelectedEventInModal(null);
     };
 
     // Handle month navigation
@@ -974,9 +987,24 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                         onTouchMove={(e) => e.stopPropagation()}
                     >
                         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                            <h3 className="text-lg font-semibold">
-                                Events for {format(selectedDayDate, 'MMMM d, yyyy')}
-                            </h3>
+                            {selectedEventInModal ? (
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={closeEventDetails}
+                                        className="text-gray-400 hover:text-gray-600 text-lg"
+                                        title="Back to events list"
+                                    >
+                                        ←
+                                    </button>
+                                    <h3 className="text-lg font-semibold">
+                                        Event Details
+                                    </h3>
+                                </div>
+                            ) : (
+                                <h3 className="text-lg font-semibold">
+                                    Events for {format(selectedDayDate, 'MMMM d, yyyy')}
+                                </h3>
+                            )}
                             <button
                                 onClick={closeDayEventsModal}
                                 className="text-gray-400 hover:text-gray-600 text-xl font-bold"
@@ -984,18 +1012,27 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                 ×
                             </button>
                         </div>
-                        <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
-                            {selectedDayEvents.map(event => (
-                                <EventCard
-                                    key={event.id}
-                                    event={event}
-                                    onClick={() => {
-                                        closeDayEventsModal();
-                                        onEventClick?.(event.id);
-                                    }}
+                        {!selectedEventInModal && (
+                            <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
+                                {selectedDayEvents.map(event => (
+                                    <EventCard
+                                        key={event.id}
+                                        event={event}
+                                        onClick={() => showEventDetails(event)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Nested Event Modal */}
+                        {selectedEventInModal && (
+                            <div className="absolute inset-0 bg-white rounded-lg z-10">
+                                <EventModal
+                                    event={selectedEventInModal}
+                                    onClose={closeEventDetails}
                                 />
-                            ))}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
