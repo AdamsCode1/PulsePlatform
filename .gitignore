@@ -31,3 +31,6 @@ dist-ssr
 *.sw?
 .vercel
 .vscode
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md

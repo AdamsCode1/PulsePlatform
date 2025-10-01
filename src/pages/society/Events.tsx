@@ -30,6 +30,7 @@ interface Event {
   rsvp?: {
     count: number;
   }[];
+  rrule?: string; // Recurrence rule
 }
 
 export default function SocietyEvents() {
@@ -167,6 +168,27 @@ export default function SocietyEvents() {
     return new Date(eventDate) < new Date();
   };
 
+  // Utility to summarize RRULE (simple version)
+  function getRecurrenceSummary(rrule: string | null): string {
+    if (!rrule) return '';
+    const freqMatch = rrule.match(/FREQ=([^;]+)/);
+    const untilMatch = rrule.match(/UNTIL=([^;]+)/);
+    let summary = '';
+    if (freqMatch) {
+      summary += `Repeats ${freqMatch[1].toLowerCase()}`;
+    }
+    if (untilMatch) {
+      const untilDate = untilMatch[1];
+      if (/^\d{8}$/.test(untilDate)) {
+        const y = untilDate.slice(0,4), m = untilDate.slice(4,6), d = untilDate.slice(6,8);
+        summary += ` until ${d}/${m}/${y}`;
+      } else {
+        summary += ` until ${untilDate}`;
+      }
+    }
+    return summary || 'Recurring';
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -290,6 +312,15 @@ export default function SocietyEvents() {
                       <span className="font-medium text-gray-800">{event.rsvp?.[0]?.count || 0} RSVPs</span>
                     </div>
                   </div>
+
+                  {/* Recurring tag - styled info box */}
+                  {event.rrule && (
+                    <div className="flex items-center bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
+                      <Calendar className="text-blue-500 mr-2 flex-shrink-0" size={16} />
+                      <span className="font-semibold text-blue-800 text-xs">Recurring</span>
+                      <span className="text-blue-700 text-xs ml-2">{getRecurrenceSummary(event.rrule)}</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between mt-2">
                     <div className="text-xs text-gray-500">

@@ -65,6 +65,10 @@ const formSchema = z.object({
   location: z.string().min(1, "Location is required").min(3, "Location must be at least 3 characters"),
   requiresExternalSignup: z.boolean().optional(),
   externalSignupLink: z.string().optional(),
+  repeats: z.boolean().optional(), // new toggle
+  repeatFrequency: z.enum(["none", "daily", "weekly", "monthly", "yearly", "custom"]).optional(), // frequency selector
+  // We'll add more recurrence fields in the next steps
+  rrule: z.string().optional(), // still needed for backend, but not user-facing
 }).refine((data) => {
   if (data.requiresExternalSignup && (!data.externalSignupLink || data.externalSignupLink.trim() === '')) {
     return false;
@@ -113,6 +117,9 @@ export default function PartnerEventSubmissionPage() {
       location: "",
       requiresExternalSignup: false,
       externalSignupLink: "",
+      repeats: false,
+      repeatFrequency: "none",
+      rrule: "",
     },
   });
 
@@ -199,6 +206,7 @@ export default function PartnerEventSubmissionPage() {
       partner_id: partnerId,
       status: 'pending',
       signup_link: data.requiresExternalSignup ? data.externalSignupLink : null,
+      rrule: data.rrule || null, // <-- Add RRULE to payload
     };
     try {
       const { data: insertedEvent, error } = await supabase
@@ -368,6 +376,59 @@ export default function PartnerEventSubmissionPage() {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="repeats"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Does this event repeat?</FormLabel>
+                        <FormControl>
+                          <Select
+                            onValueChange={v => field.onChange(v === 'true')}
+                            defaultValue={field.value ? 'true' : 'false'}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select option" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="false">No</SelectItem>
+                              <SelectItem value="true">Yes</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {form.watch('repeats') && (
+                    <FormField
+                      control={form.control}
+                      name="repeatFrequency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Repeat Frequency</FormLabel>
+                          <FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select frequency" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="daily">Daily</SelectItem>
+                                <SelectItem value="weekly">Weekly</SelectItem>
+                                <SelectItem value="monthly">Monthly</SelectItem>
+                                <SelectItem value="yearly">Yearly</SelectItem>
+                                <SelectItem value="custom">Custom...</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </>
               )}
 
@@ -473,6 +534,11 @@ export default function PartnerEventSubmissionPage() {
                     {form.getValues("requiresExternalSignup") && (
                       <div>
                         <strong>Signup Link:</strong> {form.getValues("externalSignupLink")}
+                      </div>
+                    )}
+                    {form.getValues("rrule") && (
+                      <div>
+                        <strong>Recurrence Rule:</strong> {form.getValues("rrule")}
                       </div>
                     )}
                   </div>
