@@ -286,6 +286,7 @@ async function handleEvents(req: VercelRequest, res: VercelResponse, supabase: a
           to: societyDetails.contact_email,
           subject: `Event "${eventDetails.name}" Rejected`,
           text: `Your event titled "${eventDetails.name}" has been rejected.\n\nReason: ${req.body?.reason || 'No reason provided.'}`,
+          html: undefined
         });
         console.log('Rejection email sent to', societyDetails.contact_email);
       } catch (emailErr) {
