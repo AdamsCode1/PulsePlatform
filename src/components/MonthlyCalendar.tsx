@@ -11,7 +11,7 @@ const ACADEMIC_TERMS = [
   {
     id: 'michaelmas',
     label: 'Michaelmas Term',
-    startDate: new Date(2025, 9, 6), // October 6, 2025
+    startDate: new Date(2025, 8, 25), // September 25, 2025 (start of freshers week)
     endDate: new Date(2025, 11, 12), // December 12, 2025
     color: 'from-blue-400 to-blue-600',
   },
