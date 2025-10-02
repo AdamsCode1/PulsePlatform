@@ -80,22 +80,50 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
     // Get events for a specific date
     const getEventsForDate = (date: Date) => {
-        return events.filter(event => {
-            const eventDate = new Date(event.date);
-            const isSameDate = isSameDay(eventDate, date);
+        try {
+            return events.filter(event => {
+                if (!event || !event.date) {
+                    console.warn('Event missing date:', event);
+                    return false;
+                }
 
-            // Apply term filtering
-            if (activeTerms.length > 0) {
-                const isInActiveTerm = activeTerms.some(termId => {
-                    const term = ACADEMIC_TERMS.find(t => t.id === termId);
-                    if (!term) return false;
-                    return eventDate >= term.startDate && eventDate <= term.endDate;
-                });
-                return isSameDate && isInActiveTerm;
-            }
+                let eventDate;
+                try {
+                    // Handle different date formats
+                    if (typeof event.date === 'string') {
+                        eventDate = parseISO(event.date);
+                    } else {
+                        eventDate = new Date(event.date);
+                    }
 
-            return isSameDate;
-        });
+                    // Check if the date is valid
+                    if (isNaN(eventDate.getTime())) {
+                        console.warn('Invalid event date:', event.date, 'for event:', event.id);
+                        return false;
+                    }
+                } catch (err) {
+                    console.warn('Error parsing event date:', event.date, 'for event:', event.id, err);
+                    return false;
+                }
+
+                const isSameDate = isSameDay(eventDate, date);
+
+                // Apply term filtering
+                if (activeTerms.length > 0) {
+                    const isInActiveTerm = activeTerms.some(termId => {
+                        const term = ACADEMIC_TERMS.find(t => t.id === termId);
+                        if (!term) return false;
+                        return eventDate >= term.startDate && eventDate <= term.endDate;
+                    });
+                    return isSameDate && isInActiveTerm;
+                }
+
+                return isSameDate;
+            });
+        } catch (err) {
+            console.error('Error in getEventsForDate:', err);
+            return [];
+        }
     };
 
     // Get the term that an event falls into
@@ -253,6 +281,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
     // Render daily view (weekly layout with current day highlighted)
     const renderDailyView = () => {
+        console.log('renderDailyView called, currentDate:', currentDate);
         const weekStart = startOfWeek(currentDate);
         const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
         const today = new Date();
@@ -326,6 +355,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                 <div className="p-4 md:p-8">
                     {(() => {
                         const dayEvents = getEventsForDate(currentDate);
+                        console.log('Daily view - currentDate:', currentDate, 'dayEvents:', dayEvents, 'totalEvents:', events.length);
 
                         if (dayEvents.length === 0) {
                             return (
@@ -335,6 +365,9 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                         <p className="text-gray-500 text-sm">
                                             No events scheduled for {format(currentDate, 'MMMM d, yyyy')}
                                         </p>
+                                        <p className="text-gray-400 text-xs mt-2">
+                                            Total events in system: {events.length}
+                                        </p>
                                     </div>
                                 </div>
                             );
@@ -343,7 +376,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                         return (
                             <div className="space-y-4">
                                 <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
-                                    Events for {format(currentDate, 'MMMM d, yyyy')}
+                                    Events for {format(currentDate, 'MMMM d, yyyy')} ({dayEvents.length} events)
                                 </h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">{dayEvents.map(event => (
                                     <EventCard
@@ -605,10 +638,12 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     };
 
     if (isLoading) {
+        console.log('Timetable: Loading state');
         return <TimetableLoadingSkeleton />;
     }
 
     if (error) {
+        console.log('Timetable: Error state:', error);
         return (
             <div className="p-8 text-center">
                 <div className="text-red-500 mb-4">
@@ -628,61 +663,216 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         );
     }
 
-    return (
-        <div className="w-full bg-gray-50 min-h-screen">
-            {/* Header */}
-            <div className="bg-white border-b px-4 md:px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-lg md:text-2xl font-semibold text-gray-900">
-                        Browse events and manage your timetable
-                    </h1>
-                    <Button
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-3 md:px-4 py-2 rounded-lg text-sm"
-                        onClick={() => {
-                            // Check if user is logged in (you can replace this with your actual auth check)
-                            const isLoggedIn = localStorage.getItem('societyAuth') || sessionStorage.getItem('societyAuth');
+    console.log('Timetable: Rendering normally. selectedView:', selectedView, 'events count:', events.length, 'currentDate:', currentDate);
 
-                            if (isLoggedIn) {
-                                // Redirect to society dashboard
-                                window.location.href = '/society/dashboard';
-                            } else {
-                                // Redirect to society login page
-                                window.location.href = '/login/society';
-                            }
-                        }}
-                    >
-                        <Plus className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Add Event</span>
-                        <span className="sm:hidden">Add</span>
-                    </Button>
-                </div>
-            </div>
+    try {
+        return (
+            <div className="w-full bg-gray-50 min-h-screen">
+                {/* Header */}
+                <div className="bg-white border-b px-4 md:px-6 py-4">
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-lg md:text-2xl font-semibold text-gray-900">
+                            Browse events and manage your timetable
+                        </h1>
+                        <Button
+                            className="bg-orange-500 hover:bg-orange-600 text-white px-3 md:px-4 py-2 rounded-lg text-sm"
+                            onClick={() => {
+                                // Check if user is logged in (you can replace this with your actual auth check)
+                                const isLoggedIn = localStorage.getItem('societyAuth') || sessionStorage.getItem('societyAuth');
 
-            {/* Mobile Layout */}
-            <div className="lg:hidden h-[calc(100vh-80px)] flex flex-col">
-                {/* Mobile Filters Dropdown Button */}
-                <div className="bg-white border-b px-4 py-2">
-                    <button
-                        onClick={() => setShowMobileFilters(!showMobileFilters)}
-                        className="flex items-center justify-center w-full py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                    >
-                        <span className="mr-2">Filters</span>
-                        <ChevronDown
-                            className={`h-4 w-4 transition-transform duration-200 ${showMobileFilters ? 'rotate-180' : ''
-                                }`}
-                        />
-                    </button>
+                                if (isLoggedIn) {
+                                    // Redirect to society dashboard
+                                    window.location.href = '/society/dashboard';
+                                } else {
+                                    // Redirect to society login page
+                                    window.location.href = '/login/society';
+                                }
+                            }}
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            <span className="hidden sm:inline">Add Event</span>
+                            <span className="sm:hidden">Add</span>
+                        </Button>
+                    </div>
                 </div>
 
-                {/* Mobile Filters Panel - Collapsible */}
-                {showMobileFilters && (
-                    <div className="bg-white border-b p-4 space-y-4 max-h-[50vh] overflow-y-auto">
+                {/* Debug Info */}
+                <div className="bg-yellow-100 p-2 text-xs">
+                    Current View: {selectedView} | Events: {events.length} | Date: {format(currentDate, 'yyyy-MM-dd')}
+                </div>
+
+                {/* Mobile Layout */}
+                <div className="lg:hidden h-[calc(100vh-80px)] flex flex-col">
+                    {/* Mobile Filters Dropdown Button */}
+                    <div className="bg-white border-b px-4 py-2">
+                        <button
+                            onClick={() => setShowMobileFilters(!showMobileFilters)}
+                            className="flex items-center justify-center w-full py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                        >
+                            <span className="mr-2">Filters</span>
+                            <ChevronDown
+                                className={`h-4 w-4 transition-transform duration-200 ${showMobileFilters ? 'rotate-180' : ''
+                                    }`}
+                            />
+                        </button>
+                    </div>
+
+                    {/* Mobile Filters Panel - Collapsible */}
+                    {showMobileFilters && (
+                        <div className="bg-white border-b p-4 space-y-4 max-h-[50vh] overflow-y-auto">
+                            {/* Academic Terms */}
+                            <div>
+                                <h3 className="text-sm font-medium text-gray-700 mb-2">Academic Terms</h3>
+                                <div className="space-y-2">
+                                    {ACADEMIC_TERMS.map(term => (
+                                        <label key={term.id} className="flex items-start space-x-2 cursor-pointer">
+                                            <div className="flex items-center h-5">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={activeTerms.includes(term.id)}
+                                                    onChange={() => toggleTerm(term.id)}
+                                                    className="sr-only"
+                                                />
+                                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center
+                                                ${activeTerms.includes(term.id)
+                                                        ? 'bg-gray-800 border-gray-800'
+                                                        : 'border-gray-300'
+                                                    }`}
+                                                >
+                                                    {activeTerms.includes(term.id) && (
+                                                        <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start space-x-2">
+                                                <div className={`w-3 h-3 rounded-full ${term.color} mt-0.5`}></div>
+                                                <div className="flex-1">
+                                                    <span className="text-sm text-gray-700 font-medium block">{term.label}</span>
+                                                    <span className="text-xs text-gray-500">
+                                                        {format(term.startDate, 'MMM d, yyyy')} - {format(term.endDate, 'MMM d, yyyy')}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Category Filter */}
+                            <div>
+                                <h3 className="text-sm font-medium text-gray-700 mb-2">Filter by Category</h3>
+                                <Select>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="All Categories" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Categories</SelectItem>
+                                        <SelectItem value="academic">Academic</SelectItem>
+                                        <SelectItem value="social">Social</SelectItem>
+                                        <SelectItem value="sports">Sports</SelectItem>
+                                        <SelectItem value="cultural">Cultural</SelectItem>
+                                        <SelectItem value="career">Career</SelectItem>
+                                        <SelectItem value="volunteer">Volunteer</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mobile Calendar Content */}
+                    <div className="flex-1 p-2 overflow-hidden">
+                        {/* Tab Navigation */}
+                        <div className="mb-3">
+                            <div className="flex space-x-4 border-b border-gray-200">
+                                <button
+                                    onClick={() => setSelectedView('monthly')}
+                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }`}
+                                >
+                                    Monthly
+                                </button>
+                                <button
+                                    onClick={() => setSelectedView('weekly')}
+                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }`}
+                                >
+                                    Weekly
+                                </button>
+                                <button
+                                    onClick={() => setSelectedView('daily')}
+                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }`}
+                                >
+                                    Daily
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Mobile Calendar Views Container */}
+                        <div className={`
+                        ${showMobileFilters
+                                ? 'h-[calc(100vh-300px)]'
+                                : 'h-[calc(100vh-160px)]'
+                            } 
+                        overflow-hidden flex flex-col
+                    `}>
+                            {selectedView === 'daily' ? (
+                                renderDailyView()
+                            ) : selectedView === 'weekly' ? (
+                                renderWeeklyView()
+                            ) : (
+                                <div className="h-full flex flex-col">
+                                    {/* Month Navigation */}
+                                    <div className="flex items-center justify-between mb-3 flex-shrink-0 bg-white p-2 sticky top-0 z-10 border-b">
+                                        <div className="flex items-center space-x-2">
+                                            <h2 className="text-lg font-semibold text-gray-900">
+                                                {format(currentDate, 'MMMM yyyy')}
+                                            </h2>
+                                            <div className="flex space-x-1">
+                                                <button
+                                                    onClick={handlePrevMonth}
+                                                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                                >
+                                                    <ChevronLeft className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={handleNextMonth}
+                                                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                                >
+                                                    <ChevronRight className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Calendar */}
+                                    <div className="flex-1 min-h-0 pb-4 overflow-auto">
+                                        {renderMainCalendar()}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Desktop Layout */}
+                <div className="hidden lg:flex lg:flex-row h-[calc(100vh-80px)]">
+                    {/* Left Sidebar */}
+                    <div className="w-72 bg-white border-r p-4 xl:p-6 space-y-4 xl:space-y-6 overflow-y-auto">
                         {/* Academic Terms */}
                         <div>
-                            <h3 className="text-sm font-medium text-gray-700 mb-2">Academic Terms</h3>
-                            <div className="space-y-2">
+                            <h3 className="text-sm font-medium text-gray-700 mb-3">Academic Terms</h3>
+                            <div className="space-y-3">
                                 {ACADEMIC_TERMS.map(term => (
-                                    <label key={term.id} className="flex items-start space-x-2 cursor-pointer">
+                                    <label key={term.id} className="flex items-start space-x-3 cursor-pointer">
                                         <div className="flex items-center h-5">
                                             <input
                                                 type="checkbox"
@@ -691,7 +881,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                                 className="sr-only"
                                             />
                                             <div className={`w-4 h-4 rounded border-2 flex items-center justify-center
-                                                ${activeTerms.includes(term.id)
+                                            ${activeTerms.includes(term.id)
                                                     ? 'bg-gray-800 border-gray-800'
                                                     : 'border-gray-300'
                                                 }`}
@@ -703,7 +893,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-start space-x-2">
+                                        <div className="flex items-start space-x-3">
                                             <div className={`w-3 h-3 rounded-full ${term.color} mt-0.5`}></div>
                                             <div className="flex-1">
                                                 <span className="text-sm text-gray-700 font-medium block">{term.label}</span>
@@ -717,9 +907,15 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             </div>
                         </div>
 
+                        {/* Mini Calendar */}
+                        <div>
+                            <h3 className="text-sm font-medium text-gray-700 mb-3">Calendar</h3>
+                            {renderMiniCalendar()}
+                        </div>
+
                         {/* Category Filter */}
                         <div>
-                            <h3 className="text-sm font-medium text-gray-700 mb-2">Filter by Category</h3>
+                            <h3 className="text-sm font-medium text-gray-700 mb-3">Filter by Category</h3>
                             <Select>
                                 <SelectTrigger className="w-full">
                                     <SelectValue placeholder="All Categories" />
@@ -736,308 +932,167 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             </Select>
                         </div>
                     </div>
-                )}
 
-                {/* Mobile Calendar Content */}
-                <div className="flex-1 p-2 overflow-hidden">
-                    {/* Tab Navigation */}
-                    <div className="mb-3">
-                        <div className="flex space-x-4 border-b border-gray-200">
-                            <button
-                                onClick={() => setSelectedView('monthly')}
-                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
-                                    ? 'border-gray-900 text-gray-900'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                Monthly
-                            </button>
-                            <button
-                                onClick={() => setSelectedView('weekly')}
-                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
-                                    ? 'border-gray-900 text-gray-900'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                Weekly
-                            </button>
-                            <button
-                                onClick={() => setSelectedView('daily')}
-                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
-                                    ? 'border-gray-900 text-gray-900'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                Daily
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Mobile Calendar Views Container */}
-                    <div className={`
-                        ${showMobileFilters
-                            ? 'h-[calc(100vh-300px)]'
-                            : 'h-[calc(100vh-160px)]'
-                        } 
-                        overflow-hidden flex flex-col
-                    `}>
-                        {selectedView === 'daily' ? (
-                            renderDailyView()
-                        ) : selectedView === 'weekly' ? (
-                            renderWeeklyView()
-                        ) : (
-                            <div className="h-full flex flex-col">
-                                {/* Month Navigation */}
-                                <div className="flex items-center justify-between mb-3 flex-shrink-0 bg-white p-2 sticky top-0 z-10 border-b">
-                                    <div className="flex items-center space-x-2">
-                                        <h2 className="text-lg font-semibold text-gray-900">
-                                            {format(currentDate, 'MMMM yyyy')}
-                                        </h2>
-                                        <div className="flex space-x-1">
-                                            <button
-                                                onClick={handlePrevMonth}
-                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <ChevronLeft className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={handleNextMonth}
-                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <ChevronRight className="h-4 w-4" />
-                                            </button>
-                                        </div>
-                                    </div>
+                    {/* Main Content */}
+                    <div className="flex-1 p-4 xl:p-6 overflow-hidden">
+                        {/* Tab Navigation */}
+                        <div className="mb-6">
+                            <div className="flex space-x-8 border-b border-gray-200">
+                                <div className="text-lg font-medium text-gray-900 pb-2">
+                                    Calendar
                                 </div>
-
-                                {/* Calendar */}
-                                <div className="flex-1 min-h-0 pb-4 overflow-auto">
-                                    {renderMainCalendar()}
-                                </div>
+                                <button
+                                    onClick={() => setSelectedView('monthly')}
+                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }`}
+                                >
+                                    Monthly
+                                </button>
+                                <button
+                                    onClick={() => setSelectedView('weekly')}
+                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }`}
+                                >
+                                    Weekly
+                                </button>
+                                <button
+                                    onClick={() => setSelectedView('daily')}
+                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
+                                        ? 'border-gray-900 text-gray-900'
+                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        }`}
+                                >
+                                    Daily
+                                </button>
                             </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Desktop Layout */}
-            <div className="hidden lg:flex lg:flex-row h-[calc(100vh-80px)]">
-                {/* Left Sidebar */}
-                <div className="w-72 bg-white border-r p-4 xl:p-6 space-y-4 xl:space-y-6 overflow-y-auto">
-                    {/* Academic Terms */}
-                    <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">Academic Terms</h3>
-                        <div className="space-y-3">
-                            {ACADEMIC_TERMS.map(term => (
-                                <label key={term.id} className="flex items-start space-x-3 cursor-pointer">
-                                    <div className="flex items-center h-5">
-                                        <input
-                                            type="checkbox"
-                                            checked={activeTerms.includes(term.id)}
-                                            onChange={() => toggleTerm(term.id)}
-                                            className="sr-only"
-                                        />
-                                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center
-                                            ${activeTerms.includes(term.id)
-                                                ? 'bg-gray-800 border-gray-800'
-                                                : 'border-gray-300'
-                                            }`}
-                                        >
-                                            {activeTerms.includes(term.id) && (
-                                                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-start space-x-3">
-                                        <div className={`w-3 h-3 rounded-full ${term.color} mt-0.5`}></div>
-                                        <div className="flex-1">
-                                            <span className="text-sm text-gray-700 font-medium block">{term.label}</span>
-                                            <span className="text-xs text-gray-500">
-                                                {format(term.startDate, 'MMM d, yyyy')} - {format(term.endDate, 'MMM d, yyyy')}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </label>
-                            ))}
                         </div>
-                    </div>
 
-                    {/* Mini Calendar */}
-                    <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">Calendar</h3>
-                        {renderMiniCalendar()}
-                    </div>
-
-                    {/* Category Filter */}
-                    <div>
-                        <h3 className="text-sm font-medium text-gray-700 mb-3">Filter by Category</h3>
-                        <Select>
-                            <SelectTrigger className="w-full">
-                                <SelectValue placeholder="All Categories" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Categories</SelectItem>
-                                <SelectItem value="academic">Academic</SelectItem>
-                                <SelectItem value="social">Social</SelectItem>
-                                <SelectItem value="sports">Sports</SelectItem>
-                                <SelectItem value="cultural">Cultural</SelectItem>
-                                <SelectItem value="career">Career</SelectItem>
-                                <SelectItem value="volunteer">Volunteer</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="flex-1 p-4 xl:p-6 overflow-hidden">
-                    {/* Tab Navigation */}
-                    <div className="mb-6">
-                        <div className="flex space-x-8 border-b border-gray-200">
-                            <div className="text-lg font-medium text-gray-900 pb-2">
-                                Calendar
-                            </div>
-                            <button
-                                onClick={() => setSelectedView('monthly')}
-                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
-                                    ? 'border-gray-900 text-gray-900'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                Monthly
-                            </button>
-                            <button
-                                onClick={() => setSelectedView('weekly')}
-                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
-                                    ? 'border-gray-900 text-gray-900'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                Weekly
-                            </button>
-                            <button
-                                onClick={() => setSelectedView('daily')}
-                                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
-                                    ? 'border-gray-900 text-gray-900'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                Daily
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Desktop Calendar Views Container */}
-                    <div className="h-[calc(100vh-200px)] overflow-hidden flex flex-col">
-                        {selectedView === 'daily' ? (
-                            renderDailyView()
-                        ) : selectedView === 'weekly' ? (
-                            renderWeeklyView()
-                        ) : (
-                            <div className="h-full flex flex-col">
-                                {/* Month Navigation */}
-                                <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                                    <div className="flex items-center space-x-4">
-                                        <h2 className="text-2xl xl:text-3xl font-semibold text-gray-900">
-                                            {format(currentDate, 'MMMM yyyy')}
-                                        </h2>
-                                        <div className="flex space-x-1">
-                                            <button
-                                                onClick={handlePrevMonth}
-                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <ChevronLeft className="h-5 w-5" />
-                                            </button>
-                                            <button
-                                                onClick={handleNextMonth}
-                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                            >
-                                                <ChevronRight className="h-5 w-5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Calendar */}
-                                <div className="flex-1 min-h-0 overflow-auto">
-                                    {renderMainCalendar()}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Day Events Modal */}
-            {showDayEventsModal && selectedDayEvents && selectedDayDate && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-                    onWheel={(e) => e.preventDefault()}
-                    onTouchMove={(e) => e.preventDefault()}
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) {
-                            closeDayEventsModal();
-                        }
-                    }}
-                >
-                    <div
-                        className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
-                        onWheel={(e) => e.stopPropagation()}
-                        onTouchMove={(e) => e.stopPropagation()}
-                    >
-                        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                            {selectedEventInModal ? (
-                                <div className="flex items-center space-x-2">
-                                    <button
-                                        onClick={closeEventDetails}
-                                        className="text-gray-400 hover:text-gray-600 text-lg"
-                                        title="Back to events list"
-                                    >
-                                        ←
-                                    </button>
-                                    <h3 className="text-lg font-semibold">
-                                        Event Details
-                                    </h3>
-                                </div>
+                        {/* Desktop Calendar Views Container */}
+                        <div className="h-[calc(100vh-200px)] overflow-hidden flex flex-col">
+                            {selectedView === 'daily' ? (
+                                renderDailyView()
+                            ) : selectedView === 'weekly' ? (
+                                renderWeeklyView()
                             ) : (
-                                <h3 className="text-lg font-semibold">
-                                    Events for {format(selectedDayDate, 'MMMM d, yyyy')}
-                                </h3>
-                            )}
-                            <button
-                                onClick={closeDayEventsModal}
-                                className="text-gray-400 hover:text-gray-600 text-xl font-bold"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        {!selectedEventInModal && (
-                            <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
-                                {selectedDayEvents.map(event => (
-                                    <EventCard
-                                        key={event.id}
-                                        event={event}
-                                        onClick={() => showEventDetails(event)}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                                <div className="h-full flex flex-col">
+                                    {/* Month Navigation */}
+                                    <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                                        <div className="flex items-center space-x-4">
+                                            <h2 className="text-2xl xl:text-3xl font-semibold text-gray-900">
+                                                {format(currentDate, 'MMMM yyyy')}
+                                            </h2>
+                                            <div className="flex space-x-1">
+                                                <button
+                                                    onClick={handlePrevMonth}
+                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                >
+                                                    <ChevronLeft className="h-5 w-5" />
+                                                </button>
+                                                <button
+                                                    onClick={handleNextMonth}
+                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                >
+                                                    <ChevronRight className="h-5 w-5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                        {/* Nested Event Modal */}
-                        {selectedEventInModal && (
-                            <div className="absolute inset-0 bg-white rounded-lg z-10">
-                                <EventModal
-                                    event={selectedEventInModal}
-                                    onClose={closeEventDetails}
-                                />
-                            </div>
-                        )}
+                                    {/* Calendar */}
+                                    <div className="flex-1 min-h-0 overflow-auto">
+                                        {renderMainCalendar()}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-            )}
-        </div>
-    );
+
+                {/* Day Events Modal */}
+                {showDayEventsModal && selectedDayEvents && selectedDayDate && (
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                        onWheel={(e) => e.preventDefault()}
+                        onTouchMove={(e) => e.preventDefault()}
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                closeDayEventsModal();
+                            }
+                        }}
+                    >
+                        <div
+                            className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
+                            onWheel={(e) => e.stopPropagation()}
+                            onTouchMove={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+                                {selectedEventInModal ? (
+                                    <div className="flex items-center space-x-2">
+                                        <button
+                                            onClick={closeEventDetails}
+                                            className="text-gray-400 hover:text-gray-600 text-lg"
+                                            title="Back to events list"
+                                        >
+                                            ←
+                                        </button>
+                                        <h3 className="text-lg font-semibold">
+                                            Event Details
+                                        </h3>
+                                    </div>
+                                ) : (
+                                    <h3 className="text-lg font-semibold">
+                                        Events for {format(selectedDayDate, 'MMMM d, yyyy')}
+                                    </h3>
+                                )}
+                                <button
+                                    onClick={closeDayEventsModal}
+                                    className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            {!selectedEventInModal && (
+                                <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
+                                    {selectedDayEvents.map(event => (
+                                        <EventCard
+                                            key={event.id}
+                                            event={event}
+                                            onClick={() => showEventDetails(event)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Nested Event Modal */}
+                            {selectedEventInModal && (
+                                <div className="absolute inset-0 bg-white rounded-lg z-10">
+                                    <EventModal
+                                        event={selectedEventInModal}
+                                        onClose={closeEventDetails}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    } catch (error) {
+        console.error('Error rendering Timetable:', error);
+        return (
+            <div className="p-8 text-center bg-red-50 border border-red-200 rounded-lg">
+                <h3 className="text-lg font-semibold text-red-800 mb-2">Timetable Render Error</h3>
+                <p className="text-red-600 mb-4">There was an error rendering the timetable component.</p>
+                <pre className="text-xs text-red-500 bg-red-100 p-2 rounded overflow-auto">
+                    {error instanceof Error ? error.message : String(error)}
+                </pre>
+            </div>
+        );
+    }
 };
 
 export default Timetable;
