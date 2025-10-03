@@ -63,14 +63,6 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
     const [selectedEventInModal, setSelectedEventInModal] = useState<Event | null>(null);
 
-    // Debug: Monitor currentDate changes
-    useEffect(() => {
-        console.log('=== Current Date Changed ===');
-        console.log('New currentDate:', currentDate);
-        console.log('Formatted date:', format(currentDate, 'yyyy-MM-dd (EEEE)'));
-        console.log('Current view:', selectedView);
-    }, [currentDate]);
-
     // Cleanup: restore body scroll on component unmount
     useEffect(() => {
         return () => {
@@ -180,10 +172,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
     // Handle showing all events for a specific day
     const showAllEventsForDay = (date: Date, dayEvents: Event[]) => {
-        console.log('=== showAllEventsForDay START ===');
-        console.log('Input date:', date);
-        console.log('Input dayEvents:', dayEvents);
-        console.log('Current modal state:', { showDayEventsModal, selectedDayEvents, selectedDayDate });
+
 
         if (!date || !dayEvents || !Array.isArray(dayEvents) || dayEvents.length === 0) {
             console.error('Invalid parameters for showAllEventsForDay:', { date, dayEvents });
@@ -306,20 +295,14 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     // Render daily view (weekly layout with current day highlighted)
     const renderDailyView = () => {
         try {
-            console.log('=== RENDER DAILY VIEW CALLED ===');
-            console.log('Current date:', currentDate);
-            console.log('Current date day:', currentDate.getDate());
-            console.log('Current date formatted:', format(currentDate, 'MMMM d, yyyy (EEEE)'));
+
 
             // Show 4 days starting from current date
             const dayStart = currentDate;
             const daysDays = Array.from({ length: 4 }, (_, i) => addDays(dayStart, i));
             const today = new Date();
 
-            console.log('Daily view days:', {
-                dayStart: format(dayStart, 'yyyy-MM-dd'),
-                daysDays: daysDays.map(d => format(d, 'yyyy-MM-dd (EEEE)'))
-            });
+
 
             return (
                 <div className="bg-white rounded-lg border overflow-hidden">
@@ -333,15 +316,11 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                         {/* Navigation arrows */}
                         <button
                             onClick={(e) => {
-                                console.log('=== Daily View Previous Day Button Clicked ===');
-                                console.log('Current date before:', currentDate);
                                 e.preventDefault();
                                 e.stopPropagation();
                                 try {
                                     const newDate = addDays(currentDate, -1);
-                                    console.log('New date to set:', newDate);
                                     setCurrentDate(newDate);
-                                    console.log('Previous day navigation completed');
                                 } catch (error) {
                                     console.error('Error navigating to previous day:', error);
                                 }
@@ -352,29 +331,11 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                         </button>
                         <button
                             onClick={(e) => {
-                                console.log('=== DAILY VIEW NEXT DAY BUTTON CLICKED ===');
-                                console.log('Current date before:', currentDate);
-                                console.log('Current date day before:', currentDate.getDate());
-                                console.log('Current date formatted before:', format(currentDate, 'MMMM d, yyyy (EEEE)'));
                                 e.preventDefault();
                                 e.stopPropagation();
                                 try {
                                     const newDate = addDays(currentDate, 1);
-                                    console.log('New date to set:', newDate);
-                                    console.log('New date day:', newDate.getDate());
-                                    console.log('New date formatted:', format(newDate, 'MMMM d, yyyy (EEEE)'));
-                                    console.log('Events available for new date:', getEventsForDate(newDate));
-                                    console.log('Total events in system:', events.length);
-
-                                    // Check if this is day 6 specifically
-                                    if (newDate.getDate() === 6) {
-                                        console.log('🚨 NAVIGATING TO DAY 6 - SPECIAL DEBUG 🚨');
-                                        console.log('Day 6 events:', getEventsForDate(newDate));
-                                        console.log('All events:', events.map(e => ({ id: e.id, eventName: e.eventName, date: e.date })));
-                                    }
-
                                     setCurrentDate(newDate);
-                                    console.log('Next day navigation completed, new current date should be:', newDate);
                                 } catch (error) {
                                     console.error('Error navigating to next day:', error);
                                 }
@@ -431,8 +392,6 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                         {(() => {
                             try {
                                 const dayEvents = getEventsForDate(currentDate);
-                                console.log('Daily view - currentDate:', currentDate, 'dayEvents:', dayEvents, 'totalEvents:', events.length);
-                                console.log('Date string for display:', format(currentDate, 'MMMM d, yyyy'));
 
                                 if (dayEvents.length === 0) {
                                     return (
@@ -458,7 +417,6 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                                             {dayEvents.map((event, index) => {
                                                 try {
-                                                    console.log(`Rendering event ${index + 1}:`, event);
                                                     return (
                                                         <EventCard
                                                             key={event.id}
@@ -501,7 +459,6 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                     <p className="text-gray-600 mb-4">There was an error loading the daily calendar view.</p>
                     <button
                         onClick={() => {
-                            console.log('Resetting to today');
                             setCurrentDate(new Date());
                         }}
                         className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -776,12 +733,12 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     };
 
     if (isLoading) {
-        console.log('Timetable: Loading state');
+
         return <TimetableLoadingSkeleton />;
     }
 
     if (error) {
-        console.log('Timetable: Error state:', error);
+
         return (
             <div className="p-8 text-center">
                 <div className="text-red-500 mb-4">
@@ -801,7 +758,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         );
     }
 
-    console.log('Timetable: Rendering normally. selectedView:', selectedView, 'events count:', events.length, 'currentDate:', currentDate);
+
 
     try {
         return (
@@ -964,7 +921,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                     `}>
                             {(() => {
                                 try {
-                                    console.log('Timetable: Rendering view:', selectedView);
+
                                     if (selectedView === 'daily') {
                                         return renderDailyView();
                                     } else if (selectedView === 'weekly') {
@@ -1207,7 +1164,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             <div
                                 className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
                                 onClick={() => {
-                                    console.log('Modal backdrop clicked');
+
                                     closeDayEventsModal();
                                 }}
                             >
@@ -1222,7 +1179,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                         </h3>
                                         <button
                                             onClick={() => {
-                                                console.log('Close button clicked');
+
                                                 closeDayEventsModal();
                                             }}
                                             className="text-gray-400 hover:text-gray-600 text-2xl font-bold w-8 h-8 flex items-center justify-center hover:bg-white hover:bg-opacity-50 rounded-full transition-all"
