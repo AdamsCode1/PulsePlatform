@@ -5,6 +5,7 @@ import { Event } from '../types/Event';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { toast } from '../hooks/use-toast';
+import { Badge } from './ui/badge';
 
 // Academic Terms (matching Timetable and MonthlyCalendar components)
 const ACADEMIC_TERMS = [
@@ -129,15 +130,15 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
           .insert([
             isRecurring
               ? {
-                  student_id: studentId,
-                  event_id: event.parentEventId, // Use parent event UUID
-                  occurrence_start_time: event.time, // Use occurrence start time
-                }
+                student_id: studentId,
+                event_id: event.parentEventId, // Use parent event UUID
+                occurrence_start_time: event.time, // Use occurrence start time
+              }
               : {
-                  student_id: studentId,
-                  event_id: event.id,
-                  occurrence_start_time: event.time, // For single events, still set for consistency
-                }
+                student_id: studentId,
+                event_id: event.id,
+                occurrence_start_time: event.time, // For single events, still set for consistency
+              }
           ]);
 
         if (error) {
@@ -190,8 +191,8 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
   const handleCardClick = () => {
     setIsClicked(true);
     setTimeout(() => setIsClicked(false), 200);
-    // Don't call onClick on card click - only on Details button
-    // onClick();
+    // Call onClick when card is clicked to open modal
+    onClick();
   };
 
   // Check if user has already RSVP'd on component mount
@@ -256,7 +257,7 @@ const EventCard = ({ event, onClick, onRSVPChange, rightAction }: EventCardProps
     >
       {/* Colored line at the top with animation */}
       <div className="h-1 bg-gradient-to-r from-pink-400 to-pink-500 group-hover:from-pink-500 group-hover:to-purple-500 transition-all duration-300"></div>
-      
+
       {/* Top right: No badges */}
       {/* (Removed Recurring and Status badges from top right) */}
 
