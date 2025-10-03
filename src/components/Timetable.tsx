@@ -63,6 +63,14 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     const [selectedDayDate, setSelectedDayDate] = useState<Date | null>(null);
     const [selectedEventInModal, setSelectedEventInModal] = useState<Event | null>(null);
 
+    // Debug: Monitor currentDate changes
+    useEffect(() => {
+        console.log('=== Current Date Changed ===');
+        console.log('New currentDate:', currentDate);
+        console.log('Formatted date:', format(currentDate, 'yyyy-MM-dd (EEEE)'));
+        console.log('Current view:', selectedView);
+    }, [currentDate]);
+
     // Cleanup: restore body scroll on component unmount
     useEffect(() => {
         return () => {
@@ -172,17 +180,21 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
     // Handle showing all events for a specific day
     const showAllEventsForDay = (date: Date, dayEvents: Event[]) => {
+        console.log('=== showAllEventsForDay START ===');
+        console.log('Input date:', date);
+        console.log('Input dayEvents:', dayEvents);
+        console.log('Current modal state:', { showDayEventsModal, selectedDayEvents, selectedDayDate });
+
+        if (!date || !dayEvents || !Array.isArray(dayEvents) || dayEvents.length === 0) {
+            console.error('Invalid parameters for showAllEventsForDay:', { date, dayEvents });
+            return;
+        }
+
+        console.log('Setting modal state...');
         setSelectedDayDate(date);
         setSelectedDayEvents(dayEvents);
         setShowDayEventsModal(true);
-        // Store the current scroll position and prevent body scroll when modal is open
-        const scrollY = window.scrollY;
-        document.body.style.overflow = 'hidden';
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${scrollY}px`;
-        document.body.style.width = '100%';
-        // Store scroll position for later restoration
-        document.body.dataset.scrollY = scrollY.toString();
+        console.log('Modal state set. Should be visible now.');
     };
 
     // Close day events modal
@@ -213,12 +225,24 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
     };
 
     // Handle month navigation
-    const handlePrevMonth = () => {
-        setCurrentDate(subMonths(currentDate, 1));
+    const handlePrevMonth = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            setCurrentDate(subMonths(currentDate, 1));
+        } catch (error) {
+            console.error('Error navigating to previous month:', error);
+        }
     };
 
-    const handleNextMonth = () => {
-        setCurrentDate(addMonths(currentDate, 1));
+    const handleNextMonth = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            setCurrentDate(addMonths(currentDate, 1));
+        } catch (error) {
+            console.error('Error navigating to next month:', error);
+        }
     };
 
     // Render mini calendar
@@ -281,117 +305,212 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
     // Render daily view (weekly layout with current day highlighted)
     const renderDailyView = () => {
-        console.log('renderDailyView called, currentDate:', currentDate);
-        const weekStart = startOfWeek(currentDate);
-        const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-        const today = new Date();
+        try {
+            console.log('=== RENDER DAILY VIEW CALLED ===');
+            console.log('Current date:', currentDate);
+            console.log('Current date day:', currentDate.getDate());
+            console.log('Current date formatted:', format(currentDate, 'MMMM d, yyyy (EEEE)'));
 
-        return (
-            <div className="bg-white rounded-lg border overflow-hidden">
-                {/* Header with Timetable title */}
-                <div className="p-3 md:p-4 border-b bg-gray-50">
-                    <h3 className="text-base md:text-lg font-semibold text-gray-900">Timetable</h3>
-                </div>
+            // Show 4 days starting from current date
+            const dayStart = currentDate;
+            const daysDays = Array.from({ length: 4 }, (_, i) => addDays(dayStart, i));
+            const today = new Date();
 
-                {/* Week days header with navigation - individual boxes */}
-                <div className="relative p-3 md:p-6">
-                    {/* Navigation arrows */}
-                    <button
-                        onClick={() => setCurrentDate(addDays(currentDate, -7))}
-                        className="absolute left-1 md:left-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
-                    >
-                        <ChevronLeft className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
-                    </button>
-                    <button
-                        onClick={() => setCurrentDate(addDays(currentDate, 7))}
-                        className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
-                    >
-                        <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
-                    </button>
+            console.log('Daily view days:', {
+                dayStart: format(dayStart, 'yyyy-MM-dd'),
+                daysDays: daysDays.map(d => format(d, 'yyyy-MM-dd (EEEE)'))
+            });
 
-                    {/* Individual day boxes */}
-                    <div className="flex justify-center gap-1 md:gap-3 px-8 md:px-0">
-                        {weekDays.map((day, index) => {
-                            const isToday = isSameDay(day, today);
-                            const isCurrentDay = isSameDay(day, currentDate);
+            return (
+                <div className="bg-white rounded-lg border overflow-hidden">
+                    {/* Header with Timetable title */}
+                    <div className="p-3 md:p-4 border-b bg-gray-50">
+                        <h3 className="text-base md:text-lg font-semibold text-gray-900">Timetable</h3>
+                    </div>
 
-                            return (
-                                <div
-                                    key={day.toISOString()}
-                                    className={`
+                    {/* Week days header with navigation - individual boxes */}
+                    <div className="relative p-3 md:p-6">
+                        {/* Navigation arrows */}
+                        <button
+                            onClick={(e) => {
+                                console.log('=== Daily View Previous Day Button Clicked ===');
+                                console.log('Current date before:', currentDate);
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                    const newDate = addDays(currentDate, -1);
+                                    console.log('New date to set:', newDate);
+                                    setCurrentDate(newDate);
+                                    console.log('Previous day navigation completed');
+                                } catch (error) {
+                                    console.error('Error navigating to previous day:', error);
+                                }
+                            }}
+                            className="absolute left-1 md:left-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+                        >
+                            <ChevronLeft className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                console.log('=== DAILY VIEW NEXT DAY BUTTON CLICKED ===');
+                                console.log('Current date before:', currentDate);
+                                console.log('Current date day before:', currentDate.getDate());
+                                console.log('Current date formatted before:', format(currentDate, 'MMMM d, yyyy (EEEE)'));
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                    const newDate = addDays(currentDate, 1);
+                                    console.log('New date to set:', newDate);
+                                    console.log('New date day:', newDate.getDate());
+                                    console.log('New date formatted:', format(newDate, 'MMMM d, yyyy (EEEE)'));
+                                    console.log('Events available for new date:', getEventsForDate(newDate));
+                                    console.log('Total events in system:', events.length);
+
+                                    // Check if this is day 6 specifically
+                                    if (newDate.getDate() === 6) {
+                                        console.log('🚨 NAVIGATING TO DAY 6 - SPECIAL DEBUG 🚨');
+                                        console.log('Day 6 events:', getEventsForDate(newDate));
+                                        console.log('All events:', events.map(e => ({ id: e.id, eventName: e.eventName, date: e.date })));
+                                    }
+
+                                    setCurrentDate(newDate);
+                                    console.log('Next day navigation completed, new current date should be:', newDate);
+                                } catch (error) {
+                                    console.error('Error navigating to next day:', error);
+                                }
+                            }}
+                            className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+                        >
+                            <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+                        </button>
+
+                        {/* Individual day boxes */}
+                        <div className="flex justify-center gap-1 md:gap-3 px-8 md:px-0">
+                            {daysDays.map((day, index) => {
+                                const isToday = isSameDay(day, today);
+                                const isCurrentDay = isSameDay(day, currentDate);
+
+                                return (
+                                    <div
+                                        key={day.toISOString()}
+                                        className={`
                                         relative text-center cursor-pointer transition-all duration-200
                                         ${isCurrentDay
-                                            ? 'bg-white rounded-lg shadow-md p-2 md:p-4 min-w-[50px] md:min-w-[90px]'
-                                            : 'p-1 md:p-3 min-w-[45px] md:min-w-[80px] hover:bg-gray-50 rounded-lg'
-                                        }
+                                                ? 'bg-white rounded-lg shadow-md p-2 md:p-4 min-w-[50px] md:min-w-[90px]'
+                                                : 'p-1 md:p-3 min-w-[45px] md:min-w-[80px] hover:bg-gray-50 rounded-lg'
+                                            }
                                     `}
-                                    onClick={() => setCurrentDate(day)}
-                                >
-                                    {/* "Now" indicator positioned above today's date */}
-                                    {isToday && (
-                                        <div className="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2">
-                                            <span className="text-xs text-gray-500 font-medium">Now</span>
-                                        </div>
-                                    )}
+                                        onClick={() => setCurrentDate(day)}
+                                    >
+                                        {/* "Now" indicator positioned above today's date */}
+                                        {isToday && (
+                                            <div className="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2">
+                                                <span className="text-xs text-gray-500 font-medium">Now</span>
+                                            </div>
+                                        )}
 
-                                    <div className={`text-xs font-medium mb-1 md:mb-2 ${isCurrentDay ? 'text-gray-600' : 'text-gray-400'
-                                        }`}>
-                                        {format(day, 'EEE')}
-                                    </div>
-                                    <div className={`
+                                        <div className={`text-xs font-medium mb-1 md:mb-2 ${isCurrentDay ? 'text-gray-600' : 'text-gray-400'
+                                            }`}>
+                                            {format(day, 'EEE')}
+                                        </div>
+                                        <div className={`
                                         ${isCurrentDay
-                                            ? 'text-xl md:text-4xl font-black text-gray-900'
-                                            : 'text-lg md:text-2xl font-normal text-gray-400'
-                                        }
+                                                ? 'text-xl md:text-4xl font-black text-gray-900'
+                                                : 'text-lg md:text-2xl font-normal text-gray-400'
+                                            }
                                     `}>
-                                        {format(day, 'd')}
+                                            {format(day, 'd')}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
+                    </div>
+                    {/* Events content area */}
+                    <div className="p-4 md:p-8">
+                        {(() => {
+                            try {
+                                const dayEvents = getEventsForDate(currentDate);
+                                console.log('Daily view - currentDate:', currentDate, 'dayEvents:', dayEvents, 'totalEvents:', events.length);
+                                console.log('Date string for display:', format(currentDate, 'MMMM d, yyyy'));
+
+                                if (dayEvents.length === 0) {
+                                    return (
+                                        <div className="text-center">
+                                            <div className="flex flex-col items-center justify-center min-h-[150px] md:min-h-[200px]">
+                                                <Calendar className="h-12 w-12 md:h-16 md:w-16 text-gray-300 mb-4" />
+                                                <p className="text-gray-500 text-sm">
+                                                    No events scheduled for {format(currentDate, 'MMMM d, yyyy')}
+                                                </p>
+                                                <p className="text-gray-400 text-xs mt-2">
+                                                    Total events in system: {events.length}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                return (
+                                    <div className="space-y-4">
+                                        <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
+                                            Events for {format(currentDate, 'MMMM d, yyyy')} ({dayEvents.length} events)
+                                        </h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                                            {dayEvents.map((event, index) => {
+                                                try {
+                                                    console.log(`Rendering event ${index + 1}:`, event);
+                                                    return (
+                                                        <EventCard
+                                                            key={event.id}
+                                                            event={event}
+                                                            onClick={() => showEventDetails(event)}
+                                                        />
+                                                    );
+                                                } catch (eventError) {
+                                                    console.error('Error rendering event:', event, eventError);
+                                                    return (
+                                                        <div key={event.id || index} className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                                            <p className="text-red-600 text-sm">Error loading event</p>
+                                                        </div>
+                                                    );
+                                                }
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            } catch (renderError) {
+                                console.error('Error rendering daily view events:', renderError);
+                                return (
+                                    <div className="text-center p-8">
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                            <p className="text-red-600 text-sm">Error loading events for this day</p>
+                                            <p className="text-red-400 text-xs mt-2">Date: {format(currentDate, 'MMMM d, yyyy')}</p>
+                                        </div>
+                                    </div>
+                                );
+                            }
+                        })()}
                     </div>
                 </div>
-                {/* Events content area */}
-                <div className="p-4 md:p-8">
-                    {(() => {
-                        const dayEvents = getEventsForDate(currentDate);
-                        console.log('Daily view - currentDate:', currentDate, 'dayEvents:', dayEvents, 'totalEvents:', events.length);
-
-                        if (dayEvents.length === 0) {
-                            return (
-                                <div className="text-center">
-                                    <div className="flex flex-col items-center justify-center min-h-[150px] md:min-h-[200px]">
-                                        <Calendar className="h-12 w-12 md:h-16 md:w-16 text-gray-300 mb-4" />
-                                        <p className="text-gray-500 text-sm">
-                                            No events scheduled for {format(currentDate, 'MMMM d, yyyy')}
-                                        </p>
-                                        <p className="text-gray-400 text-xs mt-2">
-                                            Total events in system: {events.length}
-                                        </p>
-                                    </div>
-                                </div>
-                            );
-                        }
-
-                        return (
-                            <div className="space-y-4">
-                                <h4 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
-                                    Events for {format(currentDate, 'MMMM d, yyyy')} ({dayEvents.length} events)
-                                </h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">{dayEvents.map(event => (
-                                    <EventCard
-                                        key={event.id}
-                                        event={event}
-                                        onClick={() => onEventClick?.(event.id)}
-                                    />
-                                ))}
-                                </div>
-                            </div>
-                        );
-                    })()}
+            );
+        } catch (error) {
+            console.error('Error rendering daily view:', error);
+            return (
+                <div className="bg-white rounded-lg border p-8 text-center">
+                    <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Daily View</h3>
+                    <p className="text-gray-600 mb-4">There was an error loading the daily calendar view.</p>
+                    <button
+                        onClick={() => {
+                            console.log('Resetting to today');
+                            setCurrentDate(new Date());
+                        }}
+                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                        Return to Today
+                    </button>
                 </div>
-            </div>
-        );
+            );
+        }
     };
 
     // Render weekly view
@@ -595,7 +714,12 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                                 {/* Show events for dates in active terms */}
                                 {isCurrentMonth && isInActiveTerm && dayEvents.length > 0 && (
-                                    <div className="flex flex-col gap-1 flex-1 overflow-hidden">
+                                    <div
+                                        className="flex flex-col gap-1 flex-1 overflow-hidden"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent parent div click
+                                        }}
+                                    >
                                         {/* Show first event as a card */}
                                         <div
                                             key={dayEvents[0].id}
@@ -617,9 +741,23 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                         {/* Show "+X more" button if there are additional events */}
                                         {dayEvents.length > 1 && (
                                             <button
+                                                type="button"
                                                 onClick={(e) => {
+                                                    console.log('=== +X more button clicked ===');
+                                                    console.log('Event target:', e.target);
+                                                    console.log('Event currentTarget:', e.currentTarget);
+                                                    e.preventDefault();
                                                     e.stopPropagation();
-                                                    showAllEventsForDay(day, dayEvents);
+
+                                                    try {
+                                                        console.log('About to call showAllEventsForDay with:', { day, dayEventsLength: dayEvents.length });
+                                                        showAllEventsForDay(day, dayEvents);
+                                                        console.log('showAllEventsForDay completed successfully');
+                                                    } catch (error) {
+                                                        console.error('Error in +X more button click handler:', error);
+                                                    }
+
+                                                    return false;
                                                 }}
                                                 className="text-xs text-blue-600 hover:text-blue-800 font-medium py-1 px-2 rounded hover:bg-blue-50 transition-colors text-left"
                                                 title={`View all ${dayEvents.length} events`}
@@ -824,41 +962,66 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             } 
                         overflow-hidden flex flex-col
                     `}>
-                            {selectedView === 'daily' ? (
-                                renderDailyView()
-                            ) : selectedView === 'weekly' ? (
-                                renderWeeklyView()
-                            ) : (
-                                <div className="h-full flex flex-col">
-                                    {/* Month Navigation */}
-                                    <div className="flex items-center justify-between mb-3 flex-shrink-0 bg-white p-2 sticky top-0 z-10 border-b">
-                                        <div className="flex items-center space-x-2">
-                                            <h2 className="text-lg font-semibold text-gray-900">
-                                                {format(currentDate, 'MMMM yyyy')}
-                                            </h2>
-                                            <div className="flex space-x-1">
+                            {(() => {
+                                try {
+                                    console.log('Timetable: Rendering view:', selectedView);
+                                    if (selectedView === 'daily') {
+                                        return renderDailyView();
+                                    } else if (selectedView === 'weekly') {
+                                        return renderWeeklyView();
+                                    } else if (selectedView === 'monthly') {
+                                        return (
+                                            <div className="h-full flex flex-col">
+                                                {/* Month Navigation */}
+                                                <div className="flex items-center justify-between mb-3 flex-shrink-0 bg-white p-2 sticky top-0 z-10 border-b">
+                                                    <div className="flex items-center space-x-2">
+                                                        <h2 className="text-lg font-semibold text-gray-900">
+                                                            {format(currentDate, 'MMMM yyyy')}
+                                                        </h2>
+                                                        <div className="flex space-x-1">
+                                                            <button
+                                                                onClick={handlePrevMonth}
+                                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            >
+                                                                <ChevronLeft className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={handleNextMonth}
+                                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            >
+                                                                <ChevronRight className="h-4 w-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Calendar */}
+                                                <div className="flex-1 min-h-0 pb-4 overflow-auto">
+                                                    {renderMainCalendar()}
+                                                </div>
+                                            </div>
+                                        );
+                                    } else {
+                                        console.warn('Timetable: Unknown view type:', selectedView, 'defaulting to daily');
+                                        return renderDailyView();
+                                    }
+                                } catch (error) {
+                                    console.error('Error rendering timetable view:', error);
+                                    return (
+                                        <div className="h-full flex items-center justify-center">
+                                            <div className="text-center">
+                                                <p className="text-red-500 mb-4">Error loading calendar view</p>
                                                 <button
-                                                    onClick={handlePrevMonth}
-                                                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    onClick={() => setSelectedView('daily')}
+                                                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                                 >
-                                                    <ChevronLeft className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={handleNextMonth}
-                                                    className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                                                >
-                                                    <ChevronRight className="h-4 w-4" />
+                                                    Return to Daily View
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Calendar */}
-                                    <div className="flex-1 min-h-0 pb-4 overflow-auto">
-                                        {renderMainCalendar()}
-                                    </div>
-                                </div>
-                            )}
+                                    );
+                                }
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -973,111 +1136,200 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                         {/* Desktop Calendar Views Container */}
                         <div className="h-[calc(100vh-200px)] overflow-hidden flex flex-col">
-                            {selectedView === 'daily' ? (
-                                renderDailyView()
-                            ) : selectedView === 'weekly' ? (
-                                renderWeeklyView()
-                            ) : (
-                                <div className="h-full flex flex-col">
-                                    {/* Month Navigation */}
-                                    <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                                        <div className="flex items-center space-x-4">
-                                            <h2 className="text-2xl xl:text-3xl font-semibold text-gray-900">
-                                                {format(currentDate, 'MMMM yyyy')}
-                                            </h2>
-                                            <div className="flex space-x-1">
+                            {(() => {
+                                try {
+                                    console.log('Timetable Desktop: Rendering view:', selectedView);
+                                    if (selectedView === 'daily') {
+                                        return renderDailyView();
+                                    } else if (selectedView === 'weekly') {
+                                        return renderWeeklyView();
+                                    } else if (selectedView === 'monthly') {
+                                        return (
+                                            <div className="h-full flex flex-col">
+                                                {/* Month Navigation */}
+                                                <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                                                    <div className="flex items-center space-x-4">
+                                                        <h2 className="text-2xl xl:text-3xl font-semibold text-gray-900">
+                                                            {format(currentDate, 'MMMM yyyy')}
+                                                        </h2>
+                                                        <div className="flex space-x-1">
+                                                            <button
+                                                                onClick={handlePrevMonth}
+                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            >
+                                                                <ChevronLeft className="h-5 w-5" />
+                                                            </button>
+                                                            <button
+                                                                onClick={handleNextMonth}
+                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                            >
+                                                                <ChevronRight className="h-5 w-5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Calendar */}
+                                                <div className="flex-1 min-h-0 overflow-auto">
+                                                    {renderMainCalendar()}
+                                                </div>
+                                            </div>
+                                        );
+                                    } else {
+                                        console.warn('Timetable Desktop: Unknown view type:', selectedView, 'defaulting to daily');
+                                        return renderDailyView();
+                                    }
+                                } catch (error) {
+                                    console.error('Error rendering timetable desktop view:', error);
+                                    return (
+                                        <div className="h-full flex items-center justify-center">
+                                            <div className="text-center">
+                                                <p className="text-red-500 mb-4">Error loading calendar view</p>
                                                 <button
-                                                    onClick={handlePrevMonth}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    onClick={() => setSelectedView('daily')}
+                                                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
                                                 >
-                                                    <ChevronLeft className="h-5 w-5" />
-                                                </button>
-                                                <button
-                                                    onClick={handleNextMonth}
-                                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                                >
-                                                    <ChevronRight className="h-5 w-5" />
+                                                    Return to Daily View
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Calendar */}
-                                    <div className="flex-1 min-h-0 overflow-auto">
-                                        {renderMainCalendar()}
-                                    </div>
-                                </div>
-                            )}
+                                    );
+                                }
+                            })()}
                         </div>
                     </div>
                 </div>
 
                 {/* Day Events Modal */}
-                {showDayEventsModal && selectedDayEvents && selectedDayDate && (
-                    <div
-                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-                        onWheel={(e) => e.preventDefault()}
-                        onTouchMove={(e) => e.preventDefault()}
-                        onClick={(e) => {
-                            if (e.target === e.currentTarget) {
-                                closeDayEventsModal();
-                            }
-                        }}
-                    >
-                        <div
-                            className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[80vh] overflow-hidden"
-                            onWheel={(e) => e.stopPropagation()}
-                            onTouchMove={(e) => e.stopPropagation()}
-                        >
-                            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                                {selectedEventInModal ? (
-                                    <div className="flex items-center space-x-2">
-                                        <button
-                                            onClick={closeEventDetails}
-                                            className="text-gray-400 hover:text-gray-600 text-lg"
-                                            title="Back to events list"
-                                        >
-                                            ←
-                                        </button>
-                                        <h3 className="text-lg font-semibold">
-                                            Event Details
-                                        </h3>
-                                    </div>
-                                ) : (
-                                    <h3 className="text-lg font-semibold">
-                                        Events for {format(selectedDayDate, 'MMMM d, yyyy')}
-                                    </h3>
-                                )}
-                                <button
-                                    onClick={closeDayEventsModal}
-                                    className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+                {(() => {
+                    try {
+                        return showDayEventsModal && selectedDayEvents && selectedDayDate ? (
+                            <div
+                                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                                onClick={() => {
+                                    console.log('Modal backdrop clicked');
+                                    closeDayEventsModal();
+                                }}
+                            >
+                                <div
+                                    className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[85vh] overflow-hidden"
+                                    onClick={(e) => e.stopPropagation()}
                                 >
-                                    ×
-                                </button>
-                            </div>
-                            {!selectedEventInModal && (
-                                <div className="p-4 overflow-y-auto max-h-[60vh] space-y-3">
-                                    {selectedDayEvents.map(event => (
-                                        <EventCard
-                                            key={event.id}
-                                            event={event}
-                                            onClick={() => showEventDetails(event)}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+                                    {/* Modal Header */}
+                                    <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-blue-50 to-purple-50">
+                                        <h3 className="text-xl font-semibold text-gray-900">
+                                            Events for {format(selectedDayDate, 'MMMM d, yyyy')} ({selectedDayEvents.length} event{selectedDayEvents.length !== 1 ? 's' : ''})
+                                        </h3>
+                                        <button
+                                            onClick={() => {
+                                                console.log('Close button clicked');
+                                                closeDayEventsModal();
+                                            }}
+                                            className="text-gray-400 hover:text-gray-600 text-2xl font-bold w-8 h-8 flex items-center justify-center hover:bg-white hover:bg-opacity-50 rounded-full transition-all"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
 
-                            {/* Nested Event Modal */}
-                            {selectedEventInModal && (
-                                <div className="absolute inset-0 bg-white rounded-lg z-10">
-                                    <EventModal
-                                        event={selectedEventInModal}
-                                        onClose={closeEventDetails}
-                                    />
+                                    {/* Modal Content */}
+                                    <div className="p-6 overflow-y-auto max-h-[70vh] bg-gray-50">
+                                        <div className="space-y-6">
+                                            {selectedDayEvents.map((event, index) => {
+                                                const eventDate = new Date(event.date);
+                                                const eventTime = new Date(event.time);
+
+                                                // Simple term color logic
+                                                const getTermColor = (date: Date) => {
+                                                    const month = date.getMonth();
+                                                    if (month >= 9 || month <= 11) return 'from-blue-500 to-blue-600'; // Michaelmas
+                                                    if (month >= 0 && month <= 2) return 'from-green-500 to-green-600'; // Epiphany
+                                                    return 'from-purple-500 to-purple-600'; // Easter
+                                                };
+
+                                                return (
+                                                    <div
+                                                        key={event.id || index}
+                                                        className="bg-white border border-gray-200 rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                                                        onClick={() => onEventClick?.(event.id)}
+                                                    >
+                                                        {/* Event Header */}
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div className="flex-1">
+                                                                <h4 className="text-xl font-bold text-gray-900 mb-2">{event.eventName}</h4>
+                                                                <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium text-white bg-gradient-to-r ${getTermColor(eventDate)} mb-2`}>
+                                                                    {format(eventDate, 'MMMM d, yyyy')}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <div className="text-lg font-semibold text-gray-700 flex items-center">
+                                                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                    </svg>
+                                                                    {format(eventTime, 'HH:mm')}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Event Details */}
+                                                        {event.location && (
+                                                            <div className="flex items-center text-gray-600 mb-3">
+                                                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                </svg>
+                                                                <span className="text-sm">{event.location}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {event.description && (
+                                                            <p className="text-gray-700 text-sm leading-relaxed mb-3">{event.description}</p>
+                                                        )}
+
+                                                        {/* Event Footer */}
+                                                        <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                                                            <div className="text-xs text-gray-500">
+                                                                Click to view details
+                                                            </div>
+                                                            <div className="flex items-center text-blue-600">
+                                                                <span className="text-sm font-medium">View Event</span>
+                                                                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    </div>
+                            </div>
+                        ) : null;
+                    } catch (error) {
+                        console.error('Error rendering modal:', error);
+                        return (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-lg p-6 max-w-md">
+                                    <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Events</h3>
+                                    <p className="text-gray-600 mb-4">There was an error loading the events modal.</p>
+                                    <button
+                                        onClick={() => closeDayEventsModal()}
+                                        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    }
+                })()}
+
+                {/* Event Details Modal */}
+                {selectedEventInModal && (
+                    <EventModal
+                        event={selectedEventInModal}
+                        onClose={closeEventDetails}
+                    />
                 )}
             </div>
         );

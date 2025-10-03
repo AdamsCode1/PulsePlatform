@@ -16,17 +16,38 @@ const DateSwitcher = ({ currentDate, onDateChange, daysToShow = 7 }: DateSwitche
     const dates = Array.from({ length: daysToShow }, (_, i) => addDays(weekStart, i));
 
     const handleDateClick = (date: Date) => {
-        onDateChange(date);
+        try {
+            console.log('DateSwitcher: handleDateClick called with:', date);
+            onDateChange(date);
+        } catch (error) {
+            console.error('Error changing date:', error);
+        }
     };
 
-    const handlePreviousWeek = () => {
-        const newDate = addDays(currentDate, -7);
-        onDateChange(newDate);
+    const handlePreviousWeek = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            console.log('DateSwitcher: handlePreviousWeek called, current date:', currentDate);
+            const newDate = addDays(currentDate, -7);
+            console.log('DateSwitcher: navigating to:', newDate);
+            onDateChange(newDate);
+        } catch (error) {
+            console.error('Error navigating to previous week:', error);
+        }
     };
 
-    const handleNextWeek = () => {
-        const newDate = addDays(currentDate, 7);
-        onDateChange(newDate);
+    const handleNextWeek = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            console.log('DateSwitcher: handleNextWeek called, current date:', currentDate);
+            const newDate = addDays(currentDate, 7);
+            console.log('DateSwitcher: navigating to:', newDate);
+            onDateChange(newDate);
+        } catch (error) {
+            console.error('Error navigating to next week:', error);
+        }
     };
 
     return (
@@ -51,7 +72,11 @@ const DateSwitcher = ({ currentDate, onDateChange, daysToShow = 7 }: DateSwitche
                     return (
                         <Button
                             key={index}
-                            onClick={() => handleDateClick(date)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDateClick(date);
+                            }}
                             variant="ghost"
                             className={`
                                 flex-shrink-0 h-14 w-12 sm:h-20 sm:w-20 flex flex-col items-center justify-center

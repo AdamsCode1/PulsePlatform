@@ -90,16 +90,39 @@ const MonthlyCalendar = ({ events, onDateSelect, selectedDate, activeTerms = ['m
     return term.color;
   };
 
-  const handlePreviousMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1));
+  const handlePreviousMonth = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      console.log('MonthlyCalendar: handlePreviousMonth called, current month:', currentMonth);
+      const newMonth = subMonths(currentMonth, 1);
+      console.log('MonthlyCalendar: navigating to month:', newMonth);
+      setCurrentMonth(newMonth);
+    } catch (error) {
+      console.error('Error navigating to previous month:', error);
+    }
   };
 
-  const handleNextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1));
+  const handleNextMonth = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      console.log('MonthlyCalendar: handleNextMonth called, current month:', currentMonth);
+      const newMonth = addMonths(currentMonth, 1);
+      console.log('MonthlyCalendar: navigating to month:', newMonth);
+      setCurrentMonth(newMonth);
+    } catch (error) {
+      console.error('Error navigating to next month:', error);
+    }
   };
 
   const handleDateClick = (date: Date) => {
-    onDateSelect?.(date);
+    try {
+      console.log('MonthlyCalendar: handleDateClick called with:', date);
+      onDateSelect?.(date);
+    } catch (error) {
+      console.error('Error selecting date:', error);
+    }
   };
 
   return (
@@ -164,7 +187,11 @@ const MonthlyCalendar = ({ events, onDateSelect, selectedDate, activeTerms = ['m
               return (
                 <div
                   key={index}
-                  onClick={() => handleDateClick(day)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDateClick(day);
+                  }}
                   onMouseEnter={() => setHoveredDate(day)}
                   onMouseLeave={() => setHoveredDate(null)}
                   className={`
