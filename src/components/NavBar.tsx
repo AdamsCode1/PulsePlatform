@@ -237,8 +237,7 @@ export default function NavBar() {
           </div>
         ) : (
           <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-gray-300">
-            <button onClick={() => navigate('/login')} className="px-2 py-1 rounded-md border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition text-xs whitespace-nowrap">Login</button>
-            <button onClick={() => navigate('/login')} className="px-2 py-1 rounded-md bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition text-xs whitespace-nowrap">Sign Up</button>
+            <button onClick={() => navigate('/login')} className="px-3 py-1.5 rounded-md bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition text-xs whitespace-nowrap">Login / Sign Up</button>
           </div>
         )}
       </div>
@@ -273,8 +272,7 @@ export default function NavBar() {
             </div>
           ) : (
             <div className="w-full flex flex-col items-center gap-3 pt-3 border-t border-gray-300">
-              <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-11/12 px-3 py-2 rounded-lg border border-gray-300 bg-white/70 text-gray-800 font-semibold shadow hover:bg-gray-100 transition">Login</button>
-              <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-11/12 px-3 py-2 rounded-lg bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition">Sign Up</button>
+              <button onClick={() => { setMenuOpen(false); navigate('/login'); }} className="w-11/12 px-3 py-2 rounded-lg bg-pink-500 text-white font-semibold shadow hover:bg-pink-600 transition">Login / Sign Up</button>
             </div>
           )}
         </div>
