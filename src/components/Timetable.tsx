@@ -306,14 +306,9 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
             return (
                 <div className="bg-white rounded-lg border overflow-hidden">
-                    {/* Header with Timetable title */}
-                    <div className="p-3 md:p-4 border-b bg-gray-50">
-                        <h3 className="text-base md:text-lg font-semibold text-gray-900">Timetable</h3>
-                    </div>
-
-                    {/* Week days header with navigation - individual boxes */}
-                    <div className="relative p-3 md:p-6">
-                        {/* Navigation arrows */}
+                    {/* Mobile-optimized date navigation */}
+                    <div className="relative flex items-center justify-center p-6 border-b bg-gray-50">
+                        {/* Left Arrow */}
                         <button
                             onClick={(e) => {
                                 e.preventDefault();
@@ -325,10 +320,19 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                     console.error('Error navigating to previous day:', error);
                                 }
                             }}
-                            className="absolute left-1 md:left-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+                            className="absolute left-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
                         >
-                            <ChevronLeft className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+                            <ChevronLeft className="h-6 w-6 text-gray-600" />
                         </button>
+
+                        {/* Current Date Display */}
+                        <div className="text-center">
+                            <div className="text-3xl font-bold text-gray-900">
+                                {format(currentDate, 'EEE, d MMM')}
+                            </div>
+                        </div>
+
+                        {/* Right Arrow */}
                         <button
                             onClick={(e) => {
                                 e.preventDefault();
@@ -340,55 +344,14 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                     console.error('Error navigating to next day:', error);
                                 }
                             }}
-                            className="absolute right-1 md:right-2 top-1/2 transform -translate-y-1/2 p-1 md:p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+                            className="absolute right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
                         >
-                            <ChevronRight className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+                            <ChevronRight className="h-6 w-6 text-gray-600" />
                         </button>
-
-                        {/* Individual day boxes */}
-                        <div className="flex justify-center gap-1 md:gap-3 px-8 md:px-0">
-                            {daysDays.map((day, index) => {
-                                const isToday = isSameDay(day, today);
-                                const isCurrentDay = isSameDay(day, currentDate);
-
-                                return (
-                                    <div
-                                        key={day.toISOString()}
-                                        className={`
-                                        relative text-center cursor-pointer transition-all duration-200
-                                        ${isCurrentDay
-                                                ? 'bg-white rounded-lg shadow-md p-2 md:p-4 min-w-[50px] md:min-w-[90px]'
-                                                : 'p-1 md:p-3 min-w-[45px] md:min-w-[80px] hover:bg-gray-50 rounded-lg'
-                                            }
-                                    `}
-                                        onClick={() => setCurrentDate(day)}
-                                    >
-                                        {/* "Now" indicator positioned above today's date */}
-                                        {isToday && (
-                                            <div className="absolute -top-4 md:-top-6 left-1/2 transform -translate-x-1/2">
-                                                <span className="text-xs text-gray-500 font-medium">Now</span>
-                                            </div>
-                                        )}
-
-                                        <div className={`text-xs font-medium mb-1 md:mb-2 ${isCurrentDay ? 'text-gray-600' : 'text-gray-400'
-                                            }`}>
-                                            {format(day, 'EEE')}
-                                        </div>
-                                        <div className={`
-                                        ${isCurrentDay
-                                                ? 'text-xl md:text-4xl font-black text-gray-900'
-                                                : 'text-lg md:text-2xl font-normal text-gray-400'
-                                            }
-                                    `}>
-                                            {format(day, 'd')}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
                     </div>
+
                     {/* Events content area */}
-                    <div className="p-4 md:p-8">
+                    <div className="p-4 md:p-8 max-h-[calc(100vh-300px)] overflow-y-auto">
                         {(() => {
                             try {
                                 const dayEvents = getEventsForDate(currentDate);
@@ -617,11 +580,11 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         const numRows = Math.ceil(calendarDays.length / 7);
 
         return (
-            <div className="bg-white rounded-lg border overflow-hidden flex flex-col" style={{ height: '700px' }}>
+            <div className="bg-white rounded-lg border overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 250px)' }}>
                 {/* Calendar Header */}
                 <div className="grid grid-cols-7 bg-gray-50 border-b flex-shrink-0">
                     {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
-                        <div key={day} className="p-3 lg:p-4 text-center text-sm font-semibold text-gray-700 border-r last:border-r-0">
+                        <div key={day} className="p-1.5 sm:p-3 lg:p-4 text-center text-xs sm:text-sm font-semibold text-gray-700 border-r last:border-r-0">
                             <span className="hidden sm:inline">{day}</span>
                             <span className="sm:hidden">{day.slice(0, 3)}</span>
                         </div>
@@ -630,7 +593,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                 {/* Calendar Grid */}
                 <div className="grid grid-cols-7 flex-1 overflow-hidden" style={{
-                    gridTemplateRows: `repeat(${numRows}, minmax(120px, 1fr))`
+                    gridTemplateRows: `repeat(${numRows}, minmax(70px, 1fr))`
                 }}>
                     {calendarDays.map(day => {
                         const dayEvents = getEventsForDate(day);
@@ -642,7 +605,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             <div
                                 key={day.toISOString()}
                                 className={`
-                                    relative p-2 border-r border-b last:border-r-0 flex flex-col min-h-[120px] overflow-hidden
+                                    relative p-1 sm:p-2 border-r border-b last:border-r-0 flex flex-col min-h-[70px] overflow-hidden
                                     ${isCurrentMonth ?
                                         (isInActiveTerm ? 'bg-white hover:bg-gray-50' : 'bg-gray-100 opacity-50')
                                         : 'bg-gray-50 opacity-30'
@@ -653,7 +616,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                 onClick={() => isInActiveTerm && setCurrentDate(day)}
                             >
                                 <div className={`
-                                    text-sm lg:text-base font-semibold mb-2 flex-shrink-0 text-left
+                                    text-xs sm:text-sm lg:text-base font-semibold mb-1 sm:mb-2 flex-shrink-0 text-left
                                     ${isToday && isInActiveTerm ? 'text-orange-600 font-bold' :
                                         isCurrentMonth && isInActiveTerm ? 'text-gray-900' : 'text-gray-400'}
                                 `}>
@@ -672,7 +635,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                 {/* Show events for dates in active terms */}
                                 {isCurrentMonth && isInActiveTerm && dayEvents.length > 0 && (
                                     <div
-                                        className="flex flex-col gap-1 flex-1 overflow-hidden"
+                                        className="flex flex-col gap-0.5 sm:gap-1 flex-1 overflow-hidden"
                                         onClick={(e) => {
                                             e.stopPropagation(); // Prevent parent div click
                                         }}
@@ -680,7 +643,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                         {/* Show first event as a card */}
                                         <div
                                             key={dayEvents[0].id}
-                                            className={`p-1.5 rounded text-xs cursor-pointer transition-all hover:shadow-sm bg-gradient-to-r ${getEventTermColor(new Date(dayEvents[0].date))} text-white shadow-sm`}
+                                            className={`p-1 sm:p-1.5 rounded text-[10px] sm:text-xs cursor-pointer transition-all hover:shadow-sm bg-gradient-to-r ${getEventTermColor(new Date(dayEvents[0].date))} text-white shadow-sm`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 onEventClick?.(dayEvents[0].id);
@@ -690,7 +653,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                             <div className="font-medium truncate leading-tight">
                                                 {dayEvents[0].eventName}
                                             </div>
-                                            <div className="text-xs opacity-90 truncate leading-tight">
+                                            <div className="text-[9px] sm:text-xs opacity-90 truncate leading-tight hidden sm:block">
                                                 {format(new Date(dayEvents[0].time), 'HH:mm')}
                                             </div>
                                         </div>
@@ -716,7 +679,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                                                     return false;
                                                 }}
-                                                className="text-xs text-blue-600 hover:text-blue-800 font-medium py-1 px-2 rounded hover:bg-blue-50 transition-colors text-left"
+                                                className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-800 font-medium py-0.5 sm:py-1 px-1 sm:px-2 rounded hover:bg-blue-50 transition-colors text-left"
                                                 title={`View all ${dayEvents.length} events`}
                                             >
                                                 +{dayEvents.length - 1} more
@@ -878,35 +841,35 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                     {/* Mobile Calendar Content */}
                     <div className="flex-1 p-2 overflow-hidden">
-                        {/* Tab Navigation */}
-                        <div className="mb-3">
-                            <div className="flex space-x-4 border-b border-gray-200">
+                        {/* iOS-style Segmented Control */}
+                        <div className="mb-4 flex justify-center">
+                            <div className="inline-flex bg-gray-200 rounded-full p-1">
                                 <button
-                                    onClick={() => setSelectedView('monthly')}
-                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
-                                        ? 'border-gray-900 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    onClick={() => setSelectedView('daily')}
+                                    className={`px-8 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ease-in-out ${selectedView === 'daily'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'bg-transparent text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
-                                    Monthly
+                                    Day
                                 </button>
                                 <button
                                     onClick={() => setSelectedView('weekly')}
-                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
-                                        ? 'border-gray-900 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    className={`px-8 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ease-in-out ${selectedView === 'weekly'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'bg-transparent text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
-                                    Weekly
+                                    Week
                                 </button>
                                 <button
-                                    onClick={() => setSelectedView('daily')}
-                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
-                                        ? 'border-gray-900 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    onClick={() => setSelectedView('monthly')}
+                                    className={`px-8 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ease-in-out ${selectedView === 'monthly'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'bg-transparent text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
-                                    Daily
+                                    Month
                                 </button>
                             </div>
                         </div>
@@ -1055,38 +1018,38 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
 
                     {/* Main Content */}
                     <div className="flex-1 p-4 xl:p-6 overflow-hidden">
-                        {/* Tab Navigation */}
-                        <div className="mb-6">
-                            <div className="flex space-x-8 border-b border-gray-200">
-                                <div className="text-lg font-medium text-gray-900 pb-2">
-                                    Calendar
-                                </div>
+                        {/* Header with iOS-style Segmented Control */}
+                        <div className="mb-6 flex items-center justify-between">
+                            <div className="text-lg font-medium text-gray-900">
+                                Calendar
+                            </div>
+                            <div className="inline-flex bg-gray-200 rounded-full p-1">
                                 <button
-                                    onClick={() => setSelectedView('monthly')}
-                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'monthly'
-                                        ? 'border-gray-900 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    onClick={() => setSelectedView('daily')}
+                                    className={`px-8 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ease-in-out ${selectedView === 'daily'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'bg-transparent text-gray-600'
                                         }`}
                                 >
-                                    Monthly
+                                    Day
                                 </button>
                                 <button
                                     onClick={() => setSelectedView('weekly')}
-                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'weekly'
-                                        ? 'border-gray-900 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    className={`px-8 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ease-in-out ${selectedView === 'weekly'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'bg-transparent text-gray-600'
                                         }`}
                                 >
-                                    Weekly
+                                    Week
                                 </button>
                                 <button
-                                    onClick={() => setSelectedView('daily')}
-                                    className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${selectedView === 'daily'
-                                        ? 'border-gray-900 text-gray-900'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    onClick={() => setSelectedView('monthly')}
+                                    className={`px-8 py-2.5 text-sm font-medium rounded-full transition-all duration-200 ease-in-out ${selectedView === 'monthly'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'bg-transparent text-gray-600'
                                         }`}
                                 >
-                                    Daily
+                                    Month
                                 </button>
                             </div>
                         </div>
