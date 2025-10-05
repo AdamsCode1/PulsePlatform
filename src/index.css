@@ -434,6 +434,21 @@ html {
     }
   }
 
+  /* Holographic shimmer animation for View all button */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% center;
+    }
+
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
   /* Scrollbar hide utility */
   .scrollbar-hide {
     /* Hide scrollbar for IE, Edge and Firefox */

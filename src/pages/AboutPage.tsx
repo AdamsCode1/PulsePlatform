@@ -88,7 +88,7 @@ const About = () => {
             </div>
 
             {/* Section 2: Why We Started DUPulse */}
-            <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 w-screen pt-4 pb-12">
+            <div className="relative z-10 flex items-center justify-center px-4 sm:px-6 w-screen py-16">
                 <div className="text-center w-full max-w-4xl">
                     <div className="mb-8">
                         <Sparkles className="w-12 h-12 text-blue-600 mx-auto mb-6" />
@@ -154,6 +154,127 @@ const About = () => {
                         </div>
                         <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">Ready to dive into Durham life?</h3>
                         <p className="text-gray-700 text-lg max-w-2xl mx-auto leading-relaxed mb-24">Help us build a more connected, vibrant, and inclusive Durham experience.</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Section 4: Meet the Team */}
+            <div className="relative z-10 min-h-screen flex items-center justify-center px-4 sm:px-6 w-screen py-12">
+                <div className="text-center w-full max-w-6xl">
+                    <div className="mb-12">
+                        <Users className="w-12 h-12 text-pink-600 mx-auto mb-6" />
+                        <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                            Meet the Team
+                        </h2>
+                        <p className="text-lg sm:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                            The passionate students behind DUPulse, working to make Durham life better for everyone.
+                        </p>
+                    </div>
+
+                    {/* Teams Grid */}
+                    <div className="space-y-16 mb-20">
+                        {/* Tech/Website Team */}
+                        <div className="bg-white backdrop-blur-sm border border-gray-200 rounded-2xl p-8 shadow-lg">
+                            <div className="text-center mb-8">
+                                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-4">Tech & Website Team</h3>
+                                <p className="text-gray-600 leading-relaxed mb-4">
+                                    Building and maintaining the platform that brings Durham together. From code to design, we make it all work seamlessly.
+                                </p>
+                                <div className="inline-block px-4 py-2 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                                    Development • Design • UX
+                                </div>
+                            </div>
+
+                            {/* Team Members */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-8">
+                                {/* Adam - Tech Leader */}
+                                <div className="text-center">
+                                    <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                        A
+                                    </div>
+                                    <h4 className="font-semibold text-gray-900">Adam</h4>
+                                    <p className="text-sm text-gray-600">Tech Leader</p>
+                                </div>
+
+                                {/* Jose Stewart */}
+                                <div className="text-center">
+                                    <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                        JS
+                                    </div>
+                                    <h4 className="font-semibold text-gray-900">Jose Stewart</h4>
+                                    <p className="text-sm text-gray-600">Full Stack Engineer</p>
+                                </div>
+
+                                {/* Mohamed Hamed */}
+                                <div className="text-center">
+                                    <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                        MH
+                                    </div>
+                                    <h4 className="font-semibold text-gray-900">Mohamed Hamed</h4>
+                                    <p className="text-sm text-gray-600">Front-end Engineer</p>
+                                </div>
+
+                                {/* Jakub Nosek */}
+                                <div className="text-center">
+                                    <div className="w-24 h-24 mx-auto mb-3 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                        JN
+                                    </div>
+                                    <h4 className="font-semibold text-gray-900">Jakub Nosek</h4>
+                                    <p className="text-sm text-gray-600">Backend Engineer</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Social Media Team */}
+                        <div className="bg-white backdrop-blur-sm border border-gray-200 rounded-2xl p-8 shadow-lg">
+                            <div className="text-center mb-8">
+                                <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-4">Social Media Team</h3>
+                                <p className="text-gray-600 leading-relaxed mb-4">
+                                    Spreading the word and keeping you updated. We create content, engage with the community, and make sure everyone knows what's happening.
+                                </p>
+                                <div className="inline-block px-4 py-2 bg-pink-100 text-pink-700 rounded-full text-sm font-medium">
+                                    Content • Engagement • Growth
+                                </div>
+                            </div>
+
+                            {/* Team Members - Placeholder */}
+                            <div className="text-center text-gray-500 italic mt-8">
+                                Team members coming soon...
+                            </div>
+                        </div>
+
+                        {/* Outreach Team */}
+                        <div className="bg-white backdrop-blur-sm border border-gray-200 rounded-2xl p-8 shadow-lg">
+                            <div className="text-center mb-8">
+                                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="text-2xl font-bold text-gray-900 mb-4">Outreach Team</h3>
+                                <p className="text-gray-600 leading-relaxed mb-4">
+                                    Connecting with societies, students, and partners. We build relationships that make Durham's social life thrive.
+                                </p>
+                                <div className="inline-block px-4 py-2 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                                    Partnerships • Community • Events
+                                </div>
+                            </div>
+
+                            {/* Team Members - Placeholder */}
+                            <div className="text-center text-gray-500 italic mt-8">
+                                Team members coming soon...
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

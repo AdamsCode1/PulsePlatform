@@ -180,6 +180,15 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         }
 
         console.log('Setting modal state...');
+
+        // Lock body scroll when modal opens
+        const scrollY = window.scrollY;
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${scrollY}px`;
+        document.body.style.width = '100%';
+        document.body.style.overflow = 'hidden';
+        document.body.dataset.scrollY = scrollY.toString();
+
         setSelectedDayDate(date);
         setSelectedDayEvents(dayEvents);
         setShowDayEventsModal(true);
@@ -580,7 +589,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
         const numRows = Math.ceil(calendarDays.length / 7);
 
         return (
-            <div className="bg-white rounded-lg border overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 250px)' }}>
+            <div className="bg-white rounded-lg border flex flex-col h-full overflow-hidden">
                 {/* Calendar Header */}
                 <div className="grid grid-cols-7 bg-gray-50 border-b flex-shrink-0">
                     {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
@@ -592,8 +601,8 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                 </div>
 
                 {/* Calendar Grid */}
-                <div className="grid grid-cols-7 flex-1 overflow-hidden" style={{
-                    gridTemplateRows: `repeat(${numRows}, minmax(70px, 1fr))`
+                <div className="grid grid-cols-7 flex-1 overflow-y-auto" style={{
+                    gridTemplateRows: `repeat(${numRows}, minmax(80px, 1fr))`
                 }}>
                     {calendarDays.map(day => {
                         const dayEvents = getEventsForDate(day);
@@ -605,7 +614,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                             <div
                                 key={day.toISOString()}
                                 className={`
-                                    relative p-1 sm:p-2 border-r border-b last:border-r-0 flex flex-col min-h-[70px] overflow-hidden
+                                    relative p-1 sm:p-2 border-r border-b last:border-r-0 flex flex-col min-h-[80px] sm:min-h-[100px] overflow-hidden
                                     ${isCurrentMonth ?
                                         (isInActiveTerm ? 'bg-white hover:bg-gray-50' : 'bg-gray-100 opacity-50')
                                         : 'bg-gray-50 opacity-30'
@@ -635,7 +644,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                 {/* Show events for dates in active terms */}
                                 {isCurrentMonth && isInActiveTerm && dayEvents.length > 0 && (
                                     <div
-                                        className="flex flex-col gap-0.5 sm:gap-1 flex-1 overflow-hidden"
+                                        className="flex flex-col gap-0.5 sm:gap-1 flex-1"
                                         onClick={(e) => {
                                             e.stopPropagation(); // Prevent parent div click
                                         }}
@@ -643,7 +652,7 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                         {/* Show first event as a card */}
                                         <div
                                             key={dayEvents[0].id}
-                                            className={`p-1 sm:p-1.5 rounded text-[10px] sm:text-xs cursor-pointer transition-all hover:shadow-sm bg-gradient-to-r ${getEventTermColor(new Date(dayEvents[0].date))} text-white shadow-sm`}
+                                            className={`p-1.5 sm:p-1.5 rounded text-[11px] sm:text-xs cursor-pointer transition-all hover:shadow-sm bg-gradient-to-r ${getEventTermColor(new Date(dayEvents[0].date))} text-white shadow-sm`}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 onEventClick?.(dayEvents[0].id);
@@ -653,36 +662,37 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                             <div className="font-medium truncate leading-tight">
                                                 {dayEvents[0].eventName}
                                             </div>
-                                            <div className="text-[9px] sm:text-xs opacity-90 truncate leading-tight hidden sm:block">
+                                            <div className="text-[10px] sm:text-xs opacity-90 truncate leading-tight">
                                                 {format(new Date(dayEvents[0].time), 'HH:mm')}
                                             </div>
                                         </div>
 
-                                        {/* Show "+X more" button if there are additional events */}
+                                        {/* Show "View all" button only if there are 2+ events */}
                                         {dayEvents.length > 1 && (
                                             <button
                                                 type="button"
                                                 onClick={(e) => {
-                                                    console.log('=== +X more button clicked ===');
-                                                    console.log('Event target:', e.target);
-                                                    console.log('Event currentTarget:', e.currentTarget);
+                                                    console.log('=== View all button clicked ===');
                                                     e.preventDefault();
                                                     e.stopPropagation();
 
                                                     try {
-                                                        console.log('About to call showAllEventsForDay with:', { day, dayEventsLength: dayEvents.length });
                                                         showAllEventsForDay(day, dayEvents);
-                                                        console.log('showAllEventsForDay completed successfully');
                                                     } catch (error) {
-                                                        console.error('Error in +X more button click handler:', error);
+                                                        console.error('Error in View all button click handler:', error);
                                                     }
 
                                                     return false;
                                                 }}
-                                                className="text-[10px] sm:text-xs text-blue-600 hover:text-blue-800 font-medium py-0.5 sm:py-1 px-1 sm:px-2 rounded hover:bg-blue-50 transition-colors text-left"
+                                                className="w-full text-[8px] sm:text-[9px] text-pink-700 font-medium py-0.5 px-1 rounded shadow-sm hover:shadow transition-all text-center leading-none"
                                                 title={`View all ${dayEvents.length} events`}
+                                                style={{
+                                                    background: 'linear-gradient(90deg, #fce7f3 0%, #fbcfe8 25%, #f9a8d4 50%, #fbcfe8 75%, #fce7f3 100%)',
+                                                    backgroundSize: '200% 100%',
+                                                    animation: 'shimmer 3s ease-in-out infinite'
+                                                }}
                                             >
-                                                +{dayEvents.length - 1} more
+                                                View all ({dayEvents.length})
                                             </button>
                                         )}
                                     </div>
@@ -893,26 +903,27 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                         return (
                                             <div className="h-full flex flex-col">
                                                 {/* Month Navigation */}
-                                                <div className="flex items-center justify-between mb-3 flex-shrink-0 bg-white p-2 sticky top-0 z-10 border-b">
-                                                    <div className="flex items-center space-x-2">
-                                                        <h2 className="text-lg font-semibold text-gray-900">
-                                                            {format(currentDate, 'MMMM yyyy')}
-                                                        </h2>
-                                                        <div className="flex space-x-1">
-                                                            <button
-                                                                onClick={handlePrevMonth}
-                                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                                                            >
-                                                                <ChevronLeft className="h-4 w-4" />
-                                                            </button>
-                                                            <button
-                                                                onClick={handleNextMonth}
-                                                                className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                                                            >
-                                                                <ChevronRight className="h-4 w-4" />
-                                                            </button>
-                                                        </div>
-                                                    </div>
+                                                <div className="relative flex items-center justify-center mb-3 flex-shrink-0 bg-white p-2 sticky top-0 z-10 border-b">
+                                                    {/* Left Arrow */}
+                                                    <button
+                                                        onClick={handlePrevMonth}
+                                                        className="absolute left-2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    >
+                                                        <ChevronLeft className="h-4 w-4" />
+                                                    </button>
+
+                                                    {/* Month Title */}
+                                                    <h2 className="text-lg font-semibold text-gray-900">
+                                                        {format(currentDate, 'MMMM yyyy')}
+                                                    </h2>
+
+                                                    {/* Right Arrow */}
+                                                    <button
+                                                        onClick={handleNextMonth}
+                                                        className="absolute right-2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                                                    >
+                                                        <ChevronRight className="h-4 w-4" />
+                                                    </button>
                                                 </div>
 
                                                 {/* Calendar */}
@@ -1067,25 +1078,23 @@ const Timetable = ({ events, onEventClick, isLoading, error }: TimetableProps) =
                                         return (
                                             <div className="h-full flex flex-col">
                                                 {/* Month Navigation */}
-                                                <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                                                    <div className="flex items-center space-x-4">
-                                                        <h2 className="text-2xl xl:text-3xl font-semibold text-gray-900">
-                                                            {format(currentDate, 'MMMM yyyy')}
-                                                        </h2>
-                                                        <div className="flex space-x-1">
-                                                            <button
-                                                                onClick={handlePrevMonth}
-                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                                            >
-                                                                <ChevronLeft className="h-5 w-5" />
-                                                            </button>
-                                                            <button
-                                                                onClick={handleNextMonth}
-                                                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                                            >
-                                                                <ChevronRight className="h-5 w-5" />
-                                                            </button>
-                                                        </div>
+                                                <div className="relative flex items-center mb-6 flex-shrink-0">
+                                                    <h2 className="text-2xl xl:text-3xl font-semibold text-gray-900">
+                                                        {format(currentDate, 'MMMM yyyy')}
+                                                    </h2>
+                                                    <div className="absolute left-0 flex space-x-1" style={{ left: '280px' }}>
+                                                        <button
+                                                            onClick={handlePrevMonth}
+                                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                        >
+                                                            <ChevronLeft className="h-5 w-5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={handleNextMonth}
+                                                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                                        >
+                                                            <ChevronRight className="h-5 w-5" />
+                                                        </button>
                                                     </div>
                                                 </div>
 
